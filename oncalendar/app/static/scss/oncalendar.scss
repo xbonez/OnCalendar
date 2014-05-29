@@ -1,0 +1,474 @@
+/* Welcome to Compass.
+ * In this file you should write your main styles. (or centralize your imports)
+ * Import this file using the following HTML or equivalent:
+ * <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" /> */
+
+/* Default variables */
+$default-border-radius: 3px;
+$default-box-shadow-color: rgb(0, 0, 0);
+$default-box-shadow-blur: 3px;
+
+@import "compass";
+@import "_colors";
+
+@charset "utf-8";
+
+html, body {
+    height: 99%;
+    margin: 0;
+    padding: 1px;
+}
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: $body_bg;
+}
+
+button {
+    font: inherit;
+    overflow: visible;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    display: inline-block;
+    padding: 4px 6px;
+    @include border-radius;
+    a {
+        text-decoration: none;
+        color: $font_color;
+    }
+}
+
+button:hover, button:focus {
+    color: $font_color_reverse;
+    background-color: $button_hover;
+    a {
+        color: $font_color_reverse;
+    }
+}
+
+button:active {
+    background-color: $button_clicked;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="color"],
+.uneditable-input {
+    /*font-weight: bold;*/
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    line-height: 1em;
+    height: 16px;
+    border: 1px solid $button_border;
+    padding: 2px;
+    margin: 0;
+    vertical-align: middle;
+    box-shadow: none;
+}
+
+p {
+    -webkit-margin-before: 0;
+    -webkit-margin-after: 0;
+}
+
+/* Master classes */
+.font-reset {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 1em;
+}
+
+.alert-box {
+    border: 1px solid $alert_border;
+    background-color: $alert_bg;
+    color: $font_color_reverse;
+    cursor: pointer;
+    padding: 5px 10px;
+    margin: 0 auto;
+    position: relative;
+    top: 10px;
+    width: 50%;
+    @include border-radius;
+}
+
+.expander {
+    cursor: pointer;
+    padding-bottom: 3px;
+}
+
+.expander.open {
+    background-color: $dialog_bg;
+}
+
+.expander-arrow {
+    color: $font_color_dim;
+    font-size: 0.8em;
+}
+
+.expander-arrow:hover {
+    color: $font_color;
+}
+
+.prev-arrow-button, .next-arrow-button {
+    cursor: pointer;
+}
+
+.inline {
+    display: inline-block;
+}
+
+.input-menu {
+    @include border-right-radius;
+    cursor: pointer;
+    height: 16px;
+    padding: 2px 4px 4px 4px;
+}
+
+.input-menu:hover {
+    @extend button:hover
+}
+
+.caps {
+    text-transform: capitalize;
+}
+
+.divider-bullet {
+    font-size: 0.5em;
+    margin-right: 10px;
+}
+
+.error-text {
+    color: $error;
+}
+
+.hide {
+    display: none;
+}
+
+.oc-checkbox, .oc-radio {
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+.oc-checkbox:hover, .oc-checkbox:focus {
+    color: $font_color;
+    background-color: transparent;
+}
+
+.oc-checkbox:active {
+    background-color: transparent;
+}
+
+.page-title {
+    position: relative;
+    color: $font-color-reverse;
+    margin: 8px 1% 20px 1%;
+    h2 {
+        margin: 20px 0 0 10px;
+    }
+}
+
+.strikethrough {
+    text-decoration: line-through;
+}
+
+/* Dropdown menus */
+@import "_dropdown";
+
+/* Popup dialogs */
+@import "_popup";
+
+/* Tab interface */
+@import "_tabs";
+
+/* Embedded fonts */
+@import "_fonts";
+
+/* Tooltips */
+@import "_tooltips";
+
+/* Item-specific styles */
+div#login-box {
+    position: relative;
+    width: 20%;
+    margin: 10% auto;
+    padding: 25px;
+    background-color: white;
+    border: 1px solid $box_border;
+    @include border-radius;
+    @include single-box-shadow;
+}
+
+div.login-label {
+    position: relative;
+    width: 99%;
+    margin: 20px 0;
+}
+
+div.login-label-text {
+    position: relative;
+    display: inline-block;
+    width: 50%;
+    text-align: right;
+    margin-right: 5px;
+}
+
+div#login-label input {
+    position: relative;
+    width: 45%;
+}
+
+div#login-form-buttons {
+    position: relative;
+    text-align: right;
+}
+
+div#db-init-prompt p {
+    display: inline-block;
+}
+
+span#init-db-button {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+div#create-db-popup {
+    width: 30%;
+    text-align: left;
+}
+
+div.outer-container {
+    position: relative;
+    margin: 0 1%;
+    background-color: $container_bg;
+    border: 1px solid $box_border;
+    @include border-radius;
+    @include single-box-shadow;
+}
+
+div.inner-container {
+    position: relative;
+    margin: 1% 2% 2% 2%;
+    padding: 2%;
+    background-color: white;
+    @include border-radius;
+    @include single-box-shadow;
+}
+
+div#admin-function-container {
+    min-height: 300px;
+}
+
+div.tab-panel {
+    min-height: 300px;
+}
+
+tr#add-group, tr#edit-group-form,
+tr#add-victim, tr#edit-victim-form {
+    border-top: 1px solid $box_border;
+}
+
+tr#add-group-buttons, tr#edit-group-buttons,
+tr#add-victim-buttons, tr#edit-victim-buttons {
+    border-bottom: 1px solid $box_border;
+}
+
+.admin-table {
+    border-collapse: collapse;
+}
+
+.admin-table th {
+    text-align: left;
+}
+
+.admin-table th, .admin-table td {
+    border: 0;
+    padding: 8px;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+.admin-panel-actions {
+    font-size: 0.8em;
+    margin: 15px 20px;
+}
+
+.admin-user-menu, .user-menu {
+    margin: 5px 10px 0 10px;
+    cursor: pointer;
+    color: $font_color_menu_reverse;
+}
+
+.admin-user-menu:hover, .user-menu:hover {
+    color: $font_color_reverse;
+}
+
+span#username {
+    cursor: pointer;
+}
+
+div#calendar-link {
+    display: inline-block;
+}
+
+div#calendar-link a,
+div#calendar-link a:visited {
+    color: $font_color;
+    text-decoration: none;
+}
+
+div#calendar-header {
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+div#calendar-box {
+    padding: 0 2% 1% 2%;
+}
+
+div#group-legend {
+    margin: 5px 0 0 35px;
+    span.group-legend-entry {
+        margin: 0 3px 0 0;
+        font-weight: bold;
+        font-size: 0.8em
+    }
+    .expander {
+        display: inline-block;
+        margin: 0 1px 2px 1px;
+        border: 1px solid rgba(255, 255, 255, 0);
+    }
+    .expander:hover {
+        border: 1px solid rgb(255, 255, 255);
+    }
+}
+
+table#calendar-table {
+    width: 95%;
+    margin: 0 auto 1% auto;
+    span.edit-day-menu {
+        position: absolute;
+        top: 0;
+        right: 0;
+        button {
+            padding: 2px;
+            font-size: 0.8em;
+        }
+    }
+    td, th {
+        width: 14.28%;
+    }
+    td {
+        position: relative;
+        border: 1px solid $box_border;
+        font-size: 0.84em;
+        white-space: nowrap;
+        padding: 8px;
+    }
+    td.calendar-day {
+        vertical-align: top;
+        div {
+            margin-top: 8px;
+            display: inline-block;
+            vertical-align: top;
+        }
+        div.calendar-day-victims {
+            margin-left: 5px;
+            p {
+                margin-bottom: 3px;
+                cursor: default;
+            }
+        }
+    }
+    td.calendar-day.prev-day,
+    td.calendar-day.post-day {
+        color: $font_color_dim;
+        background-color: $calendar_day_bg;
+    }
+    td.calendar-day.null-day {
+        background-color: null;
+        border: none;
+    }
+    td.calendar-day.today {
+        background-color: $today_bg;
+        border-color: red;
+    }
+    tr {
+        min-height: 25px;
+        position: relative;
+    }
+}
+
+div#edit-month-actions {
+    margin: 10px 0 10px 30px;
+}
+
+div#group-info-box {
+    background-color: $dialog_bg;
+    margin-top: 5px;
+    padding-bottom: 10px;
+    border-top: 1px solid $box_border;
+    border-bottom: 1px solid $box_border;
+    div#group-info-box-buttons {
+        font-size: 0.8em;
+        margin: 20px 0 0 50px;
+    }
+}
+
+div#group-info-box-head h2 {
+    margin: 0;
+    margin-left: 35px;
+    padding-top: 10px;
+    display: inline-block;
+}
+
+span#edit-group-info {
+    font-size: 0.8em;
+}
+
+table#edit-group-info-table {
+    margin-bottom: 25px;
+}
+
+table#group-info-data {
+    width: 90%;
+    margin: 0;
+    margin-left: 35px;
+    font-size: 0.8em;
+    text-align: left;
+}
+
+div#edit-day-popup {
+    max-height: 650px;
+    h3 {
+        height: 25px;
+        margin: 0 0 15px;
+    }
+    div#edit-day-form {
+        max-height: 550px;
+        overflow: auto;
+        border-top: 1px solid $calendar_day_bg;
+        border-bottom: 1px solid $calendar_day_bg;
+    }
+    table#edit-day-slots-table {
+        width: 100%;
+        tr.shadow-row {
+            border-bottom: 1px solid black;
+        }
+        td {
+            padding: 0;
+        }
+    }
+}

@@ -1,0 +1,33 @@
+<html>
+	<head>
+        <style type="text/css">
+            body {text-align: center; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10pt;}
+            table {text-align: center; margin-left: auto; margin-right: auto;}
+            th {white-space: nowrap;}
+            th.even {background-color: #D9D9D9;}
+            td.even, th.odd {background-color: #F2F2F2;}
+            td.odd {background-color: #FFF;}
+            th, td {text-align: left;}
+        </style>
+	</head>
+	<body>
+        <table width="600px">
+            <tr><th colspan="2"><span>Monitoring System Notification</span></th></tr>
+            <tr>
+                <th width="180px" class="odd">Notification Type:</th>
+                <td bgcolor="{{ color_map[data.notification_type] }}">{{ data.notification_type }}</td>
+            </tr>
+            <tr><th class="even">Service Status:</th><td class="even">{{ data.service_status }}</td></tr>
+            <tr><th class="odd">Service Name:</th><td class="odd">{{ data.service }}</td></tr>
+            <tr><th class="even">Host:</th><td class="even">
+                <a href="{{ host_query }}">{{ data.hostname }}</a>
+            </td></tr>
+	        <tr><th class="odd">Notification Count:</th><td class="odd">{{ data.notification_number }}</td></tr>
+            <tr><th class="even">Duration:</th><td class="even">{{ data.duration }}</td></tr>
+            <tr><th class="odd">Event Time:</th><td class="odd">{{ data.event_time }}</td></tr>
+            <tr><th class="even">Event Info:</th><td class="even">
+              <a href="{{ service_query }}">{{ data.info }}</a></td></tr>
+            <tr><th class="odd">Comments:</th><td class="odd">{{ data.comments }}</td></tr>
+        </table>
+	</body>
+</html>

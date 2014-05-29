@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Box On-Call Calendar</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="{{ stylesheet_url }}" />
+    <script src="{{ jquery_url }}"></script>
+    <script src="{{ datejs_url }}"></script>
+    <script src="{{ bootstrapjs_url }}"></script>
+    <script src="{{ magnific_url }}"></script>
+    <script src="{{ ocjs_url }}"></script>
+    <script src="{{ colorwheel_url }}"></script>
+  </head>
+
+  <body>
+    <div id="page-head" class="page-title">
+      <div id="title"><h2>Box On-Call Calendar</h2></div>
+      <div id="user-menu" class="user-menu dropdown">
+        <span id="username" data-toggle="dropdown">{% if g.user.username is defined %} {{ g.user.username }} {% else %} anonymous {% endif %}</span>
+        <span class="input-menu elegant_icons arrow_carrot-down" data-toggle="dropdown"> </span>
+        <ul id="user-dropdown" class="dropdown-menu" role="menu">
+          {% if anonymous is sameas true %}
+          <li><a href="/login"><span id="user-login">Login</span></a></li>
+          {% else %}
+          <li><a href="/logout"><span id="user-logout">Logout</span></a></li>
+          {% endif %}
+          {% if g.user.app_role == 2 %}
+          <li><a href="/admin"><span id="oncalendar-admin">OnCalendar Admin</span></a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <div id="calendar-container" class="outer-container">
+      <div id="group-legend" class="inline"></div>
+      <div id="group-info-box" class="hide">
+        <div id="group-info-box-head"></div>
+        <div id="group-info-box-info">
+          <table id="group-info-data">
+            <thead>
+              <tr>
+                <th>Turnover Day</th>
+                <th>Turnover Time</th>
+                <th>Email</th>
+                <th>Auto-Rotation</th>
+                <th>Oncall Shadowing</th>
+                <th>Pager Address</th>
+                <th>Backup Pager</th>
+                <th>Panic Pager</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="group-turnover-day"></td>
+                <td id="group-default-turnover-time"></td>
+                <td id="group-email-address"></td>
+                <td id="group-autorotate"></td>
+                <td id="group-shadow"></td>
+                <td id="group-alias"></td>
+                <td id="group-backup-alias"></td>
+                <td id="group-failsafe-alias"></td>
+              </tr>
+              <tr>
+                <th id="group-members-head" colspan=7>Members</th>
+              </tr>
+              <tr>
+                <td id="group-members" colspan=7></td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="group-info-box-buttons">
+            <span><button id="toggle-group-button">Hide This Group</button></span>
+            <span><button id="hide-others-button">Hide Other Groups</button></span>
+            <span><button id="show-all-victims-button">Show All Groups</button></span>
+            <span id="edit-month-link-container"></span>
+            <span id="edit-by-week-link-container"></span>
+          </div>
+        </div>
+      </div>
+      <div id="calendar-box" class="inner-container">
+        <div id="calendar-header">
+          <div id="prev-month-button" class="inline"><span class="prev-arrow-button elegant_icons arrow_carrot-left_alt2"></span></div>
+          <div id="month-year" class="inline"><h3>Month Year</h3></div>
+          <div id="next-month-button" class="inline"><span class="next-arrow-button elegant_icons arrow_carrot-right_alt2"></span></div>
+        </div>
+        <div id="calendar-table-container">
+          <table id="calendar-table" class="calendar-table">
+            <thead>
+              <tr id="days-header">
+                <th id="sunday" class="cal-days-head">Sunday</th>
+                <th id="monday" class="cal-days-head">Monday</th>
+                <th id="tuesday" class="cal-days-head">Tuesday</th>
+                <th id="wednesday" class="cal-days-head">Wednesday</th>
+                <th id="thursday" class="cal-days-head">Thursday</th>
+                <th id="friday" class="cal-days-head">Friday</th>
+                <th id="saturday" class="cal-days-head">Saturday</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="edit-group-popup" class="oncalendar-edit-popup popup mfp-hide">
+      <h3>Editing Group</h3>
+      <div id="edit-group-info-form">
+        <table id="edit-group-info-table" class="admin-table">
+          <tr>
+            <td id="group-uneditable" colspan=3>
+              <input type="hidden" id="edit-group-id" name="edit-group-id" value="">
+              <input type="hidden" id="edit-group-name" name="edit-group-name" value="">
+              <input type="hidden" id="edit-group-auth-group" name="edit-group-auth-group" value="">
+            </td>
+          </tr>
+          <tr>
+            <th>Turnover Day</th>
+            <th>Turnover Time</th>
+            <th></th>
+          </tr>
+          <tr>
+            <td>
+              <span id="edit-group-turnover-day-menu" class="dropdown"><span data-toggle="dropdown">
+              <button id="edit-group-turnover-day-label"><span class="elegant_icons arrow_carrot-down"></span></button></span>
+              <ul id="edit-group-turnover-day-options" class="dropdown-menu" role="menu">
+                <li><span data-day="1">Monday</span></li>
+                <li><span data-day="2">Tuesday</span></li>
+                <li><span data-day="3">Wednesday</span></li>
+                <li><span data-day="4">Thursday</span></li>
+                <li><span data-day="5">Friday</span></li>
+                <li><span data-day="6">Saturday</span></li>
+                <li><span data-day="0">Sunday</span></li>
+              </ul></span><input type="hidden" id="edit-group-turnover-day" name="edit-group-turnover-day" value=""></td>
+            <td><span id="edit-group-turnover-hour-menu" class="dropdown"><span data-toggle="dropdown">
+              <button id="edit-group-turnover-hour-label"></button></span>
+              <ul id="edit-group-turnover-hour-options" class="dropdown-menu" role="menu">
+                <li><span data-hour="00">00</span></li>
+                <li><span data-hour="01">01</span></li>
+                <li><span data-hour="02">02</span></li>
+                <li><span data-hour="03">03</span></li>
+                <li><span data-hour="04">04</span></li>
+                <li><span data-hour="05">05</span></li>
+                <li><span data-hour="06">06</span></li>
+                <li><span data-hour="07">07</span></li>
+                <li><span data-hour="08">08</span></li>
+                <li><span data-hour="09">09</span></li>
+                <li><span data-hour="10">10</span></li>
+                <li><span data-hour="11">11</span></li>
+                <li><span data-hour="12">12</span></li>
+                <li><span data-hour="13">13</span></li>
+                <li><span data-hour="14">14</span></li>
+                <li><span data-hour="15">15</span></li>
+                <li><span data-hour="16">16</span></li>
+                <li><span data-hour="17">17</span></li>
+                <li><span data-hour="18">18</span></li>
+                <li><span data-hour="19">19</span></li>
+                <li><span data-hour="20">20</span></li>
+                <li><span data-hour="21">21</span></li>
+                <li><span data-hour="22">22</span></li>
+                <li><span data-hour="23">23</span></li>
+              </ul></span><input type="hidden" id="edit-group-turnover-hour" name="edit-group-turnover-hour" value="09" size="2">
+              :<span id="edit-group-turnover-min-menu" class="dropdown"><span data-toggle="dropdown">
+              <button id="edit-group-turnover-min-label"></button></span>
+              <ul id="edit-group-turnover-min-options" class="dropdown-menu" role="menu">
+                <li><span data-min="00">00</span></li>
+                <li><span data-min="30">30</span></li>
+              </ul></span><input type="hidden" id="edit-group-turnover-min" name="edit-group-turnover-min" value="30" size="2"></td>
+            <td>
+              <button id="edit-group-autorotate-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-autorotate" data-checked="no"></button>
+              Auto-Rotation Enabled
+              <input type="hidden" id="edit-group-autorotate" name="edit-group-autorotate" value="0"></td>
+          </tr>
+          <tr>
+            <td colspan=2></td>
+            <td><button id="edit-group-shadow-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-shadow" data-checked="no"></button>
+              Enable On-Call shadowing
+              <input type="hidden" id="edit-group-shadow" name="add-group-shadow" value="0"></td>
+          </tr>
+          <tr>
+            <th>Email</th>
+            <td colspan=2><input type="text" id="edit-group-email" name="edit-group-email" value="" size="40"></td>
+          </tr>
+          <tr>
+            <th>Pager Address</th>
+            <td colspan=2><input type="text" id="edit-group-alias" name="edit-group-alias" value="" size="20">@oncall.inside-box.net</td>
+          </tr>
+          <tr>
+            <th colspan=3>Backup Pager</th>
+          </tr>
+          <td><button id="edit-group-backup-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-backup" data-checked="no"></button>
+            Enabled
+            <input type="hidden" id="edit-group-backup" name="edit-group-backup" value="0">
+          </td>
+          <td colspan=2><input type="text" id="edit-group-backup-alias" name="edit-group-backup-alias" value="" size="20">@oncall.inside-box.net</td>
+          <tr>
+            <th colspan=3>Panic Pager</th>
+          </tr>
+          <tr>
+            <td><button id="edit-group-failsafe-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-failsafe" data-checked="no"></button>
+              Enabled
+              <input type="hidden" id="edit-group-failsafe" name="edit-group-failsafe" value="0">
+            </td>
+            <td colspan=2><input type="text" id="edit-group-failsafe-alias" name="edit-group-failsafe-alias" value="" size="20">@oncall.inside-box.net</td>
+          </tr>
+        </table>
+        <button id="edit-group-cancel-button" class="button">Cancel</button>
+        <button id="edit-group-save-button" class="button">Save</button>
+      </div>
+    </div>
+    <div id="edit-group-victims-popup" class="popup mfp-hide">
+        <h3>Edit Group Members</h3>
+        <div id="group-victims-list-form">
+          <table id="group-victims-list-table" class="admin-table">
+            <tr>
+              <th>Remove</th>
+              <th>Active</th>
+              <th>Username</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>SMS Email</th>
+              <th></th>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td><input type="text" id="add-victim-username" name="add-victim-username" value="" size="20"></td>
+              <td><input type="text" id="add-victim-firstname" name="add-victim-firstname" value="" size="20"></td>
+              <td><input type="text" id="add-victim-lastname" name="add-victim-lastname" value="" size="20"></td>
+              <td><input type="text" id="add-victim-phone" name="add-victim-phone" value="" size="20"></td>
+              <td><input type="text" id="add-victim-email" name="add-victim-email" value="" size="20"></td>
+              <td><input type="text" id="add-victim-sms-email" name="add-victim-sms-email" value="" size="20"></td>
+              <td><button id="add-new-victim-save-button" class="button" title="Add user to group">Add</button></td>
+              <td colspan="5"></td>
+            </tr>
+          </table>
+        </div>
+    </div>
+    <div id="edit-day-popup" class="popup mfp-hide">
+      <h3>Edit Day <span id="edit-day-group"></span></h3>
+      <div id="edit-day-form">
+        <table id="edit-day-slots-table" class="admin-table"></table>
+      </div>
+      <div id="edit-day-action-buttons">
+        <table style="width: 100%;">
+          <tr>
+            <td width="50%"></td>
+            <td width="25%" align="right"><button id="edit-day-cancel-button">Cancel</button></td>
+            <td width="25%" align="right"><button id="edit-day-save-button">Save</button></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <script type="text/javascript">
+      {{ main_js|safe }}
+    </script>
+  </body>
+</html>

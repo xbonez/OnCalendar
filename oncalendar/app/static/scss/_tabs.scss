@@ -1,0 +1,60 @@
+ul.tablist {
+    @include horizontal-list-container;
+    width: 100%;
+    margin: 0 2%;
+}
+
+li.tab {
+    @include horizontal-list-item;
+    padding: 5px 8px;
+    text-align: center;
+    cursor: pointer;
+    @include border-top-radius;
+}
+
+li.tab:first-child {
+    padding-left: 8px;
+}
+
+li.tab:last-child {
+    padding-right: 8px;
+}
+
+li.tab:hover, li.tab.selected:hover {
+    color: $font_color_reverse;
+    background-color: $button_hover;
+}
+
+li.tab:active, li.tab.selected {
+    color: $font_color_reverse;
+    background-color: $button_selected;
+}
+
+li.tab.vertical {
+    clear: both;
+}
+
+div.tab-panel-container {
+    position: relative;
+    margin: 0 1%;
+    padding: 1%;
+    border: 1px solid $box_border;
+    @include border-radius;
+}
+
+div.tab-panel {
+    display: none;
+}
+
+div.tab-panel.active-panel {
+    display: block;
+}
+
+div.tab-panel-data {
+    min-height: 250px;
+    overflow: auto;
+}
+
+div.tab-panel-buttons {
+    font-size: 0.8em;
+}

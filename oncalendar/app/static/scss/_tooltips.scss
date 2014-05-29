@@ -1,0 +1,85 @@
+/*
+ *================
+ * Tooltip Classes
+ *================
+ */
+
+.tooltip {
+    position: absolute;
+    z-index: 1030;
+    display: block;
+    opacity: 0;
+    filter: alpha(opacity=0);
+    visibility: visible;
+}
+
+.tooltip.in {
+    opacity: 1.0;
+    filter: alpha(opacity=1);
+}
+
+.tooltip.top {
+    padding: 5px 0;
+    margin-top: -3px;
+    .tooltip-arrow {
+        bottom: 0;
+        left: 50%;
+        margin-left: -5px;
+        border-top-color: $box_border;
+        border-width: 5px 5px 0;
+    }
+}
+
+.tooltip.right {
+    padding: 0 5px;
+    margin-right: 3px;
+    .tooltip-arrow {
+        top: 50%;
+        left: 0;
+        margin-top: -5px;
+        border-right-color: $box_border;
+        border-width: 5px 5px 5px 0;
+    }
+}
+
+.tooltip.bottom {
+    padding: 5px 0;
+    margin-top: 3px;
+    .tooltip-arrow {
+        top: 0;
+        left: 50%;
+        margin-left: -5px;
+        border-bottom-color: $box_border;
+        border-width: 0 5px 5px;
+    }
+}
+
+.tooltip.left {
+    padding: 0 5px;
+    margin-left: -12px;
+    .tooltip-arrow {
+        top: 50%;
+        right: 0;
+        margin-top: -5px;
+        border-left-color: $box_border;
+        border-width: 5px 0 5px 5px;
+    }
+}
+
+.tooltip-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-style: solid;
+}
+
+.tooltip-inner {
+    max-width: 300px;
+    padding: 8px;
+    font-weight: normal;
+    font-size: 0.8em;
+    background-color: $dialog_bg;
+    @include border-radius;
+    border: 1px solid $box_border;
+}

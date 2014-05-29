@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OnCalendar Login</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="{{ stylesheet_url }}" />
+</head>
+<body>
+  <div id="login-title" class="page-title"><h2>OnCalendar Login</h2></div>
+  <div id="login-container">
+    <div id="login-box">
+      <form id="oncalendar-login-form" method="post" action="/login{{ login_next }}">
+        {{ form.hidden_tag() }}
+        {% for error in form.errors.username %}
+          <div id="login-error" class="error-flash">Error: {{ error }}</div>
+        {% endfor %}
+        <div id="oncalendar-username" class="login-label">
+          <div class="login-label-text">Username:</div>
+          {{ form.username }}
+        </div>
+        {% for error in form.errors.password %}
+          <div id="password-error" class="error-flash">Error: {{ error }}</div>
+        {% endfor %}
+        <div id="oncalendar-password" class="login-label">
+          <div class="login-label-text">Password:</div>
+          {{ form.password }}
+        </div>
+        <div id="login-form-buttons" class="form-buttons">
+          <button id="login-button" onClick="$('#oncalendar-login-form').submit()">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="{{ jquery_url }}"></script>
+  <script type="text/javascript">
+    {{ main_js|safe }}
+  </script>
+</body>
+</html>

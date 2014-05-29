@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Box On-Call Calendar | Edit Month</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="{{ stylesheet_url }}" />
+  <script src="{{ jquery_url }}"></script>
+  <script src="{{ datejs_url }}"></script>
+  <script src="{{ bootstrapjs_url }}"></script>
+  <script src="{{ magnific_url }}"></script>
+  <script src="{{ ocjs_url }}"></script>
+  <script src="{{ colorwheel_url }}"></script>
+</head>
+
+<body>
+<div id="page-head" class="page-title">
+  <div id="title"><h2>Box On-Call Calendar | {{ edit_group }} | Edit Month By Week</h2></div>
+</div>
+<div id="calendar-container" class="outer-container">
+  <div id="calendar-box" class="inner-container">
+    <div id="calendar-header">
+      <div id="prev-month-button" class="inline"><span class="prev-arrow-button elegant_icons arrow_carrot-left_alt2"></span></div>
+      <div id="month-year" class="inline"><h3>Month Year</h3></div>
+      <div id="next-month-button" class="inline"><span class="next-arrow-button elegant_icons arrow_carrot-right_alt2"></span></div>
+    </div>
+    <div id="calendar-table-container">
+      <table id="calendar-table" class="calendar-table">
+        <thead>
+        <tr id="days-header">
+          <th id="sunday" class="cal-days-head">Sunday</th>
+          <th id="monday" class="cal-days-head">Monday</th>
+          <th id="tuesday" class="cal-days-head">Tuesday</th>
+          <th id="wednesday" class="cal-days-head">Wednesday</th>
+          <th id="thursday" class="cal-days-head">Thursday</th>
+          <th id="friday" class="cal-days-head">Friday</th>
+          <th id="saturday" class="cal-days-head">Saturday</th>
+        </tr>
+        </thead>
+      </table>
+      <div id="edit-month-actions">
+        <button id="edit-month-cancel-button">Cancel</button>
+        <button id="edit-month-save-button">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  {{ main_js|safe }}
+</script>
+</body>
+</html>

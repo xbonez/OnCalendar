@@ -1,0 +1,77 @@
+{% extends "main.js.jinja2" %}
+
+{% block page_script %}
+
+$(document).ready(function() {
+    $.when(oncalendar.build_calendar({{ edit_year }}, {{ edit_month }}, '{{ edit_group }}')).then(function() {
+        oncalendar.display_calendar_weekly_edit('{{ edit_group }}');
+    });
+});
+
+$('#prev-month-button').click(function() {
+    oncalendar.go_to_prev_edit_month();
+});
+$('#next-month-button').click(function() {
+    oncalendar.go_to_next_edit_month();
+});
+
+$('#calendar-header')
+    .on('mouseover', '.prev-arrow-button', function() {
+        $(this).removeClass('arrow_carrot-left_alt2').addClass('arrow_carrot-left_alt');
+    })
+    .on('mouseout', '.prev-arrow-button', function() {
+        $(this).removeClass('arrow_carrot-left_alt').addClass('arrow_carrot-left_alt2');
+    })
+    .on('mouseover', '.next-arrow-button', function() {
+        $(this).removeClass('arrow_carrot-right_alt2').addClass('arrow_carrot-right_alt');
+    })
+    .on('mouseout', '.next-arrow-button', function() {
+        $(this).removeClass('arrow_carrot-right_alt').addClass('arrow_carrot-right_alt2');
+    });
+
+$('table#calendar-table').on('click', 'span.oncall-option', function() {
+    var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
+    $('button#' + day_id + '-oncall-label').text($(this).attr('data-victim'))
+        .append('<span class="elegant_icons arrow_carrot-down"></span>');
+    $('input.victim-week-' + $('button#' + day_id + '-oncall-label').attr('data-oncall-week')).attr('value', $(this).attr('data-victim'));
+}).on('click', 'span.shadow-option', function() {
+    var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
+    $('button#' + day_id + '-shadow-label').text($(this).attr('data-victim'))
+        .append('<span class="elegant_icons arrow_carrot-down"></span>');
+    $('input.shadow-week-' + $('button#' + day_id + '-shadow-label').attr('data-oncall-week')).attr('value', $(this).attr('data-victim'));
+}).on('click', 'span.backup-option', function() {
+    var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
+    $('button#' + day_id + '-backup-label').text($(this).attr('data-victim'))
+        .append('<span class="elegant_icons arrow_carrot-down"></span>');
+    $('input.backup-week-' + $('button#' + day_id + '-backup-label').attr('data-oncall-week')).attr('value', $(this).attr('data-victim'));
+});
+
+$('button#edit-month-cancel-button').click(function() {
+    window.location.href='/calendar/' + oncalendar.current_year + '/' + oncalendar.real_month;
+});
+
+$('button#edit-month-save-button').click(function() {
+    var month_data = {};
+    month_data.filter_group = oncalendar.filter_group;
+    month_data.days = {};
+    $.each($('td'), function(index, element) {
+        if (typeof $(element).attr('id') !== "undefined") {
+            var day_id = $(element).attr('id');
+            month_data.days[day_id] = {};
+            month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').val();
+            if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
+                month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').val();
+            }
+            if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
+                month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').val();
+            }
+        }
+    });
+
+    $.when(oncalendar.update_month(month_data)).then(function(data) {
+        alert('Update complete');
+        window.location.href='/calendar/' + oncalendar.current_year + '/' + oncalendar.real_month;
+    });
+});
+
+{% endblock %}

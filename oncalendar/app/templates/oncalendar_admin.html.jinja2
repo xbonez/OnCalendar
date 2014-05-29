@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Box On-Call Calendar Administration</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="{{ stylesheet_url }}" />
+    <script src="{{ jquery_url }}"></script>
+    <script src="{{ datejs_url }}"></script>
+    <script src="{{ bootstrapjs_url }}"></script>
+    <script src="{{ magnific_url }}"></script>
+    <script src="{{ ocjs_url }}"></script>
+    <script src="{{ ocadminjs_url }}"></script>
+  </head>
+
+  <body>
+    <div id="admin-title" class="page-title">
+      <div id="title"><h2>Box On-Call Calendar Administration</h2></div>
+      <div id="user-menu" class="admin-user-menu dropdown">
+        <span id="username" data-toggle="dropdown">{{ g.user.username }}</span>
+        <span class="input-menu elegant_icons arrow_carrot-down" data-toggle="dropdown"> </span>
+        <ul id="user-dropdown" class="dropdown-menu" role="menu">
+          <li><a href="/logout"><span id="user-logout">Logout</span></a></li>
+          <li><a href="/"><span id="calendar-link">Back to Calendar</span></a></li>
+        </ul>
+      </div>
+    </div>
+    <div id="admin-console" class="outer-container">
+      <div id="console-box" class="inner-container">
+        <ul id="admin-functions" class="tablist">
+          <li id="config-tab" class="tab" data-target="config-panel">
+            Configuration
+          </li><li id="groups-tab" class="tab" data-target="groups-panel">
+            Groups
+          </li><li id="victims-tab" class="tab" data-target="users-panel">
+            Users
+          </li><li id="calendar-tab" class="tab" data-target="calendar-panel">
+            Calendar Setup
+          </li>
+        </ul><div id="admin-function-container" class="tab-panel-container">
+          <div id="config-panel" class="tab-panel active-panel">
+            <div id="config-panel-buttons" class="tab-panel-buttons">
+              <button id="config-edit" class="elegant_icons icon_pencil-edit"></button>
+            </div>
+            <div id="config-panel-data" class="tab-panel-data"></div>
+          </div>
+          <div id="groups-panel" class="tab-panel">
+            <div id="groups-panel-buttons" class="tab-panel-buttons">
+              <button id="groups-add" class="elegant_icons icon_plus_alt2"></button>
+              <button id="groups-delete" class="elegant_icons icon_minus_alt2"></button>
+            </div>
+            <div id="groups-panel-data" class="tab-panel-data"></div>
+          </div>
+          <div id="users-panel" class="tab-panel">
+            <div id="users-panel-buttons" class="tab-panel-buttons">
+              <button id="users-add" class="elegant_icons icon_plus_alt2"></button>
+              <button id="users-delete" class="elegant_icons icon_minus_alt2"></button>
+            </div>
+            <div id="users-panel-data" class="tab-panel-data"></div>
+          </div>
+          <div id="calendar-panel" class="tab-panel">
+            <div id="calendar-panel-buttons" class="tab-panel-buttons"></div>
+            <div id="calendar-panel-data" class="tab-panel-data"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="create-config-popup" class="popup mfp-hide">
+      <h3>Create/Correct OnCalendar Config</h3>
+      <div id="config-popup-data">
+        <table id="config-popup-table" class="admin-table">
+          <tr class="config-item">
+            <th class="config-key">DB Host</th>
+            <td id="config-popup-dbhost" class="config-value">
+              <input type="text" id="config-popup-dbhost-input" name="DBHOST" value="">
+            </td>
+          </tr>
+          <tr class="config-item">
+            <th class="config-key">DB User</th>
+            <td id="config-popup-dbuser" class="config-value">
+              <input type="text" id="config-popup-dbuser-input" name="DBUSER" value="">
+            </td>
+          </tr>
+          <tr class="config-item">
+            <th class="config-key">DB Password</th>
+            <td id="config-popup-dbpassword" class="config-value">
+              <input type="password" id="config-popup-dbpassword-input" name="DBPASSWORD" value="">
+            </td>
+          </tr>
+          <tr class="config-item">
+            <td class="config-key">Reenter password</td>
+            <td id="config-popup-confirm-dbpassword" class="config-value">
+              <input type="password" id="config-popup-dbpassword-confirm-input" name="dbpassword-config" value="">
+            </td>
+          </tr>
+          <tr class="config-item">
+            <th class="config-key">DB Name</th>
+            <td id="config-popup-dbname" class="config-value">
+              <input type="text" id="config-popup-dbname-input" name="DBNAME" value="">
+            </td>
+          </tr>
+          <tr id="config-popup-edit-buttons" class="config-item">
+            <td><button id="cancel-config-popup-edit">Cancel</button></td>
+            <td><button id="save-config-popup-edit">Save</button></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div id="create-db-popup" class="popup mfp-hide">
+      <h3>Database does not exist</h3>
+      <p>If you have credentials that allow you to create databases in your
+      MySQL instance enter them here to create the OnCalendar database.</p>
+      <p>If you don't have permissions to create the database yourself, ask
+      your database administrator to create a database for OnCalendar and give
+      the oncalendar user ownership of it.</p>
+      <div id="create-db-mysql-credentials">
+        <table id="create-db-credentials-table" class="admin-table">
+          <tr class="config-item">
+            <th class="config-key">MySQL User</th>
+            <td class="config-value"><input type="text" id="create-db-user-input" name="create-db-user" value=""></td>
+          </tr>
+          <tr class="config-item">
+            <th class="config-key">Password</th>
+            <td class="config-value"><input type="password" id="create-db-password-input" name="create-db-password" value=""></td>
+          </tr>
+          <tr class="config-item">
+            <th></th>
+            <td><button id="create-db-button">Create Database</button></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div id="init-db-prompt-popup" class="popup mfp-hide">
+      <h3>Database has not been initialized.</h3>
+      <div id="db-init-prompt">
+        <p>Initialize now?</p>
+        <input type="hidden" id="init-db-force" name="init-db-force" value="no">
+        <button id="init-db-button" onClick="oncalendar_admin.initialize_db()">Yes</button>
+      </div>
+    </div>
+    <div id="delete-groups-confirm-popup" class="popup mfp-hide">
+      <h3>Are you sure?</h3>
+      <div id="delete-groups-confirm">
+        <p>The following groups will be deleted:</p>
+        <p id="delete-groups-list"></p>
+        <button id="delete-groups-cancel-button">Cancel</button>
+        <button id="delete-groups-confirm-button">Delete</button>
+      </div>
+    </div>
+    <div id="delete-victims-confirm-popup" class="popup mfp-hide">
+      <h3>Are you sure?</h3>
+      <div id="delete-victims-confirm">
+        <p>The following users will be deleted:</p>
+        <p id="delete-victims-list"></p>
+        <button id="delete-victims-cancel-button">Cancel</button>
+        <button id="delete-victims-confirm-button">Delete</button>
+      </div>
+    </div>
+    <script type="text/javascript">
+      {{ main_js|safe }}
+    </script>
+  </body>
+</html>
