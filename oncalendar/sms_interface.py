@@ -22,21 +22,22 @@ class OnCalendarSMS(object):
         """
         Initialize the Twilio client object
         """
-        self.client = TwilioRestClient(config.TWILIO_SID, config.TWILIO_TOKEN)
-        self.wordlist = [w.strip() for w in open(oc.config.SMS_WORDLIST_FILE).readlines()]
+        OnCalendarSMS.client = TwilioRestClient(config.TWILIO_SID, config.TWILIO_TOKEN)
+        OnCalendarSMS.wordlist = [w.strip() for w in open(oc.config.SMS_WORDLIST_FILE).readlines()]
 
 
-    def send_sms(self, phone_number, body, callback=True):
+    @classmethod
+    def send_sms(cls, phone_number, body, callback=True):
 
         if callback:
-            msg = self.client.sms.message.create(
+            msg = cls.client.sms.messages.create(
                 to=phone_number,
                 from_=oc.config.TWILIO_NUMBER,
                 body=body,
-                status_callback=TWILIO_CALLBACK_URL
+                status_callback=os.config.TWILIO_CALLBACK_URL
             )
         else:
-            msg = self.client.sms.message.create(
+            msg = cls.client.sms.messages.create(
                 to=phone_number,
                 from_=oc.config.TWILIO_NUMBER,
                 body=body
@@ -45,12 +46,14 @@ class OnCalendarSMS(object):
         return msg.sid
 
 
-    def send_sms_alert(self, group, victim, phone_number, body, type='<<UNKNOWN>>'):
+    @classmethod
+    def send_sms_alert(cls, groupid, victimid, phone_number, body, type='UNKNOWN'):
 
         try:
             ocdb = oc.OnCalendarDB(oc.config)
-            sms_id = ocdb.add_sms_record(group, victim, type)
-            sms_hash = self.wordlist[sms_id % len(self.wordlist)]
+            sms_id = ocdb.add_sms_record(groupid, victimid, type)[0]
+            print "SMS ID: {0}".format(sms_id)
+            sms_hash = cls.wordlist[sms_id % len(cls.wordlist)]
             ocdb.set_sms_hash(sms_id, sms_hash)
         except oc.OnCalendarDBError, error:
             raise OnCalendarSMSError([error.args[0], error.args[1]])
@@ -58,7 +61,7 @@ class OnCalendarSMS(object):
         response_key = "[[{0}]]\n".format(sms_hash)
         body = response_key + body[:oc.config.SMS_CLIP - len(response_key)]
 
-        sms_sid = self.send_sms(phone_number, body)
+        sms_sid = cls.send_sms(phone_number, body, False)
 
         try:
             ocdb.set_sms_sid(sms_id, sms_sid)
@@ -66,10 +69,12 @@ class OnCalendarSMS(object):
             raise OnCalendarSMSError([error.args[0], error.args[1]])
 
 
-    def send_email(self, address, body, subject='', clip=False):
+    @classmethod
+    def send_email(cls, address, body, subject='', format='html'):
 
-        if clip:
-            message = MIMEText(body[:oc.config.SMS_CLIP])
+        if format == 'html':
+            message = MIMEText(body, 'html')
+            message.set_charset('utf-8')
         else:
             message = MIMEText(body)
 
@@ -87,24 +92,20 @@ class OnCalendarSMS(object):
             raise OnCalendarSMSError(error[0][address][0], error[0][address][1])
 
 
-    def send_email_alert(self, address, body, type='<<UNKNOWN>>'):
+    @classmethod
+    def send_email_alert(cls, address, body, clip=False):
 
-        try:
-            ocdb = oc.OnCalendarDB(oc.config)
-            (victim, sms_email_address) = ocdb.get_sms_email(victimid)
-        except oc.OnCalendarDBError, error:
-            raise OnCalendarSMSError([error.args[0], error.args[1]])
+        if clip:
+            body = body[:oc.config.SMS_CLIP]
 
-        if sms_email_address is not None:
-            self.send_email(sms_email_address, body)
-        else:
-            raise OnCalendarSMSError(oc.ocapi_err.DBSELECT_EMPTY, "User {0} has no SMS email address configured".format(victim))
+        cls.send_email(address, body, '', 'plain')
 
 
-    def send_failsafe(self, body):
+    @classmethod
+    def send_failsafe(cls, body):
 
         for failsafe_email in oc.config.SMS_FAILSAFES:
-            self.send_email(failsafe_email, body, '<<FAILSAFE>> - Paging Issue', True)
+            cls.send_email(failsafe_email, body, '<<FAILSAFE>> - Paging Issue', True)
 
 
 if __name__ == '__main__':

@@ -3,19 +3,20 @@
         <style type="text/css">
             body {text-align: center; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10pt;}
             table {text-align: center; margin-left: auto; margin-right: auto;}
+            h2 {text-decoration: underline;}
             th {white-space: nowrap;}
-            th.even {background-color: #D9D9D9;}
-            td.even, th.odd {background-color: #F2F2F2;}
-            td.odd {background-color: #FFF;}
-            th, td {text-align: left;}
+            th.even {background-color: #D9D9D9; text-align: left;}
+            td.even, th.odd {background-color: #F2F2F2; text-align: left;}
+            td.odd {background-color: #FFF; text-align: left;}
+            td.type {text-align: left;}
         </style>
 	</head>
 	<body>
         <table width="600px">
-            <tr><th colspan="2"><span>Monitoring System Notification</span></th></tr>
+            <tr><th colspan="2"><h2>Monitoring System Notification</h2></th></tr>
             <tr>
                 <th width="180px" class="odd">Notification Type:</th>
-                <td bgcolor="{{ color_map[data.notification_type] }}">{{ data.notification_type }}</td>
+                <td class="type" bgcolor="{{ color_map[data.notification_type] }}">{{ data.notification_type }}</td>
             </tr>
             <tr><th class="even">Host Status:</th><td class="even">{{ data.host_status }}</td></tr>
             <tr><th class="odd">Hostname:</th><td class="odd">

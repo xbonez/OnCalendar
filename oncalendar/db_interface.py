@@ -1278,7 +1278,7 @@ class OnCalendarDB(object):
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
         today = dt.datetime.now()
         slot_min = 30 if today.minute > 29 else 0
-        get_victims_calendar_query = """SELECT g.name, c.victimid, c.shadowid, c.backupid
+        get_victims_calendar_query = """SELECT g.name, g.id as groupid, c.victimid, c.shadowid, c.backupid
         FROM calendar c, groups g
         WHERE calday=(SELECT id FROM caldays WHERE year='{0}' AND month='{1}' AND day='{2}')
         AND hour='{3}' AND min='{4}' AND c.groupid=g.id
@@ -1301,6 +1301,7 @@ class OnCalendarDB(object):
 
         for row in cursor.fetchall():
             current_victims[row['name']] = {}
+            current_victims[row['name']]['groupid'] = row['groupid']
             victim_info = cls.get_victim_info('id', row['victimid'])
             current_victims[row['name']]['oncall'] = victim_info[row['victimid']]
             current_victims[row['name']]['shadow'] = None
@@ -1313,3 +1314,138 @@ class OnCalendarDB(object):
                 current_victims[row['name']]['backup'] = backup_info[row['backupid']]
 
         return current_victims
+
+
+    @classmethod
+    def get_victim_message_count(cls, victim, throttle_time):
+        """
+        Retrieves the count of SMS messages sent to the user within the
+        last <throttle_time> seconds.
+
+        Args:
+            victim (str): The name of the user.
+            throttle_time: The threshold in seconds to check against.
+
+        Returns:
+            (int): The number of messages sent.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        message_count_query = """SELECT COUNT(*) FROM sms_send
+        WHERE victimid=(SELECT id FROM victims WHERE username='{0}')
+        AND ts > DATE_SUB(NOW(), INTERVAL {1} SECOND)""".format(
+            victim,
+            throttle_time
+        )
+
+        try:
+            cursor.execute(message_count_query)
+        except mysql.Error, error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        message_count = cursor.fetchone()
+
+        return message_count
+
+
+    @classmethod
+    def set_throttle(cls, victim, throttle_time):
+        """
+        Sets the "throttle until" timestamp for the user
+
+        Args:
+            victim (str): The name of the user.
+            throttle_time: The number of seconds to add for throttle until.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        set_throttle_query = """UPDATE victims
+        SET throttle_until=DATE_ADD(NOW(), INTERVAL {0} SECOND)
+        WHERE username='{1}'""".format(throttle_time, victim)
+
+        try:
+            cursor.execute(set_throttle_query)
+            cls.oncalendar_db.commit()
+        except mysql.Error, error:
+            cls.oncalendar_db.rollback()
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+
+    @classmethod
+    def add_sms_record(cls, groupid, victimid, alert_type):
+        """
+        Adds a record for a sent SMS message to the sms_send table.
+
+        Args:
+            group: The group the alert was triggered for.
+            victim: The user that the SMS was sent to.
+            type: The alert type.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        add_record_query = """INSERT INTO sms_send (groupid, victimid, type)
+        VALUES({0}, {1}, '{2}')""".format(groupid, victimid, alert_type)
+
+        try:
+            cursor.execute(add_record_query)
+            cls.oncalendar_db.commit()
+            cursor.execute("SELECT LAST_INSERT_ID()")
+        except mysql.Error, error:
+            cls.oncalendar_db.rollback()
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        sms_id = cursor.fetchone()
+
+        return sms_id
+
+
+    @classmethod
+    def set_sms_hash(cls, id, hash):
+        """
+        Adds the generated hash word to the sms_send record.
+
+        Args:
+            id (int): The id of the record.
+            hash (str): The keyword assigned to the message.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        set_hash_query = """UPDATE sms_send SET sms_hash='{0}' WHERE id='{1}'""".format(hash, id)
+
+        try:
+            cursor.execute(set_hash_query)
+            cls.oncalendar_db.commit()
+        except mysql.Error, error:
+            cls.oncalendar_db.rollback()
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+
+    @classmethod
+    def set_sms_sid(cls, id, sid):
+        """
+        Adds the Twilio SMS SID to the sms_send record.
+
+        Args:
+            id (int): The id of the record.
+            sid (str): The SID returned by Twilio.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        set_sid_query = """UPDATE sms_send SET twilio_sms_sid='{0}' WHERE id='{1}'""".format(sid, id)
+
+        try:
+            cursor.execute(set_sid_query)
+            cls.oncalendar_db.commit()
+        except mysql.Error, error:
+            cls.oncalendar_db.rollback()
+            raise OnCalendarDBError(error.args[0], error.args[1])

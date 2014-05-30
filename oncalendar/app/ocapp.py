@@ -7,6 +7,7 @@ import oncalendar as oc
 from oncalendar.app import forms
 from oncalendar.app import auth
 import os
+import re
 
 ocapp = Flask(__name__)
 ocapp.debug = True
@@ -1033,15 +1034,21 @@ if __name__ == '__main__':
 
 # Notification APIs
 #--------------------------------------
-@ocapp.route('/api/notification/sms/oncall/<group>', methods=['POST'])
-def api_send_sms(group):
+@ocapp.route('/api/notification/sms/<victim_type>/<group>', methods=['POST'])
+def api_send_sms(victim_type, group):
     """
-    API interface to send an SMS alert to the scheduled oncall for a group
+    API interface to send an SMS alert to the scheduled oncall or backup for a group
 
     Returns:
         (str): Success or failure status as JSON
     """
     sms_status = 'UNKNOWN'
+
+    if victim_type not in ('oncall', 'backup'):
+        return json.dumps({
+            'sms_status': 'ERROR',
+            'sms_error': [oc.ocapi_err.NOPARAM, 'Unknown SMS target: {0}'.format(victim_type)]
+        }), 400
 
     if not request.form:
         return json.dumps({
@@ -1049,34 +1056,10 @@ def api_send_sms(group):
             'sms_error': [oc.ocapi_err.NOPOSTDATA, 'No data received']
         }), 400
     elif request.form['type'] == 'host':
-        notification_data = {
-            'type': 'host',
-            'notification_type': request.form.notification_type,
-            'host_status': request.form.host_status,
-            'hostname': request.form.hostname,
-            'host_address': request.form.host_address,
-            'duration': request.form.duration,
-            'notification_number': request.form.notification_number,
-            'event_time': request.form.event_time,
-            'info': request.form.info,
-            'comments': request.form.comments
-        }
+        notification_data = parse_host_form(request.form)
         sms_message = render_template('host_sms.jinja2', data=notification_data)
     elif request.form['type'] == 'service':
-        notification_data = {
-            'type': 'service',
-            'notification_type': request.form.notification_type,
-            'service_status': request.form.service_status,
-            'service': request.form.service_description,
-            'hostname': request.form.host,
-            'host_address': request.form.host_address,
-            'duration': request.form.duration,
-            'notification_number': request.form.notification_number,
-            'event_time': request.form.event_time,
-            'info': request.form.info,
-            'notes_url': request.form.notes_url,
-            'comments': request.form.comments
-        }
+        notification_data = parse_service_form(request.form)
         sms_message = render_template('service_sms.jinja2', data=notification_data)
     else:
         return json.dumps({
@@ -1084,39 +1067,44 @@ def api_send_sms(group):
             'sms_error': [oc.ocapi_err.NOPARAM, 'Request must specify either host or service type']
         }), 400
 
+    shadow = None
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         current_victims = ocdb.get_current_victims(group)
-        oncall = current_victims[group]['oncall']
-        shadow = None
-        if current_victims[group]['shadow'] is not None:
-            shadow = current_victims[group]['shadow']
+        groupid = current_victims[group]['groupid']
+        if victim_type == 'backup':
+            target = current_victims[group]['backup']
+        else:
+            target = current_victims[group]['oncall']
+            if current_victims[group]['shadow'] is not None:
+                shadow = current_victims[group]['shadow']
     except oc.OnCalendarDBError, error:
         return json.dumps({
             'sms_status': 'ERROR',
             'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
         }), 500
 
-    if oncall['throttle_time_remaining'] > 0:
+    if target['throttle_time_remaining'] > 0:
         return json.dumps({
             'sms_status': 'Throttle limit for {0} has been reached, throttling for {1} more seconds'.format(
-                oncall,
-                oncall['throttle_time_remaining'])
+                target['username'],
+                target['throttle_time_remaining'])
         })
 
     ocsms = oc.OnCalendarSMS(oc.config)
 
     try:
-        oncall_sent_messages = ocdb.get_victim_message_count(oncall['username'])
+        target_sent_messages = ocdb.get_victim_message_count(target['username'], oc.config.SMS_THROTTLE_TIME)[0]
+        print "sent message count: {0}".format(target_sent_messages)
     except oc.OnCalendarDBError, error:
         return json.dumps({
             'sms_status': 'ERROR',
             'sms_error': [error.args[0], error.args[1]]
         }), 500
 
-    if oncall_sent_messages >= oncall['throttle']:
+    if target_sent_messages >= target['throttle']:
         try:
-            ocdb.set_throttle(oncall['username'], oc.config.SMS_THROTTLE_TIME)
+            ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
         except oc.OnCalendarDBError, error:
             return json.dumps({
                 'sms_status': 'ERROR',
@@ -1125,36 +1113,47 @@ def api_send_sms(group):
 
         throttle_message = 'Alert limit reached, throttling further pages'
 
-        ocsms.send_sms(oncall['phone'], throttle_message)
-        if shadow is not None:
-            ocsms.send_sms(shadow['phone'], throttle_message)
+        ocsms.send_sms(target['phone'], throttle_message, False)
+        if victim_type == 'oncall' and shadow is not None:
+            ocsms.send_sms(shadow['phone'], throttle_message, False)
+
+    api_send_email(victim_type, group)
 
     try:
-        ocsms.send_sms_alert(group, oncall['username'], oncall['phone'], sms_message, notification_data['notification_type'])
+        ocsms.send_sms_alert(groupid, target['id'], target['phone'], sms_message, notification_data['notification_type'])
         sms_status = 'SMS handoff to Twilio successful'
-    except oc.OnCalendarSMSError:
-        if oncall['sms_email'] is not None:
+    except oc.OnCalendarSMSError, error:
+        if target['sms_email'] is not None and valid_email_address(target['sms_email']):
             try:
-                ocsms.send_email_alert(oncall['sms_email'], sms_message, notification_data['notification_type'])
-            except oc.OnCalendarSMSError:
+                ocsms.send_email_alert(target['sms_email'], sms_message, target['truncate'])
+                sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
+            except oc.OnCalendarSMSError, error:
                 ocsms.send_failsafe(sms_message)
+                return json.dumps({
+                    'sms_status': 'ERROR',
+                    'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
+                }), 500
+        else:
+            return json.dumps({
+                'sms_status': 'ERROR',
+                'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
+            })
 
-    if shadow is not None:
-        ocsms.send_sms_alert(group, oncall['shadow'], oncall['phone'], sms_message, notification_data['notification_type'])
-
-    api_send_email(group)
+    if victim_type == 'oncall' and shadow is not None:
+        ocsms.send_sms_alert(groupid, shadow['id'], shadow['phone'], sms_message, notification_data['notification_type'])
 
     return json.dumps({'sms_status': sms_status})
 
 
-@ocapp.route('/api/notification/email/oncall/<group>', methods=['POST'])
-def api_send_email(group):
+@ocapp.route('/api/notification/email/<victim_type>/<group>', methods=['POST'])
+def api_send_email(victim_type, group):
     """
     API interface to send an SMS alert to the scheduled oncall for a group
 
     Returns:
         (str): Success or failure status as JSON
     """
+    message_format = None
     color_map = {
         'PROBLEM': '#FF8080',
         'RECOVERY': '#80FF80',
@@ -1168,32 +1167,27 @@ def api_send_email(group):
         'TEST': '#80FFFF'
     }
 
+    if victim_type not in ('oncall', 'backup'):
+        return json.dumps({
+            'sms_status': 'ERROR',
+            'sms_error': [oc.ocapi_err.NOPARAM, 'Unknown SMS target: {0}'.format(victim_type)]
+        }), 400
+
     if not request.form:
         return json.dumps({
             'email_status': 'ERROR',
             'email_error': [oc.ocapi_err.NOPOSTDATA, 'No data received']
         }), 500
     if request.form['type'] == 'host':
-        notification_data = {
-            'type': 'host',
-            'notification_type': request.form['notification_type'],
-            'host_status': request.form['host_status'],
-            'hostname': request.form['hostname'],
-            'host_address': request.form['host_address'],
-            'hostgroup': request.form['hostgroup'],
-            'duration': request.form['duration'],
-            'notification_number': request.form['notification_number'],
-            'event_time': request.form['event_time'],
-            'info': request.form['info'],
-            'comments': request.form['comments']
-        }
-        email_subject = "{0} {1} Alert: {2} is {3}".format(
+        notification_data = parse_host_form(request.form)
+        email_subject = "** {0} {1} Alert: {2} is {3} **".format(
             notification_data['notification_type'],
             notification_data['type'],
             notification_data['host_address'],
             notification_data['host_status']
         )
-        if 'html_format' in request.form:
+        if 'format' in request.form and requests.form['format'] == 'html':
+            message_format = 'html'
             host_query = oc.config.MONITOR_URL + oc.config.HOST_QUERY
             host_query = host_query.format(notification_data['host_address'])
             host_info = oc.config.MONITOR_URL + oc.config.HOST_INFO_QUERY
@@ -1207,32 +1201,24 @@ def api_send_email(group):
                                             hostgroup_query=hostgroup_query,
                                             color_map=color_map)
         else:
+            message_format = 'plain'
             email_message = render_template('host_email_plain.jinja2', data=notification_data)
     elif request.form['type'] == 'service':
-        notification_data = {
-            'type': 'service',
-            'notification_type': request.form['notification_type'],
-            'service_status': request.form['service_status'],
-            'service': request.form['service_description'],
-            'hostname': request.form['host'],
-            'host_address': request.form['host_address'],
-            'duration': request.form['duration'],
-            'notification_number': request.form['notification_number'],
-            'event_time': request.form['event_time'],
-            'info': request.form['info'],
-            'notes_url': request.form['notes_url'],
-            'comments': request.form['comments']
-        }
-        email_subject = "{0} {1} Alert: {2}/{3} is {4}".format(
+        notification_data = parse_service_form(request.form)
+        email_subject = "** {0} {1} Alert: {2}/{3} is {4} **".format(
             notification_data['notification_type'],
             notification_data['type'],
             notification_data['hostname'],
             notification_data['service'],
             notification_data['service_status']
         )
-        if 'html_format' in request.form:
+        if 'format' in request.form and request.form['format'] == 'html':
+            message_format = 'html'
             service_query = oc.config.MONITOR_URL + oc.config.SERVICE_QUERY
-            service_query = service_query.format(notification_data['service'])
+            service_query = service_query.format(
+                notification_data['host_address'],
+                notification_data['service']
+            )
             host_query = oc.config.MONITOR_URL + oc.config.HOST_QUERY
             host_query = host_query.format(notification_data['host_address'])
             email_message = render_template('service_email_html.jinja2',
@@ -1241,6 +1227,7 @@ def api_send_email(group):
                                             host_query=host_query,
                                             color_map=color_map)
         else:
+            message_format = 'plain'
             email_message = render_template('service_email_plain.jinja2', data=notification_data)
     else:
         return json.dumps({
@@ -1250,13 +1237,16 @@ def api_send_email(group):
 
     ocsms = oc.OnCalendarSMS(oc.config)
 
+    shadow = None
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         current_victims = ocdb.get_current_victims(group)
-        oncall = current_victims[group]['oncall']
-        shadow = None
-        if current_victims[group]['shadow'] is not None:
-            shadow = current_victims[group]['shadow']
+        if victim_type == 'backup':
+            target = current_victims[group]['backup']
+        else:
+            target = current_victims[group]['oncall']
+            if current_victims[group]['shadow'] is not None:
+                shadow = current_victims[group]['shadow']
     except oc.OnCalendarDBError, error:
         return json.dumps({
             'email_status': 'ERROR',
@@ -1264,13 +1254,66 @@ def api_send_email(group):
         }), 500
 
     try:
-        ocsms.send_email(oncall['email'], email_message, email_subject)
-        if shadow is not None:
-            ocsms.send_email(shadow['email'], email_message, email_subject)
+        ocsms.send_email(target['email'], email_message, email_subject, message_format)
+        if victim_type == 'oncall' and shadow is not None:
+            ocsms.send_email(shadow['email'], email_message, email_subject, message_format)
     except oc.OnCalendarSMSError, error:
         return json.dumps({
             'email_status': 'ERROR',
             'email_error': "{0}: {1}".format(error.args[0], error.args[1])
         })
 
-    return json.dumps({'email_status': 'Notification email sent to {0}'.format(oncall['email'])})
+    return json.dumps({'email_status': 'Notification email sent to {0}'.format(target['email'])})
+
+
+def parse_host_form(form_data):
+
+    notification_data = {
+        'type': 'Host',
+        'notification_type': request.form['notification_type'],
+        'host_status': request.form['host_status'],
+        'hostname': request.form['hostname'],
+        'host_address': request.form['host_address'],
+        'hostgroup': request.form['hostgroup'],
+        'duration': request.form['duration'],
+        'notification_number': request.form['notification_number'],
+        'event_time': request.form['event_time'],
+        'info': request.form['info'],
+        'comments': request.form['comments']
+    }
+
+    return notification_data
+
+
+def parse_service_form(form_data):
+
+    notification_data = {
+        'type': 'Service',
+        'notification_type': request.form['notification_type'],
+        'service_status': request.form['service_status'],
+        'service': request.form['service_description'],
+        'hostname': request.form['hostname'],
+        'host_address': request.form['host_address'],
+        'duration': request.form['duration'],
+        'notification_number': request.form['notification_number'],
+        'event_time': request.form['event_time'],
+        'info': request.form['info'],
+        'notes_url': request.form['notes_url'],
+        'comments': request.form['comments']
+    }
+
+    return notification_data
+
+
+def valid_email_address(address):
+    """
+    Simple validation of email address format
+
+    Args:
+        address (str): The address to check
+    """
+    email_checker = re.compile("^[^\s]+@[^\s]+\.[^\s]{2,3}$")
+    if email_checker.search(address) == None:
+        return False
+
+    return True
