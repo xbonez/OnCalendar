@@ -2,7 +2,12 @@ var current_user = {{ user_json }};
 
 oncalendar.group_color_map = {};
 $.when(oncalendar.get_group_info()).then(function(data) {
-    oncalendar.oncall_groups = data;
+    oncalendar.oncall_groups = {};
+	$.each(data, function(group, group_info) {
+		if (group_info.active == 1) {
+			oncalendar.oncall_groups[group] = group_info;
+		}
+	});
     group_count = 0;
     $.each(oncalendar.oncall_groups, function (name, date) {
         if (oncalendar.oncall_groups[name].turnover_hour < 10) {
