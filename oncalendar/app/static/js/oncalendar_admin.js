@@ -642,7 +642,7 @@ var oncalendar_admin = {
                             '<td class="victim-email">' + row.email + '</td>' +
                             '<td class="victim-sms-email">' + row.sms_email + '</td>' +
                             '<td class="victim-app-role">' + app_roles[row.app_role] + '</td>' +
-                            '<td class="victim-groups">' + oca.victim_group_list(row) + '</td>'
+                            '<td class="victim-groups">' + oca.victim_group_list(row.groups) + '</td>'
                         );
                     });
                 }
@@ -767,12 +767,12 @@ var oncalendar_admin = {
             $.when(oca.update_victim(victim_data)).then(
                 function(data) {
                     console.log(data);
-                    var victim_row = $('#victims-table').children('tbody').children('tr#victim' + data.id);
-                    $.each(data, function(key, value) {
+                    var victim_row = $('#victims-table').children('tbody').children('tr#victim' + data[victim_data.id].id);
+                    $.each(data[victim_data.id], function(key, value) {
                         if (key === "active") {
                             victim_row.children('td.victim-active').text(basic_boolean[value]);
                         } else if (key === "groups") {
-                            victim_row.children('td.victim-groups').text(oca.victim_group_list(data));
+                            victim_row.children('td.victim-groups').text(oca.victim_group_list(value));
                         } else if (key === "app_role") {
                             victim_row.children('td.victim-app-role').text(app_roles[value]);
                         } else {
@@ -907,7 +907,7 @@ var oncalendar_admin = {
                                     '<td class="victim-email">' + data.email + '</td>' +
                                     '<td class="victim-sms-email">' + data.sms_email + '</td>' +
                                     '<td class="victim-app-role">' + app_roles[data.app_role] + '</td>' +
-                                    '<td class="victim-groups">' + oca.victim_group_list(data) + '</td>'
+                                    '<td class="victim-groups">' + oca.victim_group_list(data.groups) + '</td>'
                                 ).attr('id', 'victim' + data.id);
                             oca.no_victims = false;
                         },
@@ -1319,9 +1319,9 @@ var oncalendar_admin = {
 
         return update_victim_object.promise();
     },
-    victim_group_list: function(victim) {
+    victim_group_list: function(groups) {
         var victim_groups = [];
-        $.each(victim.groups, function(i, group_name) {
+        $.each(groups, function(i, group_name) {
             victim_groups.push(group_name);
         });
         return victim_groups.join(', ');

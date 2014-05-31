@@ -1119,7 +1119,6 @@ class OnCalendarDB(object):
             victim_data['sms_email'],
             victim_data['app_role']
         )
-        print add_victim_query
 
         try:
             cursor.execute('SELECT id FROM victims WHERE username=\'{0}\''.format(victim_data['username']))
@@ -1128,19 +1127,18 @@ class OnCalendarDB(object):
                 raise OnCalendarDBError(ocapi_err.API_VICTIMEXISTS, 'User {0} already exists'.format(victim_data['username']))
             cursor.execute(add_victim_query)
             cls.oncalendar_db.commit()
+            cursor.execute("SELECT LAST_INSERT_ID()")
         except mysql.Error, error:
             cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to add user to database - {0}'.format(error.args[1]))
 
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        cursor.execute('SELECT * FROM victims WHERE username=\'{0}\''.format(victim_data['username']))
-        new_victim = cursor.fetchone()
+        new_victim_id = cursor.fetchone()
 
         try:
             for group in victim_data['groups']:
                 cursor.execute('REPLACE INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, 1)'.format(
                         group,
-                        new_victim['id']
+                        new_victim_id
                     )
                 )
             cls.oncalendar_db.commit()
@@ -1148,12 +1146,9 @@ class OnCalendarDB(object):
             cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to add user to groups - {0}'.format(error.args[1]))
 
-        new_victim['groups'] = []
-        cursor.execute('SELECT m.groupid as gid, m.active as gactive, g.name from groupmap m, groups g WHERE m.victimid={0} and g.id=m.groupid'.format(new_victim['id']))
-        for row in cursor.fetchall():
-            new_victim['groups'].append(row['name'])
+        new_victim = cls.get_victim_info('username', victim_data['username'])
 
-        return new_victim
+        return new_victim[new_victim_id]
 
 
     @classmethod
@@ -1201,18 +1196,20 @@ class OnCalendarDB(object):
             (OnCalendarDBError): Passes the mysql error code and message.
         """
         cursor = cls.oncalendar_db.cursor()
-        update_victim_query = "UPDATE victims SET username='{0}', firstname='{1}', lastname='{2}', phone='{3}', active='{4}', sms_email='{5}', app_role='{6}', email='{7}' \
-            WHERE id={8}".format(
-                victim_data['username'],
-                victim_data['firstname'],
-                victim_data['lastname'],
-                victim_data['phone'],
-                victim_data['active'],
-                victim_data['sms_email'],
-                victim_data['app_role'],
-                victim_data['email'],
-                victim_data['id']
-            )
+        update_victim_query = """UPDATE victims SET username='{0}',
+        firstname='{1}', lastname='{2}', phone='{3}', active='{4}',
+        sms_email='{5}', app_role='{6}', email='{7}'
+        WHERE id={8}""".format(
+            victim_data['username'],
+            victim_data['firstname'],
+            victim_data['lastname'],
+            victim_data['phone'],
+            victim_data['active'],
+            victim_data['sms_email'],
+            victim_data['app_role'],
+            victim_data['email'],
+            victim_data['id']
+        )
 
         try:
             cursor.execute(update_victim_query)
@@ -1220,10 +1217,6 @@ class OnCalendarDB(object):
         except mysql.Error, error:
             cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'User update failed - {0}'.format(error.args[1]))
-
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        cursor.execute('SELECT * FROM victims WHERE username=\'{0}\''.format(victim_data['username']))
-        updated_victim = cursor.fetchone()
 
         print victim_data['groups']
         try:
@@ -1235,14 +1228,14 @@ class OnCalendarDB(object):
                 ))
                 row = cursor.fetchone()
                 print row
-                if row['COUNT(*)'] == 0 and int(value) == 1:
+                if row[0] == 0 and int(value) == 1:
                     print "adding user {0} to group {1}".format(victim_data['id'], gid)
                     cursor.execute('INSERT INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, {2})'.format(
                         gid,
                         victim_data['id'],
                         value
                     ))
-                elif row['COUNT(*)'] == 1 and int(value) == 0:
+                elif row[0] == 1 and int(value) == 0:
                     print "removing user {0} from group {1}".format(victim_data['id'], gid)
                     cursor.execute("DELETE FROM groupmap WHERE groupid='{0}' AND victimid='{1}'".format(
                         gid,
@@ -1253,10 +1246,7 @@ class OnCalendarDB(object):
             cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to update user groups - {0}'.format(error.args[1]))
 
-        updated_victim['groups'] = []
-        cursor.execute('SELECT m.groupid as gid, g.name from groupmap m, groups g WHERE m.victimid={0} and g.id=m.groupid'.format(victim_data['id']))
-        for row in cursor.fetchall():
-            updated_victim['groups'].append(row['name'])
+        updated_victim = cls.get_victim_info('username', victim_data['username'])
 
         return updated_victim
 
