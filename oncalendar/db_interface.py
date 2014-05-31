@@ -1278,7 +1278,8 @@ class OnCalendarDB(object):
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
         today = dt.datetime.now()
         slot_min = 30 if today.minute > 29 else 0
-        get_victims_calendar_query = """SELECT g.name, g.id as groupid, c.victimid, c.shadowid, c.backupid
+        get_victims_calendar_query = """SELECT g.name, g.id as groupid,
+        g.email as group_email, c.victimid, c.shadowid, c.backupid
         FROM calendar c, groups g
         WHERE calday=(SELECT id FROM caldays WHERE year='{0}' AND month='{1}' AND day='{2}')
         AND hour='{3}' AND min='{4}' AND c.groupid=g.id
@@ -1302,6 +1303,7 @@ class OnCalendarDB(object):
         for row in cursor.fetchall():
             current_victims[row['name']] = {}
             current_victims[row['name']]['groupid'] = row['groupid']
+            current_victims[row['name']]['group_email'] = row['group_email']
             victim_info = cls.get_victim_info('id', row['victimid'])
             current_victims[row['name']]['oncall'] = victim_info[row['victimid']]
             current_victims[row['name']]['shadow'] = None

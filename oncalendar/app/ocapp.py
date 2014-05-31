@@ -1044,7 +1044,7 @@ def api_send_sms(victim_type, group):
     """
     sms_status = 'UNKNOWN'
 
-    if victim_type not in ('oncall', 'backup'):
+    if victim_type not in ('oncall', 'backup', 'group'):
         return json.dumps({
             'sms_status': 'ERROR',
             'sms_error': [oc.ocapi_err.NOPARAM, 'Unknown SMS target: {0}'.format(victim_type)]
@@ -1167,7 +1167,7 @@ def api_send_email(victim_type, group):
         'TEST': '#80FFFF'
     }
 
-    if victim_type not in ('oncall', 'backup'):
+    if victim_type not in ('oncall', 'backup', 'group'):
         return json.dumps({
             'sms_status': 'ERROR',
             'sms_error': [oc.ocapi_err.NOPARAM, 'Unknown SMS target: {0}'.format(victim_type)]
@@ -1186,7 +1186,7 @@ def api_send_email(victim_type, group):
             notification_data['host_address'],
             notification_data['host_status']
         )
-        if 'format' in request.form and requests.form['format'] == 'html':
+        if 'format' in request.form and request.form['format'] == 'html':
             message_format = 'html'
             host_query = oc.config.MONITOR_URL + oc.config.HOST_QUERY
             host_query = host_query.format(notification_data['host_address'])
@@ -1243,6 +1243,8 @@ def api_send_email(victim_type, group):
         current_victims = ocdb.get_current_victims(group)
         if victim_type == 'backup':
             target = current_victims[group]['backup']
+        elif victim_type == 'group':
+            target = current_victims[group]['group_email']
         else:
             target = current_victims[group]['oncall']
             if current_victims[group]['shadow'] is not None:
