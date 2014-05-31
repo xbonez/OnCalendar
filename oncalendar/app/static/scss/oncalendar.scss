@@ -247,6 +247,15 @@ div#create-db-popup {
     text-align: left;
 }
 
+div#delete-groups-confirm-popup {
+    p {
+        font-size: 0.8em;
+    }
+    p#delete-groups-list {
+        margin: 10px 0 10px 10px;
+    }
+}
+
 div.outer-container {
     position: relative;
     margin: 0 1%;

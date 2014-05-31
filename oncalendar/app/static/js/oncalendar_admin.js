@@ -596,7 +596,7 @@ var oncalendar_admin = {
         });
         $('button#delete-groups-confirm-button').click(function() {
             $.each(oca.groups_to_delete, function(name, id) {
-                $.when(oca.groups_to_delete(id)).then(
+                $.when(oca.delete_group(id)).then(
                     function(data) {
                         $('tr#group' + id).remove();
                         if (data.group_count == 0) {
