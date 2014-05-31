@@ -1049,17 +1049,17 @@ class OnCalendarDB(object):
             (OnCalendarDBError): Passes the mysql error code and message.
         """
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        victim_info_query = "SELECT v.id, v.active, v.username, v.firstname,\
-        v.lastname, v.phone, v.email, v.sms_email, v.app_role, v.throttle,\
-        IFNULL(TIMESTAMPDIFF(SECOND, NOW(), throttle_until), 0) AS throttle_time_remaining,\
-        v.truncate, m.groupid AS gid, g.name FROM victims v, groupmap m, groups g"
+        victim_info_query = """SELECT v.id, v.active, v.username, v.firstname,
+        v.lastname, v.phone, v.email, v.sms_email, v.app_role, v.throttle,
+        IFNULL(TIMESTAMPDIFF(SECOND, NOW(), throttle_until), 0) AS throttle_time_remaining,
+        v.truncate, m.groupid AS gid, g.name FROM victims v
+        LEFT OUTER JOIN groupmap AS m ON v.id=m.victimid
+        LEFT OUTER JOIN groups AS g ON g.id=m.groupid"""
         if search_key:
             if search_value:
-                victim_info_query += ' WHERE v.{0}=\'{1}\' AND v.id=m.victimid AND g.id=m.groupid'.format(search_key, search_value)
+                victim_info_query += " WHERE v.{0}='{1}'".format(search_key, search_value)
             else:
-                raise OnCalendarDBError(ocapi_err.NOPARAM, 'No {0} provided to search on'.format(search_key))
-        else:
-            victim_info_query += ' WHERE v.id=m.victimid AND g.id=m.groupid'
+                raise OnCalendarDBError(ocapi_err.NOPARAM, 'No {0} provided to search on.'.format(search_key))
 
         try:
             cursor.execute(victim_info_query)
