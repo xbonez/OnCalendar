@@ -1196,47 +1196,91 @@ def api_send_sms(victim_type, group):
         )
 
     shadow = None
-    try:
-        ocdb = oc.OnCalendarDB(oc.config)
-        current_victims = ocdb.get_current_victims(group)
-        groupid = current_victims[group]['groupid']
-        if victim_type == 'backup':
-            target = current_victims[group]['backup']
-        else:
-            target = current_victims[group]['oncall']
-            if current_victims[group]['shadow'] is not None:
-                shadow = current_victims[group]['shadow']
-    except oc.OnCalendarDBError, error:
-        raise OnCalendarAppError(
-            payload = {
-                'sms_status': 'ERROR',
-                'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
-            }
-        )
+    throttle_message = 'Alert limit reached, throttling further pages'
+    print "Sending off the email copies"
+    api_send_email(victim_type, group)
 
-    if target['throttle_time_remaining'] > 0:
-        return json.dumps({
-            'sms_status': 'Throttle limit for {0} has been reached, throttling for {1} more seconds'.format(
-                target['username'],
-                target['throttle_time_remaining'])
-        })
-
-    ocsms = oc.OnCalendarSMS(oc.config)
-
-    try:
-        target_sent_messages = ocdb.get_victim_message_count(target['username'], oc.config.SMS_THROTTLE_TIME)[0]
-        print "sent message count: {0}".format(target_sent_messages)
-    except oc.OnCalendarDBError, error:
-        raise OnCalendarAppError(
-            payload = {
-                'sms_status': 'ERROR',
-                'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
-            }
-        )
-
-    if target_sent_messages >= target['throttle']:
+    if victim_type == 'group':
+        print "Panic page for group {0}".format(group)
         try:
-            ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
+            ocdb = oc.OnCalendarDB(oc.config)
+            group_info = ocdb.get_group_info(group_name=group)
+            groupid = group_info[group]['id']
+            victim_ids = group_info[group]['victims'].keys()
+        except oc.OnCalendarDBError as error:
+            raise OnCalendarAppError(
+                payload = {
+                    'sms_status': 'ERROR',
+                    'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+                }
+            )
+
+        ocsms = oc.OnCalendarSMS(oc.config)
+        panic_status = {
+            'throttled': 0,
+            'successful': 0,
+            'sms_errors': 0
+        }
+
+        for victimid in victim_ids:
+            target = group_info[group]['victims'][victimid]
+            if target['throttle_time_remaining'] <= 0:
+                try:
+                    target_sent_messages = ocdb.get_victim_message_count(
+                        target['username'],
+                        oc.config.SMS_THROTTLE_TIME
+                    )[0]
+                except oc.OnCalendarDBError as error:
+                    raise OnCalendarAppError(
+                        payload = {
+                            'sms_status': 'ERROR',
+                            'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+                        }
+                    )
+                if target_sent_messages >= target['throttle']:
+                    try:
+                        ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
+                    except oc.OnCalendarDBError as error:
+                        raise OnCalendarAppError(
+                            payload = {
+                                'sms_status': 'Error',
+                                'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+                            }
+                        )
+                    ocsms.send_sms(target['phone'], throttle_message, False)
+                    panic_status['throttled'] += 1
+                else:
+                    try:
+                        ocsms.send_sms_alert(groupid, target['id'], target['phone'], sms_message, notification_data['notification_type'])
+                        panic_status['successful'] += 1
+                    except oc.OnCalendarSMSError as error:
+                        if target['sms_email'] is not None and valid_email_address(target['sms_email']):
+                            try:
+                                ocsms.send_email_alert(target['sms_email'], sms_message, target['truncate'])
+                            except oc.OnCalendarSMSError, error:
+                                panic_status['sms_errors'] += 1
+                        else:
+                            panic_status['sms_errors'] += 1
+            else:
+                panic_status['throttle'] += 1
+
+        sms_status = "Panic page results: {0} users - {1} SMS messages successful, {2} users throttled, {2} SMS failures".format(
+            len(victim_ids),
+            panic_status['successful'],
+            panic_status['throttled'],
+            panic_status['sms_errors']
+        )
+    else:
+        try:
+            ocdb = oc.OnCalendarDB(oc.config)
+            current_victims = ocdb.get_current_victims(group)
+            groupid = current_victims[group]['groupid']
+            if victim_type == 'backup':
+                target = current_victims[group]['backup']
+            else:
+                target = current_victims[group]['oncall']
+                if current_victims[group]['shadow'] is not None:
+                    shadow = current_victims[group]['shadow']
         except oc.OnCalendarDBError, error:
             raise OnCalendarAppError(
                 payload = {
@@ -1245,40 +1289,73 @@ def api_send_sms(victim_type, group):
                 }
             )
 
-        throttle_message = 'Alert limit reached, throttling further pages'
+        ocsms = oc.OnCalendarSMS(oc.config)
 
-        ocsms.send_sms(target['phone'], throttle_message, False)
-        if victim_type == 'oncall' and shadow is not None:
-            ocsms.send_sms(shadow['phone'], throttle_message, False)
+        if target['throttle_time_remaining'] > 0:
+            return json.dumps({
+                'sms_status': 'Throttle limit for {0} has been reached, throttling for {1} more seconds'.format(
+                    target['username'],
+                    target['throttle_time_remaining'])
+            })
 
-    api_send_email(victim_type, group)
-
-    try:
-        ocsms.send_sms_alert(groupid, target['id'], target['phone'], sms_message, notification_data['notification_type'])
-        sms_status = 'SMS handoff to Twilio successful'
-    except oc.OnCalendarSMSError, error:
-        if target['sms_email'] is not None and valid_email_address(target['sms_email']):
-            try:
-                ocsms.send_email_alert(target['sms_email'], sms_message, target['truncate'])
-                sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
-            except oc.OnCalendarSMSError, error:
-                ocsms.send_failsafe(sms_message)
-                raise OnCalendarAppError(
-                    payload = {
-                        'sms_status': 'ERROR',
-                        'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
-                    }
-                )
-        else:
+        try:
+            target_sent_messages = ocdb.get_victim_message_count(target['username'], oc.config.SMS_THROTTLE_TIME)[0]
+            print "sent message count: {0}".format(target_sent_messages)
+        except oc.OnCalendarDBError, error:
             raise OnCalendarAppError(
                 payload = {
                     'sms_status': 'ERROR',
-                    'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
+                    'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
                 }
             )
 
-    if victim_type == 'oncall' and shadow is not None:
-        ocsms.send_sms_alert(groupid, shadow['id'], shadow['phone'], sms_message, notification_data['notification_type'])
+        if target_sent_messages >= target['throttle']:
+            try:
+                ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
+            except oc.OnCalendarDBError, error:
+                raise OnCalendarAppError(
+                    payload = {
+                        'sms_status': 'ERROR',
+                        'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+                    }
+                )
+
+            ocsms.send_sms(target['phone'], throttle_message, False)
+            if victim_type == 'oncall' and shadow is not None:
+                ocsms.send_sms(shadow['phone'], throttle_message, False)
+
+            return json.dumps({
+                'sms_status': 'Throttle limit for {0} has been reached, throttling for {1} more seconds'.format(
+                    target['username'],
+                    target['throttle_time_remaining'])
+            })
+
+        try:
+            ocsms.send_sms_alert(groupid, target['id'], target['phone'], sms_message, notification_data['notification_type'])
+            sms_status = 'SMS handoff to Twilio successful'
+        except oc.OnCalendarSMSError, error:
+            if target['sms_email'] is not None and valid_email_address(target['sms_email']):
+                try:
+                    ocsms.send_email_alert(target['sms_email'], sms_message, target['truncate'])
+                    sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
+                except oc.OnCalendarSMSError, error:
+                    ocsms.send_failsafe(sms_message)
+                    raise OnCalendarAppError(
+                        payload = {
+                            'sms_status': 'ERROR',
+                            'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
+                        }
+                    )
+            else:
+                raise OnCalendarAppError(
+                    payload = {
+                        'sms_status': 'ERROR',
+                        'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
+                    }
+                )
+
+        if victim_type == 'oncall' and shadow is not None:
+            ocsms.send_sms_alert(groupid, shadow['id'], shadow['phone'], sms_message, notification_data['notification_type'])
 
     return json.dumps({'sms_status': sms_status})
 
@@ -1392,7 +1469,24 @@ def api_send_email(victim_type, group):
         if victim_type == 'backup':
             target = current_victims[group]['backup']
         elif victim_type == 'group':
-            target = current_victims[group]['group_email']
+            try:
+                group_info = ocdb.get_group_info(group_name=group)
+            except oc.OnCalendarDBError as error:
+                raise OnCalendarAppError(
+                    payload = {
+                        'email_status': 'ERROR',
+                        'email_error': "{0}: {1}".format(error.args[0], error.args[1])
+                    }
+                )
+            target = {}
+            if group_info[group]['email'] is not None and valid_email_address(group_info[group]['email']):
+                target['email'] = group_info[group]['email']
+            else:
+                victim_emails = []
+                for victim_id in group_info[group]['victims']:
+                    victim_emails.append(group_info[group]['victims'][victim_id]['email'])
+                target['email'] = ','.join(victim_emails)
+
         else:
             target = current_victims[group]['oncall']
             if current_victims[group]['shadow'] is not None:
@@ -1431,6 +1525,10 @@ def parse_host_form(form_data):
         'info'
     ]
 
+    for field in required_fields:
+        if not field in form_data or form_data[field] is None:
+            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
+
     notification_data = {
         'type': 'Host',
         'notification_type': form_data['notification_type'],
@@ -1444,10 +1542,6 @@ def parse_host_form(form_data):
         'info': form_data['info'],
         'comments': form_data['comments']
     }
-
-    for field in required_fields:
-        if not notification_data[field] or notification_data[field] is None:
-            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
 
     return notification_data
 
@@ -1466,6 +1560,10 @@ def parse_service_form(form_data):
         'info'
     ]
 
+    for field in required_fields:
+        if not field in form_data or form_data[field] is None:
+            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
+
     notification_data = {
         'type': 'Service',
         'notification_type': form_data['notification_type'],
@@ -1480,10 +1578,6 @@ def parse_service_form(form_data):
         'notes_url': form_data['notes_url'],
         'comments': form_data['comments']
     }
-
-    for field in required_fields:
-        if not notification_data[field] or notification_data[field] is None:
-            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
 
     return notification_data
 
