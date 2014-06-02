@@ -22,6 +22,32 @@ class OnCalendarFileWriteError(Exception):
     """
     pass
 
+class OnCalendarFormParseError(Exception):
+    """
+    Exception class for errors parsing incoming form data.
+    """
+    pass
+
+
+class OnCalendarBadRequest(Exception):
+    """
+    Exception class for bad requests to the API.
+    """
+    def __init__(self, payload):
+        Exception.__init__(self)
+        self.status_code = 400
+        self.payload = payload
+
+
+class OnCalendarAppError(Exception):
+    """
+    Exception class for internal errors
+    """
+    def __init__(self, payload):
+        Exception.__init__(self)
+        self.status_code = 500
+        self.payload = payload
+
 
 @login_manager.user_loader
 def load_user(id):
@@ -31,6 +57,16 @@ def load_user(id):
 @ocapp.before_request
 def before_request():
     g.user = flogin.current_user
+
+
+@ocapp.errorhandler(OnCalendarBadRequest)
+def handle_bad_request(error):
+    return json.dumps(error.payload), error.status_code
+
+
+@ocapp.errorhandler(OnCalendarAppError)
+def handle_app_error(error):
+    return json.dumps(error.payload), error.status_code
 
 
 @ocapp.route('/test')
@@ -297,7 +333,9 @@ def api_get_calendar(year=None, month=None, group=None):
         ocdb = oc.OnCalendarDB(oc.config)
         victims = ocdb.get_calendar(year, month, group)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(victims)
 
@@ -306,7 +344,9 @@ def api_get_calendar(year=None, month=None, group=None):
 def api_calendar_update_month():
     month_data = request.get_json()
     if not month_data:
-        return json.dumps([oc.ocapi_err.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+        )
     else:
         update_group = month_data['filter_group']
         days = month_data['days']
@@ -316,7 +356,9 @@ def api_calendar_update_month():
         response = ocdb.update_calendar_month(update_group, days)
     except oc.OnCalendarDBError, error:
         print json.dumps([error.args[0], error.args[1]])
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(response)
 
@@ -342,7 +384,9 @@ def api_get_cal_boundaries():
         cal_start = ocdb.get_caldays_start()
         cal_end = ocdb.get_caldays_end()
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     start_tuple = cal_start.timetuple()
     start_year, start_month, start_day = start_tuple[0:3]
@@ -370,7 +414,9 @@ def api_get_cal_end():
         ocdb = oc.OnCalendarDB(oc.config)
         cal_end = ocdb.get_caldays_end()
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     end_tuple = cal_end.timetuple()
     year, month, day = end_tuple[0:3]
@@ -395,7 +441,9 @@ def api_get_cal_start():
         ocdb = oc.OnCalendarDB(oc.config)
         cal_start = ocdb.get_caldays_start()
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     start_tuple = cal_start.timetuple()
     year, month, day = start_tuple[0:3]
@@ -406,14 +454,18 @@ def api_get_cal_start():
 def api_calendar_update_day():
     update_day_data = request.get_json()
     if not update_day_data:
-        return json.dumps([oc.ocapi_err.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+        )
 
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         response = ocdb.update_calendar_day(update_day_data)
     except oc.OnCalendarDBError, error:
         print json.dumps([error.args[0], error.args[1]])
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(response)
 
@@ -433,7 +485,9 @@ def api_get_all_groups_info():
         ocdb = oc.OnCalendarDB(oc.config)
         groups = ocdb.get_group_info()
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(groups)
 
@@ -456,7 +510,9 @@ def api_get_group_info_by_name(group=None):
         ocdb = oc.OnCalendarDB(oc.config)
         group_info = ocdb.get_group_info(False, group)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(group_info)
 
@@ -479,7 +535,9 @@ def api_get_group_info_by_id(gid=None):
         ocdb = oc.OnCalendarDB(oc.config)
         group_info = ocdb.get_group_info(gid, False)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(group_info)
 
@@ -502,7 +560,9 @@ def api_get_group_victims(group=None):
         ocdb = oc.OnCalendarDB(oc.config)
         group_victims = ocdb.get_group_victims(group)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(group_victims)
 
@@ -523,7 +583,9 @@ def api_get_all_victims_info():
         ocdb = oc.OnCalendarDB(oc.config)
         victims = ocdb.get_victim_info()
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(victims)
 
@@ -543,7 +605,9 @@ def api_get_current_victims(group=None):
         ocdb = oc.OnCalendarDB(oc.config)
         victims = ocdb.get_current_victims(group)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(victims)
 
@@ -569,7 +633,9 @@ def api_get_victim_info(key=None, id=None):
         ocdb = oc.OnCalendarDB(oc.config)
         victim_info = ocdb.get_victim_info(key, id)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(victim_info)
 
@@ -627,10 +693,14 @@ def api_update_config():
                     cf.write('    {0} = \'{1}\'\n'.format(cv, current_config[cv]))
                 cf.close()
         except EnvironmentError, error:
-            return json.dumps([error.args[0], error.args[1]]), 500
+            raise OnCalendarAppError(
+                payload = [error.args[0], error.args[1]]
+            )
     else:
         error_string = 'Config file {0} does not exist'.format(config_file)
-        return json.dumps([oc.API_NOCONFIG, error_string]), 500
+        raise OnCalendarAppError(
+            payload = [oc.API_NOCONFIG, error_string]
+        )
 
     return json.dumps(current_config)
 
@@ -667,7 +737,9 @@ def api_add_group():
         'auth_group': ''
     }
     if not request.form:
-        return json.dumps([oc.ocapi_err.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+        )
     else:
         form_keys = [key for key in request.form if request.form[key]]
 
@@ -678,7 +750,9 @@ def api_add_group():
         ocdb = oc.OnCalendarDB(oc.config)
         new_group = ocdb.add_group(group_data)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(new_group)
 
@@ -701,7 +775,9 @@ def api_delete_group(group_id):
         ocdb = oc.OnCalendarDB(oc.config)
         group_count = ocdb.delete_group(group_id)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps({'group_count': group_count})
 
@@ -720,7 +796,9 @@ def api_update_group():
                   as JSON with an HTTP return code of 500.
     """
     if not request.form:
-        return json.dumps([oc.ocapi_err.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+        )
     else:
         form_keys = [key for key in request.form if request.form[key]]
 
@@ -750,7 +828,9 @@ def api_update_group():
         ocdb = oc.OnCalendarDB(oc.config)
         group_info = ocdb.update_group(group_data)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(group_info)
 
@@ -766,7 +846,9 @@ def api_group_victims():
                as JSON with an HTTP return code of 500.
     """
     if not request.json:
-        return json.dump([oc.ocapi_error.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_error.NOPOSTDATA, 'No data received']
+        )
     else:
         group_victims_data = request.json
 
@@ -775,7 +857,9 @@ def api_group_victims():
         group_victims = ocdb.update_group_victims(group_victims_data)
         print group_victims
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(group_victims)
 
@@ -806,7 +890,9 @@ def api_add_victim():
         'groups': []
     }
     if not request.form:
-        return json.dumps([oc.ocapi_err.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+        )
     else:
         form_keys = [key for key in request.form if request.form[key]]
 
@@ -824,7 +910,9 @@ def api_add_victim():
         ocdb = oc.OnCalendarDB(oc.config)
         new_victim = ocdb.add_victim(victim_data)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     print new_victim
     return json.dumps(new_victim)
@@ -848,7 +936,9 @@ def api_delete_victim(victim_id):
         ocdb = oc.OnCalendarDB(oc.config)
         victim_count = ocdb.delete_victim(victim_id)
     except (oc.OnCalendarDBError, oc.OnCalendarAPIError), error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps({'victim_count': victim_count})
 
@@ -867,7 +957,9 @@ def api_update_victim():
                   as JSON with an HTTP return code of 500.
     """
     if not request.form:
-        return json.dumps([oc.ocapi_err.NOPOSTDATA, 'No data received']), 500
+        raise OnCalendarAppError(
+            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+        )
     else:
         form_keys = [key for key in request.form if request.form[key]]
 
@@ -894,7 +986,9 @@ def api_update_victim():
         ocdb = oc.OnCalendarDB(oc.config)
         victim_info = ocdb.update_victim(victim_data)
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(victim_info)
 
@@ -919,14 +1013,18 @@ def db_extend(days):
         ocdb = oc.OnCalendarDB(oc.config)
     except oc.OnCalendarDBError, error:
         print error
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     try:
         new_end = ocdb.extend_caldays(int(days))
         end_tuple = new_end.timetuple()
         year, month, day = end_tuple[0:3]
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps([year, month, day])
 
@@ -949,7 +1047,9 @@ def api_db_verify():
         ocdb = oc.OnCalendarDB(oc.config)
         init_status = ocdb.verify_database()
     except oc.OnCalendarDBError, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(init_status)
 
@@ -977,7 +1077,9 @@ def api_create_db():
         cursor = db.cursor()
         cursor.execute('CREATE DATABASE OnCalendar')
     except mysql.Error, error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(['OK'])
 
@@ -999,7 +1101,9 @@ def api_db_init():
         ocdb = oc.OnCalendarDB(oc.config)
         init_status = ocdb.initialize_database()
     except (oc.OnCalendarDBError, oc.OnCalendarDBInitTSError), error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(init_status)
 
@@ -1023,7 +1127,9 @@ def api_db_init_force():
         ocdb = oc.OnCalendarDB(oc.config)
         init_status = ocdb.initialize_database(True)
     except (oc.OnCalendarDBError, oc.OnCalendarDBInitTSError), error:
-        return json.dumps([error.args[0], error.args[1]]), 500
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
 
     return json.dumps(init_status)
 
@@ -1045,27 +1151,49 @@ def api_send_sms(victim_type, group):
     sms_status = 'UNKNOWN'
 
     if victim_type not in ('oncall', 'backup', 'group'):
-        return json.dumps({
-            'sms_status': 'ERROR',
-            'sms_error': [oc.ocapi_err.NOPARAM, 'Unknown SMS target: {0}'.format(victim_type)]
-        }), 400
+        raise OnCalendarBadRequest(
+            payload = {
+                'sms_status': 'ERROR',
+                'sms_error': "{0}: Unknown SMS target: {1}".format(oc.ocapi_err.NOPARAM, victim_type)
+            }
+        )
 
     if not request.form:
-        return json.dumps({
-            'sms_status': 'ERROR',
-            'sms_error': [oc.ocapi_err.NOPOSTDATA, 'No data received']
-        }), 400
+        raise OnCalendarBadRequest(
+            payload = {
+                'sms_status': 'ERROR',
+                'sms_error': "{0}: No data received".format(oc.ocapi_err.NOPOSTDATA)
+            }
+        )
     elif request.form['type'] == 'host':
-        notification_data = parse_host_form(request.form)
+        try:
+            notification_data = parse_host_form(request.form)
+        except OnCalendarFormParseError as error:
+            raise OnCalendarBadRequest(
+                payload = {
+                    'sms_status': 'ERROR',
+                    'sms_error': "{0}: {1}".format(error.args[1], error.args[1])
+                }
+            )
         sms_message = render_template('host_sms.jinja2', data=notification_data)
     elif request.form['type'] == 'service':
-        notification_data = parse_service_form(request.form)
+        try:
+            notification_data = parse_service_form(request.form)
+        except OnCalendarFormParseError as error:
+            raise OnCalendarBadRequest(
+                payload = {
+                    'sms_status': 'ERROR',
+                    'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+                }
+            )
         sms_message = render_template('service_sms.jinja2', data=notification_data)
     else:
-        return json.dumps({
-            'sms_status': 'ERROR',
-            'sms_error': [oc.ocapi_err.NOPARAM, 'Request must specify either host or service type']
-        }), 400
+        raise OnCalendarBadRequest(
+            payload = {
+                'sms_status': 'ERROR',
+                'sms_error': "{0}: Request my specify either host or service type".format(oc.ocapi_err.NOPARAM)
+            }
+        )
 
     shadow = None
     try:
@@ -1079,10 +1207,12 @@ def api_send_sms(victim_type, group):
             if current_victims[group]['shadow'] is not None:
                 shadow = current_victims[group]['shadow']
     except oc.OnCalendarDBError, error:
-        return json.dumps({
-            'sms_status': 'ERROR',
-            'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
-        }), 500
+        raise OnCalendarAppError(
+            payload = {
+                'sms_status': 'ERROR',
+                'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+            }
+        )
 
     if target['throttle_time_remaining'] > 0:
         return json.dumps({
@@ -1097,19 +1227,23 @@ def api_send_sms(victim_type, group):
         target_sent_messages = ocdb.get_victim_message_count(target['username'], oc.config.SMS_THROTTLE_TIME)[0]
         print "sent message count: {0}".format(target_sent_messages)
     except oc.OnCalendarDBError, error:
-        return json.dumps({
-            'sms_status': 'ERROR',
-            'sms_error': [error.args[0], error.args[1]]
-        }), 500
+        raise OnCalendarAppError(
+            payload = {
+                'sms_status': 'ERROR',
+                'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+            }
+        )
 
     if target_sent_messages >= target['throttle']:
         try:
             ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
         except oc.OnCalendarDBError, error:
-            return json.dumps({
-                'sms_status': 'ERROR',
-                'sms_error': [error.args[0], error.args[1]]
-            }), 500
+            raise OnCalendarAppError(
+                payload = {
+                    'sms_status': 'ERROR',
+                    'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
+                }
+            )
 
         throttle_message = 'Alert limit reached, throttling further pages'
 
@@ -1129,15 +1263,19 @@ def api_send_sms(victim_type, group):
                 sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
             except oc.OnCalendarSMSError, error:
                 ocsms.send_failsafe(sms_message)
-                return json.dumps({
-                    'sms_status': 'ERROR',
-                    'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
-                }), 500
+                raise OnCalendarAppError(
+                    payload = {
+                        'sms_status': 'ERROR',
+                        'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
+                    }
+                )
         else:
-            return json.dumps({
-                'sms_status': 'ERROR',
-                'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
-            })
+            raise OnCalendarAppError(
+                payload = {
+                    'sms_status': 'ERROR',
+                    'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
+                }
+            )
 
     if victim_type == 'oncall' and shadow is not None:
         ocsms.send_sms_alert(groupid, shadow['id'], shadow['phone'], sms_message, notification_data['notification_type'])
@@ -1168,18 +1306,21 @@ def api_send_email(victim_type, group):
     }
 
     if victim_type not in ('oncall', 'backup', 'group'):
-        return json.dumps({
-            'sms_status': 'ERROR',
-            'sms_error': [oc.ocapi_err.NOPARAM, 'Unknown SMS target: {0}'.format(victim_type)]
-        }), 400
+        raise OnCalendarBadRequest(
+            payload = {'email_status': 'ERROR', 'email_error': "{0}: Unknown email target {1}".format(oc.ocapi_err.NOPARAM, victim_type)}
+        )
 
     if not request.form:
-        return json.dumps({
-            'email_status': 'ERROR',
-            'email_error': [oc.ocapi_err.NOPOSTDATA, 'No data received']
-        }), 500
+        raise OnCalendarAppError(
+            payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(oc.ocapi_err.NOPOSTDATA, 'No data received')}
+        )
     if request.form['type'] == 'host':
-        notification_data = parse_host_form(request.form)
+        try:
+            notification_data = parse_host_form(request.form)
+        except OnCalendarFormParseError as error:
+            raise OnCalendarBadRequest(
+                payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
+            )
         email_subject = "** {0} {1} Alert: {2} is {3} **".format(
             notification_data['notification_type'],
             notification_data['type'],
@@ -1204,7 +1345,12 @@ def api_send_email(victim_type, group):
             message_format = 'plain'
             email_message = render_template('host_email_plain.jinja2', data=notification_data)
     elif request.form['type'] == 'service':
-        notification_data = parse_service_form(request.form)
+        try:
+            notification_data = parse_service_form(request.form)
+        except OnCalendarFormParseError as error:
+            raise OnCalendarBadRequest(
+                payload={'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
+            )
         email_subject = "** {0} {1} Alert: {2}/{3} is {4} **".format(
             notification_data['notification_type'],
             notification_data['type'],
@@ -1230,10 +1376,12 @@ def api_send_email(victim_type, group):
             message_format = 'plain'
             email_message = render_template('service_email_plain.jinja2', data=notification_data)
     else:
-        return json.dumps({
-            'email_status': 'ERROR',
-            'email_error': [oc.ocapi_err.NOPARAM, 'Request must specify either host or service type']
-        }), 500
+        raise OnCalendarAppError(
+            payload = {
+                'email_status': 'ERROR',
+                'email_error': "{0}: {1}".format(oc.ocapi_err.NOPARAM, 'Request must specify either host or service type')
+            }
+        )
 
     ocsms = oc.OnCalendarSMS(oc.config)
 
@@ -1250,59 +1398,92 @@ def api_send_email(victim_type, group):
             if current_victims[group]['shadow'] is not None:
                 shadow = current_victims[group]['shadow']
     except oc.OnCalendarDBError, error:
-        return json.dumps({
-            'email_status': 'ERROR',
-            'email_error': "{0}: {1}".format(error.args[0], error.args[1])
-        }), 500
+        raise OnCalendarAppError(
+            payload = {
+                'email_status': 'ERROR',
+                'email_error': "{0}: {1}".format(error.args[0], error.args[1])
+            }
+        )
 
     try:
         ocsms.send_email(target['email'], email_message, email_subject, message_format)
         if victim_type == 'oncall' and shadow is not None:
             ocsms.send_email(shadow['email'], email_message, email_subject, message_format)
     except oc.OnCalendarSMSError, error:
-        return json.dumps({
-            'email_status': 'ERROR',
-            'email_error': "{0}: {1}".format(error.args[0], error.args[1])
-        })
+        raise OnCalendarAppError(
+            payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
+        )
 
     return json.dumps({'email_status': 'Notification email sent to {0}'.format(target['email'])})
 
 
 def parse_host_form(form_data):
 
+    required_fields = [
+        'notification_type',
+        'host_status',
+        'hostname',
+        'host_address',
+        'hostgroup',
+        'duration',
+        'notification_number',
+        'event_time',
+        'info'
+    ]
+
     notification_data = {
         'type': 'Host',
-        'notification_type': request.form['notification_type'],
-        'host_status': request.form['host_status'],
-        'hostname': request.form['hostname'],
-        'host_address': request.form['host_address'],
-        'hostgroup': request.form['hostgroup'],
-        'duration': request.form['duration'],
-        'notification_number': request.form['notification_number'],
-        'event_time': request.form['event_time'],
-        'info': request.form['info'],
-        'comments': request.form['comments']
+        'notification_type': form_data['notification_type'],
+        'host_status': form_data['host_status'],
+        'hostname': form_data['hostname'],
+        'host_address': form_data['host_address'],
+        'hostgroup': form_data['hostgroup'],
+        'duration': form_data['duration'],
+        'notification_number': form_data['notification_number'],
+        'event_time': form_data['event_time'],
+        'info': form_data['info'],
+        'comments': form_data['comments']
     }
+
+    for field in required_fields:
+        if not notification_data[field] or notification_data[field] is None:
+            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
 
     return notification_data
 
 
 def parse_service_form(form_data):
 
+    required_fields = [
+        'notification_type',
+        'service_status',
+        'service',
+        'hostname',
+        'host_address',
+        'duration',
+        'notification_number',
+        'event_time',
+        'info'
+    ]
+
     notification_data = {
         'type': 'Service',
-        'notification_type': request.form['notification_type'],
-        'service_status': request.form['service_status'],
-        'service': request.form['service_description'],
-        'hostname': request.form['hostname'],
-        'host_address': request.form['host_address'],
-        'duration': request.form['duration'],
-        'notification_number': request.form['notification_number'],
-        'event_time': request.form['event_time'],
-        'info': request.form['info'],
-        'notes_url': request.form['notes_url'],
-        'comments': request.form['comments']
+        'notification_type': form_data['notification_type'],
+        'service_status': form_data['service_status'],
+        'service': form_data['service_description'],
+        'hostname': form_data['hostname'],
+        'host_address': form_data['host_address'],
+        'duration': form_data['duration'],
+        'notification_number': form_data['notification_number'],
+        'event_time': form_data['event_time'],
+        'info': form_data['info'],
+        'notes_url': form_data['notes_url'],
+        'comments': form_data['comments']
     }
+
+    for field in required_fields:
+        if not notification_data[field] or notification_data[field] is None:
+            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
 
     return notification_data
 
