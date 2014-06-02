@@ -216,8 +216,8 @@ var oncalendar = {
             if (current_day.getDay() == 0) {
                 if (typeof week_row !== "undefined") {
                     calendar_table_fragment.appendChild(week_row);
+                    current_week++;
                 }
-                current_week++;
                 week_row = document.createDocumentFragment();
                 week_row.appendChild(document.createElement('tr'));
                 week_row.firstChild.setAttribute('id', 'week' + current_week);
@@ -478,8 +478,10 @@ var oncalendar = {
                 }
             }
             if (current_day.getDay() == 0) {
-                calendar_table_fragment.appendChild(week_row);
-                current_week++;
+                if (typeof week_row !== "undefined") {
+                    calendar_table_fragment.appendChild(week_row);
+                    current_week++;
+                }
                 week_row = document.createDocumentFragment();
                 week_row.appendChild(document.createElement('tr'));
                 week_row.firstChild.setAttribute('id', 'week' + current_week);
@@ -739,7 +741,7 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">';
                     if (cal.oncall_groups[group].shadow == 1) {
                         shadow_fragment = document.createDocumentFragment();
                         shadow_fragment.appendChild(document.createElement('br'));
@@ -747,7 +749,7 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.lastChild.setAttribute('value', "--");
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         backup_fragment = document.createDocumentFragment();
@@ -756,7 +758,7 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.lastChild.setAttribute('value', "--");
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
@@ -767,8 +769,10 @@ var oncalendar = {
             current_date_string = cal.current_year + '-' + cal.real_month + '-' + current_day.toString('d');
             calday = cal.victims.map[current_date_string];
             if (current_day.getDay() == 0) {
-                calendar_table_fragment.appendChild(week_row);
-                current_week++;
+                if (typeof week_row !== "undefined") {
+                    calendar_table_fragment.appendChild(week_row);
+                    current_week++;
+                }
                 week_row = document.createDocumentFragment();
                 week_row.appendChild(document.createElement('tr'));
                 week_row.firstChild.setAttribute('id', 'week' + current_week);
@@ -850,7 +854,7 @@ var oncalendar = {
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">';
                 if (cal.oncall_groups[group].shadow == 1) {
                     shadow_fragment = document.createDocumentFragment();
                     shadow_fragment.appendChild(document.createElement('br'));
@@ -858,7 +862,7 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('type', 'hidden');
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                    shadow_fragment.lastChild.setAttribute('value', '--');
                 }
                 if (cal.oncall_groups[group].backup == 1) {
                     backup_fragment = document.createDocumentFragment();
@@ -867,10 +871,10 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('type', 'hidden');
                     backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                    backup_fragment.lastChild.setAttribute('value', backup_string);
+                    backup_fragment.lastChild.setAttribute('value', '--');
                 }
             }
-            week_row.firstChild.appendChild(day_cell)
+            week_row.firstChild.appendChild(day_cell);
             current_day.add(1).days();
         }
 
@@ -955,7 +959,7 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">';
                     if (cal.oncall_groups[group].shadow == 1) {
                         shadow_fragment = document.createDocumentFragment();
                         shadow_fragment.appendChild(document.createElement('br'));
@@ -963,7 +967,7 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.lastChild.setAttribute('value', "--");
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         backup_fragment = document.createDocumentFragment();
@@ -972,7 +976,7 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.lastChild.setAttribute('value', "--");
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
