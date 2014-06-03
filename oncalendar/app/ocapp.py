@@ -107,8 +107,8 @@ def check_current_victims():
                     )
 
     except oc.OnCalendarDBError as error:
-        print "Check failed"
-        print error
+        ocsms = oc.OnCalendarSMS(oc.config)
+        ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
 
 
 @login_manager.user_loader
