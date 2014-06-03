@@ -1,16 +1,25 @@
 class config(object):
+    # App basic config
+    SECRET_KEY          = ''
+    APP_BASE_DIR        = ''
+    # Database config
     DBUSER              = 'oncalendar'
     DBHOST              = 'localhost'
     DBNAME              = 'OnCalendar'
     DBPASSWORD          = 'oncalendar'
     CSRF_ENABLED        = 'true'
-    SECRET_KEY          = ''
+    # LDAP auth config
     LDAP_URL            = ''
     LDAP_BINDDN         = ''
     LDAP_BINDPW         = ''
     LDAP_BASEDN         = ''
     LDAP_GROUPSDN       = ''
     LDAP_USERATTR       = ''
+    # Logging options
+    LOG_LEVEL           = ''
+    LOG_FORMAT          = '%(asctime)s %(levelname)s: %(message)s:'
+    APP_LOG_FILE        = ''
+    SCHEDULE_LOG_FILE   = ''
     # SMS Notification configs
     TWILIO_NUMBER       = ''
     TWILIO_SID          = ''

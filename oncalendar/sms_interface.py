@@ -52,7 +52,6 @@ class OnCalendarSMS(object):
         try:
             ocdb = oc.OnCalendarDB(oc.config)
             sms_id = ocdb.add_sms_record(groupid, victimid, type)[0]
-            print "SMS ID: {0}".format(sms_id)
             sms_hash = cls.wordlist[sms_id % len(cls.wordlist)]
             ocdb.set_sms_hash(sms_id, sms_hash)
         except oc.OnCalendarDBError, error:

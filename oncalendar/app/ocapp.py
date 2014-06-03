@@ -12,20 +12,28 @@ import os
 import re
 
 ocapp = Flask(__name__)
-ocapp.debug = True
 ocapp.config.from_object(oc.config)
 login_manager = flogin.LoginManager()
 login_manager.login_view = 'oc_login'
 login_manager.init_app(ocapp)
 
+# Set up logging for the app
+ocapp.app_log_handler = logging.FileHandler(oc.config.APP_LOG_FILE)
+ocapp.schedule_log_handler = logging.FileHandler(oc.config.SCHEDULE_LOG_FILE)
+ocapp.log_formatter = logging.Formatter(oc.config.LOG_FORMAT)
+ocapp.app_log_handler.setFormatter(ocapp.log_formatter)
+ocapp.schedule_log_handler.setFormatter(ocapp.log_formatter)
+ocapp.logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
+ocapp.logger.addHandler(ocapp.app_log_handler)
+
 # Start the scheduler to check and update the current oncall,
 # shadow and backup for each group at 5 minute intervals
-default_handler = logging.StreamHandler()
-default_handler.setLevel(logging.DEBUG)
 ocapp_scheduler = Scheduler()
 ocapp_scheduler.start()
-ocapp_scheduler_logger = logging.getLogger('apscheduler')
-ocapp_scheduler_logger.addHandler(default_handler)
+ocapp.aps_logger = logging.getLogger('apscheduler')
+ocapp.aps_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
+ocapp.aps_logger.addHandler(ocapp.schedule_log_handler)
+
 
 class OnCalendarFileWriteError(Exception):
     """
@@ -63,6 +71,7 @@ class OnCalendarAppError(Exception):
 @ocapp_scheduler.interval_schedule(minutes=1)
 def check_current_victims():
     ocdb = oc.OnCalendarDB(oc.config)
+    ocapp.aps_logger.debug("Checking oncall schedules")
     try:
         oncall_check_status = ocdb.check_schedule()
         rotate_on_message = "You are now {0} oncall for group {1}"
@@ -72,6 +81,7 @@ def check_current_victims():
 
         for group in oncall_check_status.keys():
             if oncall_check_status[group]['oncall']['updated']:
+                ocapp.aps_logger.info("{0} primary oncall updated".format(group))
                 ocsms.send_sms(
                     oncall_check_status[group]['oncall']['new_phone'],
                     rotate_on_message.format('primary', group),
@@ -84,6 +94,7 @@ def check_current_victims():
                         False
                     )
             if 'shadow' in oncall_check_status[group] and oncall_check_status[group]['shadow']['updated']:
+                ocapp.aps_logger.info("{0} shadow oncall updated".format(group))
                 ocsms.send_sms(
                     oncall_check_status[group]['shadow']['new_phone'],
                     rotate_on_message.format('shadow', group)
@@ -95,6 +106,7 @@ def check_current_victims():
                         False
                     )
             if 'backup' in oncall_check_status[group] and oncall_check_status[group]['backup']['updated']:
+                ocapp.aps_logger.info("{0} backup oncall updated".format(group))
                 ocsms.send_sms(
                     oncall_check_status[group]['backup']['new_phone'],
                     rotate_on_message.format('backup', group)
@@ -107,6 +119,10 @@ def check_current_victims():
                     )
 
     except oc.OnCalendarDBError as error:
+        ocapp.aps_logger.error("Oncall rotation checked failed - {0}: {1}".format(
+            error.args[0],
+            error.args[1])
+        )
         ocsms = oc.OnCalendarSMS(oc.config)
         ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
 
@@ -254,7 +270,7 @@ def oc_admin():
                                magnific_url=url_for('static', filename='js/magnific-popup.js'),
                                bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
     else:
-        print "User {0} not authorized".format(g.user.username)
+        ocapp.logger.error("User {0} not authorized for /admin access".format(g.user.username))
         return redirect(url_for('root'))
 
 
@@ -333,7 +349,7 @@ def edit_month_group(group=None, year=None, month=None):
                                magnific_url=url_for('static', filename='js/magnific-popup.js'),
                                bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
     else:
-        print "User {0} not authorized".format(g.user.username)
+        ocapp.logger.error("User {0} not authorized to edit calendar for {1}".format(g.user.username, group))
         return redirect(url_for('root'))
 
 
@@ -375,7 +391,7 @@ def edit_weekly_group(group=None, year=None, month=None):
                                magnific_url=url_for('static', filename='js/magnific-popup.js'),
                                bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
     else:
-        print "User {0} not authorized".format(g.user.username)
+        ocapp.logger.error("User {0} not authorized to edit calendar for {1}".format(g.user.username, group))
         return redirect(url_for('root'))
 
 
@@ -417,7 +433,10 @@ def api_calendar_update_month():
         ocdb = oc.OnCalendarDB(oc.config)
         response = ocdb.update_calendar_month(update_group, days)
     except oc.OnCalendarDBError, error:
-        print json.dumps([error.args[0], error.args[1]])
+        ocapp.logger.error("Could not update month - {0}: {1}".format(
+            error.args[0],
+            error.args[1]
+        ))
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -524,7 +543,10 @@ def api_calendar_update_day():
         ocdb = oc.OnCalendarDB(oc.config)
         response = ocdb.update_calendar_day(update_day_data)
     except oc.OnCalendarDBError, error:
-        print json.dumps([error.args[0], error.args[1]])
+        ocapp.logger.error("Could not update calendar day - {0}: {1}".format(
+            error.args[0],
+            error.args[1]
+        ))
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -917,7 +939,6 @@ def api_group_victims():
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         group_victims = ocdb.update_group_victims(group_victims_data)
-        print group_victims
     except oc.OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
@@ -966,8 +987,6 @@ def api_add_victim():
         else:
             victim_data[key] = request.form[key]
 
-    print victim_data
-
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         new_victim = ocdb.add_victim(victim_data)
@@ -976,7 +995,6 @@ def api_add_victim():
             payload = [error.args[0], error.args[1]]
         )
 
-    print new_victim
     return json.dumps(new_victim)
 
 
@@ -1039,7 +1057,6 @@ def api_update_victim():
     for key in form_keys:
         if key == "groups[]":
             for gid in request.form.getlist('groups[]'):
-                print gid
                 victim_data['groups'].append(gid)
         else:
             victim_data[key] = request.form[key]
@@ -1074,7 +1091,10 @@ def db_extend(days):
     try:
         ocdb = oc.OnCalendarDB(oc.config)
     except oc.OnCalendarDBError, error:
-        print error
+        ocapp.logger.error("Unable to extend calendar - {0}: {1}".format(
+            error.args[0],
+            error.args[1]
+        ))
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1259,7 +1279,6 @@ def api_send_sms(victim_type, group):
 
     shadow = None
     throttle_message = 'Alert limit reached, throttling further pages'
-    print "Sending off the email copies"
     api_send_email(victim_type, group)
 
     if victim_type == 'group':
@@ -1362,7 +1381,6 @@ def api_send_sms(victim_type, group):
 
         try:
             target_sent_messages = ocdb.get_victim_message_count(target['username'], oc.config.SMS_THROTTLE_TIME)[0]
-            print "sent message count: {0}".format(target_sent_messages)
         except oc.OnCalendarDBError, error:
             raise OnCalendarAppError(
                 payload = {

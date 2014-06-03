@@ -320,7 +320,6 @@ class OnCalendarDB(object):
                 int(insert_date.month),
                 int(insert_date.day)
             )
-            print insert_query
             try:
                 insert_cursor.execute(insert_query)
             except mysql.Error, error:
@@ -553,7 +552,6 @@ class OnCalendarDB(object):
         if day_slots[0][1] == 30:
             post_slots.append([day_slots[0][0], 0])
 
-        print update_day_data
         for day in sorted(update_day_data.keys()):
             victim = None
             shadow = None
@@ -567,12 +565,10 @@ class OnCalendarDB(object):
             if 'backup' in update_day_data[day] and update_day_data[day]['backup'] != "--":
                 backup = update_day_data[day]['backup']
 
-            print 'victim: {0}, shadow: {0}, backup: {0}'.format(victim, shadow, backup)
             if victim is None and shadow is None and backup is None:
                 continue
 
             year, month, date = day.split('-')
-            print year, month, date + ' - ' + update_day_data[day]['oncall'] + ' - ' + group_name
 
             slot_check = {}
             slot_check_query = """SELECT * FROM calendar WHERE calday=(SELECT id FROM caldays
@@ -634,11 +630,9 @@ class OnCalendarDB(object):
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
                     elif backup is not None:
                         update_month_query += "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                print update_month_query
                 try:
                     cursor.execute(update_month_query)
                 except mysql.Error, error:
-                    print "Database error {0}: {1}".format(error.args[0], error.args[1])
                     raise OnCalendarDBError(error.args[0], error.args[1])
 
             next_date = dt.date(int(year), int(month), int(date)) + increment_day
@@ -704,12 +698,9 @@ class OnCalendarDB(object):
                     elif backup is not None:
                         update_month_query += "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
 
-                print update_month_query
-
                 try:
                     cursor.execute(update_month_query)
                 except mysql.Error, error:
-                    print "Database error {0}: {1}".format(error.args[0], error.args[1])
                     raise OnCalendarDBError(error.args[0], error.args[1])
 
         cls.oncalendar_db.commit()
@@ -735,7 +726,6 @@ class OnCalendarDB(object):
         update_group = update_day_data['group']
         update_calday = update_day_data['calday']
         update_slots = update_day_data['slots']
-        print update_slots
 
         for slot in update_slots:
             slot_bits = slot.split('-')
@@ -779,7 +769,6 @@ class OnCalendarDB(object):
         WHERE calday={0} AND c.groupid=(SELECT id FROM groups WHERE name='{1}')
         """.format(update_calday, update_group)
 
-        print new_day_query
         cursor.execute(new_day_query)
         slots = {}
         for row in cursor.fetchall():
@@ -970,7 +959,6 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        print group_data
         cursor = cls.oncalendar_db.cursor()
         update_query = "UPDATE groups SET name='{0}',active='{1}',autorotate='{2}',turnover_day='{3}',\
                        turnover_hour='{4}',turnover_min='{5}',shadow='{6}',backup='{7}',failsafe='{8}',\
@@ -1016,7 +1004,6 @@ class OnCalendarDB(object):
         """
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
         for victim in group_victim_changes['victims']:
-            print victim
             if victim['remove']:
                 try:
                     cursor.execute("DELETE FROM groupmap where groupid={0} AND victimid={1}".format(
@@ -1027,7 +1014,6 @@ class OnCalendarDB(object):
                     raise OnCalendarDBError(error.args[0], error.args[1])
             else:
                 try:
-                    print "updating groupmap, victimid={0}, groupid={1}, active={2}".format(victim['victimid'], group_victim_changes['groupid'], victim['active'])
                     cursor.execute("UPDATE groupmap SET active={0} WHERE groupid={1} AND victimid={2}".format(
                         victim['active'],
                         group_victim_changes['groupid'],
@@ -1250,7 +1236,6 @@ class OnCalendarDB(object):
             cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'User update failed - {0}'.format(error.args[1]))
 
-        print victim_data['groups']
         try:
             for group in victim_data['groups']:
                 gid, value = group.split('-')
@@ -1259,16 +1244,13 @@ class OnCalendarDB(object):
                     victim_data['id']
                 ))
                 row = cursor.fetchone()
-                print row
                 if row[0] == 0 and int(value) == 1:
-                    print "adding user {0} to group {1}".format(victim_data['id'], gid)
                     cursor.execute('INSERT INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, {2})'.format(
                         gid,
                         victim_data['id'],
                         value
                     ))
                 elif row[0] == 1 and int(value) == 0:
-                    print "removing user {0} from group {1}".format(victim_data['id'], gid)
                     cursor.execute("DELETE FROM groupmap WHERE groupid='{0}' AND victimid='{1}'".format(
                         gid,
                         victim_data['id']
