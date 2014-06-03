@@ -451,6 +451,18 @@ table#edit-group-info-table {
     margin-bottom: 25px;
 }
 
+div#edit-group-victims-popup {
+    div#group-victims-list-form {
+        position: relative;
+        table#group-victims-list-table {
+            position: relative;
+            div#victim-username-textbox {
+                position: relative;
+            }
+        }
+    }
+}
+
 table#group-info-data {
     width: 90%;
     margin: 0;
@@ -480,4 +492,21 @@ div#edit-day-popup {
             padding: 0;
         }
     }
+}
+
+.autocomplete-selected {
+    background-color: $button_hover;
+    color: $font_color_reverse;
+}
+
+.autocomplete-suggestion {
+    overflow: hidden;
+    margin-bottom: 1px;
+    padding-left: 8px;
+}
+
+.autocomplete-suggestion:hover {
+    cursor: pointer;
+    background-color: $button_hover;
+    color: $font_color_reverse;
 }

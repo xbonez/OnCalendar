@@ -1013,11 +1013,12 @@ class OnCalendarDB(object):
                 except mysql.Error, error:
                     raise OnCalendarDBError(error.args[0], error.args[1])
             else:
+                print "adding victim id {0} to group {1}".format(victim['victimid'], group_victim_changes['groupid'])
                 try:
-                    cursor.execute("UPDATE groupmap SET active={0} WHERE groupid={1} AND victimid={2}".format(
-                        victim['active'],
+                    cursor.execute("REPLACE INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, {2})".format(
                         group_victim_changes['groupid'],
-                        victim['victimid']
+                        victim['victimid'],
+                        victim['active'],
                     ))
                 except mysql.Error, error:
                     raise OnCalendarDBError(error.args[0], error.args[1])
@@ -1142,7 +1143,7 @@ class OnCalendarDB(object):
             cursor.execute('SELECT id FROM victims WHERE username=\'{0}\''.format(victim_data['username']))
             rows = cursor.fetchall()
             if rows:
-                raise OnCalendarDBError(ocapi_err.API_VICTIMEXISTS, 'User {0} already exists'.format(victim_data['username']))
+                raise OnCalendarDBError(ocapi_err.VICTIMEXISTS, 'User {0} already exists'.format(victim_data['username']))
             cursor.execute(add_victim_query)
             cls.oncalendar_db.commit()
             cursor.execute("SELECT LAST_INSERT_ID()")
@@ -1167,6 +1168,40 @@ class OnCalendarDB(object):
         new_victim = cls.get_victim_info('username', victim_data['username'])
 
         return new_victim[new_victim_id]
+
+
+    @classmethod
+    def add_victim_to_group(cls, victim_id, group_id):
+        """
+        Adds an already existing victim to a group
+
+        Args:
+            victim_id (str): The id of the victim
+            group_id (str): The group to add the victim to
+
+        Returns:
+            (dict): The victim's information
+
+        Raises:
+            (OnCalendarDBError): Passes the mysql error code and message.
+        """
+
+        cursor = cls.oncalendar_db.cursor()
+        group_add_query = """REPLACE INTO groupmap (groupid, victimid, active)
+        VALUES ({0}, {1}, 1""".format(group_id, victim_id)
+        try:
+            cursor.execute(group_add_query)
+            cls.oncalendar_db.commit()
+        except mysql.Error as error:
+            cls.oncalendar_db.rollback()
+            raise OnCalendarDBError(
+                error.args[0],
+                "Failed to add user to groups - {0}".format(error.args[1])
+            )
+
+        updated_victim = cls.git_victim_info('id', victim_id)
+
+        return updated_victim[victim_id]
 
 
     @classmethod
@@ -1311,6 +1346,51 @@ class OnCalendarDB(object):
                 current_victims[row['name']]['backup'] = backup_info[row['backupid']]
 
         return current_victims
+
+
+    @classmethod
+    def get_suggested_victims(cls, stub):
+        """
+        Queries the victims table for any usernames matching the stub.
+
+        Args:
+            stub (str): String to match against victim usernames
+
+        Returns:
+            (dict): The matched victims
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+
+        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        victim_stub_query = """SELECT id, username, firstname, lastname,
+        phone, email, sms_email FROM victims
+        WHERE username like '{0}%'""".format(stub)
+
+        try:
+            cursor.execute(victim_stub_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        suggested_victims = {'suggestions': []}
+        for row in cursor.fetchall():
+            victim_data = {
+                'id': row['id'],
+                'firstname': row['firstname'],
+                'lastname': row['lastname'],
+                'phone': row['phone'],
+                'email': row['email'],
+                'sms_email': row['sms_email']
+            }
+            suggested_victims['suggestions'].append(
+                {
+                    'value': row['username'],
+                    'data': victim_data
+                }
+            )
+
+        return suggested_victims
 
 
     @classmethod

@@ -1208,7 +1208,20 @@ table#edit-group-info-table {
   margin-bottom: 25px;
 }
 
-/* line 454, ../scss/oncalendar.scss */
+/* line 455, ../scss/oncalendar.scss */
+div#edit-group-victims-popup div#group-victims-list-form {
+  position: relative;
+}
+/* line 457, ../scss/oncalendar.scss */
+div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table {
+  position: relative;
+}
+/* line 459, ../scss/oncalendar.scss */
+div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table div#victim-username-textbox {
+  position: relative;
+}
+
+/* line 466, ../scss/oncalendar.scss */
 table#group-info-data {
   width: 90%;
   margin: 0;
@@ -1217,31 +1230,51 @@ table#group-info-data {
   text-align: left;
 }
 
-/* line 462, ../scss/oncalendar.scss */
+/* line 474, ../scss/oncalendar.scss */
 div#edit-day-popup {
   max-height: 650px;
 }
-/* line 464, ../scss/oncalendar.scss */
+/* line 476, ../scss/oncalendar.scss */
 div#edit-day-popup h3 {
   height: 25px;
   margin: 0 0 15px;
 }
-/* line 468, ../scss/oncalendar.scss */
+/* line 480, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-form {
   max-height: 550px;
   overflow: auto;
   border-top: 1px solid rgba(42, 70, 97, 0.1);
   border-bottom: 1px solid rgba(42, 70, 97, 0.1);
 }
-/* line 474, ../scss/oncalendar.scss */
+/* line 486, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table {
   width: 100%;
 }
-/* line 476, ../scss/oncalendar.scss */
+/* line 488, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table tr.shadow-row {
   border-bottom: 1px solid black;
 }
-/* line 479, ../scss/oncalendar.scss */
+/* line 491, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table td {
   padding: 0;
+}
+
+/* line 497, ../scss/oncalendar.scss */
+.autocomplete-selected {
+  background-color: rgba(40, 70, 97, 0.75);
+  color: whitesmoke;
+}
+
+/* line 502, ../scss/oncalendar.scss */
+.autocomplete-suggestion {
+  overflow: hidden;
+  margin-bottom: 1px;
+  padding-left: 8px;
+}
+
+/* line 508, ../scss/oncalendar.scss */
+.autocomplete-suggestion:hover {
+  cursor: pointer;
+  background-color: rgba(40, 70, 97, 0.75);
+  color: whitesmoke;
 }

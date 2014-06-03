@@ -199,7 +199,8 @@ def root():
                            ocjs_url=url_for('static', filename='js/oncalendar.js'),
                            colorwheel_url=url_for('static', filename='js/color_wheel.js'),
                            magnific_url=url_for('static', filename='js/magnific-popup.js'),
-                           bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
+                           bootstrapjs_url=url_for('static', filename='js/bootstrap.js'),
+                           jq_autocomplete_url=url_for('static', filename='js/jquery.autocomplete.js'))
 
 
 @ocapp.route('/login', methods=['GET', 'POST'])
@@ -322,7 +323,8 @@ def oc_calendar(year=None, month=None):
                            ocjs_url=url_for('static', filename='js/oncalendar.js'),
                            colorwheel_url=url_for('static', filename='js/color_wheel.js'),
                            magnific_url=url_for('static', filename='js/magnific-popup.js'),
-                           bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
+                           bootstrapjs_url=url_for('static', filename='js/bootstrap.js'),
+                           jq_autocomplete_url=url_for('static', filename='js/jquery.autocomplete.js'))
 
 
 @ocapp.route('/edit/month/<group>/<year>/<month>')
@@ -717,6 +719,28 @@ def api_get_current_victims(group=None):
         )
 
     return json.dumps(victims)
+
+
+@ocapp.route('/api/victims/suggest')
+def api_suggest_victims():
+    """
+    API interface to suggest victim names for autocompletion.
+
+    Returns:
+        (str): dict of the suggested users' info as JSON.
+    """
+
+    query = request.args['query']
+
+    try:
+        ocdb = oc.OnCalendarDB(oc.config)
+        suggested_victims = ocdb.get_suggested_victims(query)
+    except oc.OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
+
+    return json.dumps(suggested_victims)
 
 
 @ocapp.route('/api/victim/<key>/<id>/')

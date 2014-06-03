@@ -8,6 +8,7 @@
     <script src="{{ datejs_url }}"></script>
     <script src="{{ bootstrapjs_url }}"></script>
     <script src="{{ magnific_url }}"></script>
+    <script src="{{ jq_autocomplete_url }}"></script>
     <script src="{{ ocjs_url }}"></script>
     <script src="{{ colorwheel_url }}"></script>
   </head>
@@ -222,7 +223,12 @@
             <tr>
               <td></td>
               <td></td>
-              <td><input type="text" id="add-victim-username" name="add-victim-username" value="" size="20"></td>
+              <td>
+                <div id="victim-username-textbox">
+                  <input type="hidden" id="victim-id" name="victim-id" value="0">
+                  <input type="text" id="add-victim-username" class="autocomplete" name="add-victim-username" value="" size="20">
+                </div>
+              </td>
               <td><input type="text" id="add-victim-firstname" name="add-victim-firstname" value="" size="20"></td>
               <td><input type="text" id="add-victim-lastname" name="add-victim-lastname" value="" size="20"></td>
               <td><input type="text" id="add-victim-phone" name="add-victim-phone" value="" size="20"></td>
