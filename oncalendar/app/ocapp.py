@@ -26,8 +26,7 @@ ocapp.schedule_log_handler.setFormatter(ocapp.log_formatter)
 ocapp.logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
 ocapp.logger.addHandler(ocapp.app_log_handler)
 
-# Start the scheduler to check and update the current oncall,
-# shadow and backup for each group at 5 minute intervals
+# Start the scheduler and set up logging for it
 ocapp_scheduler = Scheduler()
 ocapp_scheduler.start()
 ocapp.aps_logger = logging.getLogger('apscheduler')
@@ -45,6 +44,7 @@ class OnCalendarFormParseError(Exception):
     """
     Exception class for errors parsing incoming form data.
     """
+
     pass
 
 
@@ -52,6 +52,7 @@ class OnCalendarBadRequest(Exception):
     """
     Exception class for bad requests to the API.
     """
+
     def __init__(self, payload):
         Exception.__init__(self)
         self.status_code = 400
@@ -60,8 +61,9 @@ class OnCalendarBadRequest(Exception):
 
 class OnCalendarAppError(Exception):
     """
-    Exception class for internal errors
+    Exception class for internal application errors
     """
+
     def __init__(self, payload):
         Exception.__init__(self)
         self.status_code = 500
@@ -70,6 +72,13 @@ class OnCalendarAppError(Exception):
 
 @ocapp_scheduler.interval_schedule(minutes=1)
 def check_current_victims():
+    """
+    Scheduled job to check the current oncall/shadow/backup for each
+    group and update if necessary. If a change occurs the incoming
+    and outgoing oncall/shadow/backup users are notified via
+    SMS of their new status.
+    """
+
     ocdb = oc.OnCalendarDB(oc.config)
     ocapp.aps_logger.debug("Checking oncall schedules")
     try:
@@ -139,22 +148,20 @@ def before_request():
 
 @ocapp.errorhandler(OnCalendarBadRequest)
 def handle_bad_request(error):
+    """
+    Handler for BadRequest errors, HTTP code 400.
+    """
+
     return json.dumps(error.payload), error.status_code
 
 
 @ocapp.errorhandler(OnCalendarAppError)
 def handle_app_error(error):
+    """
+    Handler for application errors, HTTP code 500
+    """
+
     return json.dumps(error.payload), error.status_code
-
-
-@ocapp.route('/test')
-def test():
-    return json.dumps(g.user.ldap_groups)
-
-
-@ocapp.route('/test', methods=['POST'])
-def test_post():
-    return json.dumps(request.form)
 
 
 @ocapp.route('/')
@@ -165,6 +172,7 @@ def root():
     Returns:
         (string): Rendered template of the main page HTML and Javascript.
     """
+
     is_anonymous = g.user.is_anonymous()
     if not is_anonymous:
         user = {
@@ -206,6 +214,7 @@ def oc_login():
         (string): Rendered template of the login page if the user is
                   not logged in.
     """
+
     # if g.user is not None and g.user.is_authenticated():
     #    return redirect(url_for('root'))
     form = forms.LoginForm()
@@ -237,6 +246,7 @@ def oc_logout():
     Returns:
         (redirect): URL for the main page of the site.
     """
+
     flogin.logout_user()
     return redirect(url_for('root'))
 
@@ -250,6 +260,7 @@ def oc_admin():
     Returns:
         (string): Rendered template of the admin interface HTML and Javascript.
     """
+
     if g.user.app_role == 2:
         is_anonymous = g.user.is_anonymous()
         user = {
@@ -282,6 +293,7 @@ def oc_calendar(year=None, month=None):
     Returns:
         (string): Rendered template of the main page HTML and Javascript.
     """
+
     is_anonymous = g.user.is_anonymous()
     if not is_anonymous:
         user = {
@@ -324,6 +336,7 @@ def edit_month_group(group=None, year=None, month=None):
     Returns:
         (string): Rendered template of the edit month interface HTML and Javascript.
     """
+
     if g.user.app_role == 2 or (group in g.user.groups):
         user = {
             'username': g.user.username,
@@ -366,6 +379,7 @@ def edit_weekly_group(group=None, year=None, month=None):
     Returns:
         (str): Rendered template of the weekly edit interface HTML and Javascript.
     """
+
     if g.user.app_role == 2 or (group in g.user.groups):
         user = {
             'username': g.user.username,
@@ -460,6 +474,7 @@ def api_get_cal_boundaries():
         (str): On error returns a list of the error code and error message
                as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         cal_start = ocdb.get_caldays_start()
@@ -491,6 +506,7 @@ def api_get_cal_end():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         cal_end = ocdb.get_caldays_end()
@@ -518,6 +534,7 @@ def api_get_cal_start():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         cal_start = ocdb.get_caldays_start()
@@ -565,6 +582,7 @@ def api_get_all_groups_info():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         groups = ocdb.get_group_info()
@@ -590,6 +608,7 @@ def api_get_group_info_by_name(group=None):
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         group_info = ocdb.get_group_info(False, group)
@@ -615,6 +634,7 @@ def api_get_group_info_by_id(gid=None):
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         group_info = ocdb.get_group_info(gid, False)
@@ -640,6 +660,7 @@ def api_get_group_victims(group=None):
         (str): On error returns a list of the error code and error message
                as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         group_victims = ocdb.get_group_victims(group)
@@ -663,6 +684,7 @@ def api_get_all_victims_info():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         victims = ocdb.get_victim_info()
@@ -685,6 +707,7 @@ def api_get_current_victims(group=None):
         (str): On error returns a list of the error code and error message
                as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         victims = ocdb.get_current_victims(group)
@@ -711,6 +734,7 @@ def api_get_victim_info(key=None, id=None):
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     if key not in ['id', 'username']:
         return json.dumps(oc.ocapi_err.NOPARAM, 'Invalid search key: {0}'.format(key))
     try:
@@ -738,6 +762,7 @@ def api_get_config():
     Returns:
         (string): JSON formatted app config.
     """
+
     config_vars = [attr for attr in dir(oc.config()) if not attr.startswith('__')]
     oc_config = {}
     for cv in config_vars:
@@ -760,6 +785,7 @@ def api_update_config():
         (string): On error returns a list of the error code and error message
               as JSON with an HTTP return code of 500.
     """
+
     config_file = '{0}/oncalendar/oc_config.py'.format(os.getcwd())
     config_vars = [attr for attr in dir(oc.config()) if not attr.startswith('__')]
     updates = [key for key in request.form if request.form[key]]
@@ -804,6 +830,7 @@ def api_add_group():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     group_data = {
         'name': '',
         'active': '',
@@ -855,6 +882,7 @@ def api_delete_group(group_id):
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         group_count = ocdb.delete_group(group_id)
@@ -879,6 +907,7 @@ def api_update_group():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     if not request.form:
         raise OnCalendarAppError(
             payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
@@ -929,6 +958,7 @@ def api_group_victims():
         (str): On error returns a list of the error code and error message
                as JSON with an HTTP return code of 500.
     """
+
     if not request.json:
         raise OnCalendarAppError(
             payload = [oc.ocapi_error.NOPOSTDATA, 'No data received']
@@ -962,6 +992,7 @@ def api_add_victim():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     victim_data = {
         'username': '',
         'firstname': '',
@@ -1012,6 +1043,7 @@ def api_delete_victim(victim_id):
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         victim_count = ocdb.delete_victim(victim_id)
@@ -1036,6 +1068,7 @@ def api_update_victim():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     if not request.form:
         raise OnCalendarAppError(
             payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
@@ -1088,6 +1121,7 @@ def db_extend(days):
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
     except oc.OnCalendarDBError, error:
@@ -1125,6 +1159,7 @@ def api_db_verify():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         init_status = ocdb.verify_database()
@@ -1154,6 +1189,7 @@ def api_create_db():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         db = mysql.connect(oc.config.DBHOST, request.form['mysql_user'], request.form['mysql_password'])
         cursor = db.cursor()
@@ -1179,6 +1215,7 @@ def api_db_init():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         init_status = ocdb.initialize_database()
@@ -1205,6 +1242,7 @@ def api_db_init_force():
         (string): On error returns a list of the error code and error message
                   as JSON with an HTTP return code of 500.
     """
+
     try:
         ocdb = oc.OnCalendarDB(oc.config)
         init_status = ocdb.initialize_database(True)
@@ -1230,6 +1268,7 @@ def api_send_sms(victim_type, group):
     Returns:
         (str): Success or failure status as JSON
     """
+
     sms_status = 'UNKNOWN'
 
     if victim_type not in ('oncall', 'backup', 'group'):
@@ -1448,6 +1487,7 @@ def api_send_email(victim_type, group):
     Returns:
         (str): Success or failure status as JSON
     """
+
     message_format = None
     color_map = {
         'PROBLEM': '#FF8080',
@@ -1669,6 +1709,7 @@ def valid_email_address(address):
     Args:
         address (str): The address to check
     """
+
     email_checker = re.compile("^[^\s]+@[^\s]+\.[^\s]{2,3}$")
     if email_checker.search(address) == None:
         return False
