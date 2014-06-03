@@ -34,7 +34,7 @@ class OnCalendarSMS(object):
                 to=phone_number,
                 from_=oc.config.TWILIO_NUMBER,
                 body=body,
-                status_callback=os.config.TWILIO_CALLBACK_URL
+                status_callback=oc.config.TWILIO_CALLBACK_URL
             )
         else:
             msg = cls.client.sms.messages.create(
