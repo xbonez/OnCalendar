@@ -1,5 +1,6 @@
 import calendar
 import datetime as dt
+import logging
 import MySQLdb as mysql
 from oncalendar.api_exceptions import OnCalendarAPIError, ocapi_err
 import os
@@ -1056,7 +1057,6 @@ class OnCalendarDB(object):
                 'phone': row['phone'],
                 'email': row['email'],
                 'sms_email': row['sms_email'],
-                'active': row['active'],
                 'app_role': row['app_role'],
                 'group_active': row['group_active']
             }
@@ -1298,25 +1298,14 @@ class OnCalendarDB(object):
             OnCalendarDBError: Passes the mysql error code and message.
         """
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        today = dt.datetime.now()
-        slot_min = 30 if today.minute > 29 else 0
-        get_victims_calendar_query = """SELECT g.name, g.id as groupid,
-        g.email as group_email, c.victimid, c.shadowid, c.backupid
-        FROM calendar c, groups g
-        WHERE calday=(SELECT id FROM caldays WHERE year='{0}' AND month='{1}' AND day='{2}')
-        AND hour='{3}' AND min='{4}' AND c.groupid=g.id
-        """.format(
-            today.year,
-            today.month,
-            today.day,
-            today.hour,
-            slot_min,
-        )
+        get_victims_query = """SELECT name, id AS groupid, email AS group_email,
+        victimid, shadowid, backupid
+        FROM groups"""
         if group:
-            get_victims_calendar_query += " AND g.id=(SELECT id FROM groups WHERE name='{0}')".format(group)
+            get_victims_query += " WHERE id=(SELECT id FROM groups WHERE name='{0}')".format(group)
 
         try:
-            cursor.execute(get_victims_calendar_query)
+            cursor.execute(get_victims_query)
         except mysql.Error, error:
             raise OnCalendarDBError(error.args[0], error.args[1])
 
@@ -1326,10 +1315,12 @@ class OnCalendarDB(object):
             current_victims[row['name']] = {}
             current_victims[row['name']]['groupid'] = row['groupid']
             current_victims[row['name']]['group_email'] = row['group_email']
-            victim_info = cls.get_victim_info('id', row['victimid'])
-            current_victims[row['name']]['oncall'] = victim_info[row['victimid']]
+            current_victims[row['name']]['oncall'] = None
             current_victims[row['name']]['shadow'] = None
             current_victims[row['name']]['backup'] = None
+            if row['victimid'] is not None:
+                victim_info = cls.get_victim_info('id', row['victimid'])
+                current_victims[row['name']]['oncall'] = victim_info[row['victimid']]
             if row['shadowid'] is not None:
                 shadow_info = cls.get_victim_info('id', row['shadowid'])
                 current_victims[row['name']]['shadow'] = shadow_info[row['shadowid']]
@@ -1338,6 +1329,180 @@ class OnCalendarDB(object):
                 current_victims[row['name']]['backup'] = backup_info[row['backupid']]
 
         return current_victims
+
+
+    @classmethod
+    def check_schedule(cls):
+        """
+        Queries the calendar and checks against list of current victims,
+        updates the list if necessary
+
+        Returns:
+            (dict): Status of the check for each group, previous and new
+                    victims if there was a change.
+        """
+        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        current_victims_query = "SELECT name, id, victimid, shadowid, backupid FROM groups"
+        try:
+            cursor.execute(current_victims_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        current_victims = {}
+
+        for row in cursor.fetchall():
+            current_victims[row['name']] = row
+
+        today = dt.datetime.now()
+        slot_min = 30 if today.minute > 29 else 0
+        calendar_victims_query = """SELECT g.name, g.id AS groupid,
+        c.victimid, c.shadowid, c.backupid
+        FROM calendar c, groups g
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}')
+        AND hour='{3}' AND min='{4}' AND c.groupid=g.id""".format(
+            today.year,
+            today.month,
+            today.day,
+            today.hour,
+            slot_min,
+        )
+        try:
+            cursor.execute(calendar_victims_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        schedule_status = {}
+        phone_query = "SELECT phone FROM victims WHERE id='{0}'"
+        phones_query = """SELECT v1.phone as new_phone, v2.phone as prev_phone
+        FROM victims v1, victims v2
+        WHERE v1.id='{0}' AND v2.id='{1}'"""
+        rotate_query = "UPDATE groups SET {0}='{1}' WHERE id='{2}'"
+
+        for row in cursor.fetchall():
+            schedule_status[row['name']] = {}
+            if row['victimid'] is not None:
+                if row['victimid'] != current_victims[row['name']]['victimid']:
+                    try:
+                        if current_victims[row['name']]['victimid'] is None:
+                            victim_phone_query = phone_query.format(row['victimid'])
+                            cursor.execute(victim_phone_query)
+                            phone = cursor.fetchone()
+                            schedule_status[row['name']]['oncall'] = {
+                                'updated': True,
+                                'previous': None,
+                                'prev_phone': None,
+                                'new': row['victimid'],
+                                'new_phone': phone['phone']
+                            }
+                        else:
+                            victim_phones_query = phones_query.format(
+                                row['victimid'],
+                                current_victims[row['name']]['victimid']
+                            )
+                            cursor.execute(victim_phones_query)
+                            phones = cursor.fetchone()
+                            schedule_status[row['name']]['oncall'] = {
+                                'updated': True,
+                                'previous': current_victims[row['name']]['victimid'],
+                                'prev_phone': phones['prev_phone'],
+                                'new': row['victimid'],
+                                'new_phone': phones['new_phone']
+                            }
+                        update_victim_query = rotate_query.format(
+                            'victimid',
+                            row['victimid'],
+                            row['groupid']
+                        )
+                        cursor.execute(update_victim_query)
+                        cls.oncalendar_db.commit()
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1])
+                else:
+                    schedule_status[row['name']]['oncall'] = {'updated': False}
+
+            if row['shadowid'] is not None:
+                if row['shadowid'] != current_victims[row['name']]['shadowid']:
+                    try:
+                        if current_victims[row['name']]['shadowid'] is None:
+                            shadow_phone_query = phone_query.format(row['shadowid'])
+                            cursor.execute(shadow_phone_query)
+                            phone = cursor.fetchone()
+                            schedule_status[row['name']]['shadow'] = {
+                                'updated': True,
+                                'previous': None,
+                                'prev_phone': None,
+                                'new': row['shadowid'],
+                                'new_phone': phone['new_phone']
+                            }
+                        else:
+                            shadow_phones_query = phones_query.format(
+                                row['shadowid'],
+                                current_victims[row['name']]['shadowid']
+                            )
+                            cursor.execute(shadow_phones_query)
+                            phones = cursor.fetchone()
+                            schedule_status[row['name']]['shadow'] = {
+                                'updated': True,
+                                'previous': current_victims[row['name']]['shadowid'],
+                                'prev_phone': phones['prev_phone'],
+                                'new': row['shadowid'],
+                                'new_phone': phones['new_phone']
+                            }
+                        update_shadow_query = rotate_query.format(
+                            'shadowid',
+                            row['shadowid'],
+                            row['groupid']
+                        )
+                        cursor.execute(update_shadow_query)
+                        cls.oncalendar_db.commit()
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1])
+                else:
+                    schedule_status[row['name']]['shadow'] = {'updated': False}
+
+            if row['backupid'] is not None:
+                if row['backupid'] != current_victims[row['name']]['backupid']:
+                    try:
+                        if current_victims[row['name']]['backupid'] is None:
+                            backup_phone_query = phone_query.format(row['backupid'])
+                            cursor.execute(backup_phone_query)
+                            phone = cursor.fetchone()
+                            schedule_status[row['name']]['backup'] = {
+                                'updated': True,
+                                'previous': None,
+                                'prev_phone': None,
+                                'new': row['backupid'],
+                                'new_phone': phone['new_phone']
+                            }
+                        else:
+                            backup_phones_query = phones_query.format(
+                                row['backupid'],
+                                current_victims[row['name']]['backupid']
+                            )
+                            cursor.execute(backup_phones_query)
+                            phones = cursor.fetchone()
+                            schedule_status[row['name']]['backup'] = {
+                                'updated': True,
+                                'previous': current_victims[row['name']]['backupid'],
+                                'prev_phone': phones['prev_phone'],
+                                'new': row['backupid'],
+                                'new_phone': phones['new_phone']
+                            }
+                        update_backup_query = rotate_query.format(
+                            'backupid',
+                            row['backupid'],
+                            row['groupid']
+                        )
+                        cursor.execute(update_backup_query)
+                        cls.oncalendar_db.commit()
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1])
+                else:
+                    schedule_status[row['name']]['backup'] = {'updated': False}
+
+        return schedule_status
+
 
 
     @classmethod

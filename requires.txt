@@ -1,3 +1,4 @@
+APScheduler>=2.1.2
 MySQL-python>=1.2.4
 Flask>=0.10.1
 Flask-Login>=0.2.7

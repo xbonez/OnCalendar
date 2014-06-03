@@ -1,7 +1,9 @@
+from apscheduler.scheduler import Scheduler
 import datetime as dt
 from flask import Flask, render_template, url_for, request, flash, redirect, g
 import flask.ext.login as flogin
 import json
+import logging
 import MySQLdb as mysql
 import oncalendar as oc
 from oncalendar.app import forms
@@ -15,6 +17,15 @@ ocapp.config.from_object(oc.config)
 login_manager = flogin.LoginManager()
 login_manager.login_view = 'oc_login'
 login_manager.init_app(ocapp)
+
+# Start the scheduler to check and update the current oncall,
+# shadow and backup for each group at 5 minute intervals
+default_handler = logging.StreamHandler()
+default_handler.setLevel(logging.DEBUG)
+ocapp_scheduler = Scheduler()
+ocapp_scheduler.start()
+ocapp_scheduler_logger = logging.getLogger('apscheduler')
+ocapp_scheduler_logger.addHandler(default_handler)
 
 class OnCalendarFileWriteError(Exception):
     """
@@ -47,6 +58,57 @@ class OnCalendarAppError(Exception):
         Exception.__init__(self)
         self.status_code = 500
         self.payload = payload
+
+
+@ocapp_scheduler.interval_schedule(minutes=1)
+def check_current_victims():
+    ocdb = oc.OnCalendarDB(oc.config)
+    try:
+        oncall_check_status = ocdb.check_schedule()
+        rotate_on_message = "You are now {0} oncall for group {1}"
+        rotate_off_message = "You are no longer {0} oncall for group {1}"
+
+        ocsms = oc.OnCalendarSMS(oc.config)
+
+        for group in oncall_check_status.keys():
+            if oncall_check_status[group]['oncall']['updated']:
+                ocsms.send_sms(
+                    oncall_check_status[group]['oncall']['new_phone'],
+                    rotate_on_message.format('primary', group),
+                    False
+                )
+                if oncall_check_status[group]['oncall']['prev_phone'] is not None:
+                    ocsms.send_sms(
+                        oncall_check_status[group]['oncall']['prev_phone'],
+                        rotate_off_message.format('primary', group),
+                        False
+                    )
+            if 'shadow' in oncall_check_status[group] and oncall_check_status[group]['shadow']['updated']:
+                ocsms.send_sms(
+                    oncall_check_status[group]['shadow']['new_phone'],
+                    rotate_on_message.format('shadow', group)
+                )
+                if oncall_check_status[group]['shadow']['prev_phone'] is not None:
+                    ocsms.send_sms(
+                        oncall_check_status[group]['shadow']['new_phone'],
+                        rotate_off_message.format('shadow', group),
+                        False
+                    )
+            if 'backup' in oncall_check_status[group] and oncall_check_status[group]['backup']['updated']:
+                ocsms.send_sms(
+                    oncall_check_status[group]['backup']['new_phone'],
+                    rotate_on_message.format('backup', group)
+                )
+                if oncall_check_status[group]['backup']['prev_phone'] is not None:
+                    ocsms.send_sms(
+                        oncall_check_status[group]['backup']['prev_phone'],
+                        rotate_off_message.format('backup', group),
+                        False
+                    )
+
+    except oc.OnCalendarDBError as error:
+        print "Check failed"
+        print error
 
 
 @login_manager.user_loader
