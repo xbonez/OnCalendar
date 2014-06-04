@@ -349,9 +349,9 @@ var oncalendar = {
         var current_day = new Date(cal.view_start);
         var today_string = cal.now.toString('yyyy-M-d');
         var day_victims = {};
-        var victim_options = '';
-        var shadow_options = '';
-        var backup_options = '';
+        var victim_options = '<li><span class="oncall-option" data-victim="--">--</span></li>';
+        var shadow_options = '<li><span class="shadow-option" data-victim="--">--</span></li>';
+        var backup_options = '<li><span class="backup-option" data-victim="--">--</span></li>';
         var current_week = 0,
             calday,
             day_cell,
@@ -620,9 +620,9 @@ var oncalendar = {
         var current_day = new Date(cal.view_start);
         var today_string = cal.now.toString('yyyy-M-d');
         var day_victims = {};
-        var victim_options = '';
-        var shadow_options = '';
-        var backup_options = '';
+        var victim_options = '<li><span class="oncall-option" data-victim="--">--</span></li>';
+        var shadow_options = '<li><span class="shadow-option" data-victim="--">--</span></li>';
+        var backup_options = '<li><span class="backup-option" data-victim="--">--</span></li>';
         var current_week = 0,
             oncall_week = 0,
             week_row,

@@ -99,6 +99,7 @@ var edit_calday = function(target_group, calday, cal_date) {
     }
 
     $('button#edit-day-save-button').attr('data-calday', calday).attr('data-group', target_group).attr('data-date', cal_date);
+    $('ul.slot-menu').append('<li><span class="slot-item" data-target="--">--</span></li>')
     $.each(oncalendar.oncall_groups[target_group].victims, function(i, victim) {
         if (victim.group_active == 1) {
             $('ul.slot-menu').append('<li><span class="slot-item" data-target="' + victim.username + '">' + victim.username + '</span></li>');
