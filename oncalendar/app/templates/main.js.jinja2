@@ -238,7 +238,14 @@ $('#group-legend').on('click', 'div.expander', function() {
         $(this).children('.expander-arrow').removeClass('arrow_carrot-down').addClass('arrow_carrot-right').attr('data-state', 'closed');
         $('div#group-info-box').addClass('hide');
     }
+}).on('mouseover', 'span.group-legend-entry', function() {
+    var hover_group = $(this).text();
+    $('p.victim-group[data-group="' + hover_group + '"]').addClass('horshack');
+}).on('mouseout', 'span.group-legend-entry', function() {
+    var hover_group = $(this).text();
+    $('p.victim-group[data-group="' + hover_group + '"]').removeClass('horshack');
 });
+
 
 $('#group-info-box').on('click', 'div.alert-box', function() {
     $(this).remove();

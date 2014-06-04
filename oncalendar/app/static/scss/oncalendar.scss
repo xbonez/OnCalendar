@@ -101,6 +101,11 @@ p {
     @include border-radius;
 }
 
+.horshack {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
 .expander {
     cursor: pointer;
     padding-bottom: 3px;
