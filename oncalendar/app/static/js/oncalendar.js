@@ -189,15 +189,61 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                 day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
-                            } else if (victims.oncall !== current_victim[group].oncall) {
-                                current_victim[group].oncall = victims.oncall;
-                                current_victim[group].oncall_name = victims.oncall_name;
-                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                                if (victims.shadow != null) {
+                                    if (victims.shadow !== current_victim[group].shadow) {
+                                        current_victim[group].shadow = victims.shadow;
+                                        current_victim[group].shadow_name = victims.shadow_name;
+                                    }
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                }
+                                if (victims.backup != null) {
+                                    if (victims.backup !== current_victim[group].backup) {
+                                        current_victim[group].backup = victims.backup;
+                                        current_victim[group].backup_name = victims.backup_name;
+                                    }
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                }
+                            } else {
+                                if (victims.oncall !== current_victim[group].oncall) {
+                                    current_victim[group].oncall = victims.oncall;
+                                    current_victim[group].oncall_name = victims.oncall_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                                }
+                                if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
+                                    current_victim[group].shadow = victims.shadow;
+                                    current_victim[group].shadow_name = victims.shadow_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                }
+                                if (victims.backup != null && victims.backup !== current_victim[group].backup) {
+                                    current_victim[group].backup = victims.backup;
+                                    current_victim[group].backup_name = victims.backup_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                }
                             }
                         });
                     });
@@ -258,15 +304,61 @@ var oncalendar = {
                             day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                             day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                             day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
-                        } else if (victims.oncall !== current_victim[group].oncall) {
-                            current_victim[group].oncall = victims.oncall;
-                            current_victim[group].oncall_name = victims.oncall_name;
-                            day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                            day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group] + ' info-tooltip');
-                            day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                            day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
-                            day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                            day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                            if (victims.shadow != null) {
+                                if (victims.shadow !== current_victim[group].shadow) {
+                                    current_victim[group].shadow = victims.shadow;
+                                    current_victim[group].shadow_name = victims.shadow_name;
+                                }
+                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                            }
+                            if (victims.backup != null) {
+                                if (victims.backup !== current_victim[group].backup) {
+                                    current_victim[group].backup = victims.backup;
+                                    current_victim[group].backup_name = victims.backup_name;
+                                }
+                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                            }
+                        } else {
+                            if (victims.oncall !== current_victim[group].oncall) {
+                                current_victim[group].oncall = victims.oncall;
+                                current_victim[group].oncall_name = victims.oncall_name;
+                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group] + ' info-tooltip');
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                            }
+                            if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
+                                current_victim[group].shadow = victims.shadow;
+                                current_victim[group].shadow_name = victims.shadow_name;
+                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                            }
+                            if (victims.backup != null && victims.backup !== current_victim[group].backup) {
+                                current_victim[group].backup = victims.backup;
+                                current_victim[group].backup_name = victims.backup_name;
+                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                            }
                         }
                     });
                 });
@@ -314,15 +406,62 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                 day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
-                            } else if (victims.oncall !== current_victim[group].oncall) {
-                                current_victim[group].oncall = victims.oncall;
-                                current_victim[group].oncall_name = victims.oncall_name;
-                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group] + ' info-tooltip');
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                day_cell.firstChile.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                                if (victims.shadow != null) {
+                                    if (victims.shadow !== current_victim[group].shadow) {
+                                        current_victim[group].shadow = victims.shadow;
+                                        current_victim[group].shadow_name = victims.shadow_name;
+                                    }
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                }
+                                if (victims.backup != null) {
+                                    console.log('group ' + group + ' has a backup: ' + victims.backup);
+                                    if (victims.backup !== current_victim[group].backup) {
+                                        current_victim[group].backup = victims.backup;
+                                        current_victim[group].backup_name = victims.backup_name;
+                                    }
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                }
+                            } else {
+                                if (victims.oncall !== current_victim[group].oncall) {
+                                    current_victim[group].oncall = victims.oncall;
+                                    current_victim[group].oncall_name = victims.oncall_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group] + ' info-tooltip');
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChile.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                                }
+                                if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
+                                    current_victim[group].shadow = victims.shadow;
+                                    current_victim[group].shadow_name = victims.shadow_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                }
+                                if (victims.backup != null && victims.backup !== current_victim[group].backup) {
+                                    current_victim[group].backup = victims.backup;
+                                    current_victim[group].backup_name = victims.backup_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                }
                             }
                         });
                     });
@@ -704,11 +843,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         shadow_fragment.appendChild(document.createElement('div'));
                         shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
                             '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-shadow-label">' + shadow_string +
+                            '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                             '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
                         shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
@@ -721,11 +861,12 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
                         backup_fragment.appendChild(document.createElement('div'));
                         backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
                             '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-backup-label">' + backup_string +
+                            '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                             '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
                         backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
@@ -749,7 +890,9 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', "--");
+                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         backup_fragment = document.createDocumentFragment();
@@ -758,7 +901,9 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', "--");
+                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
@@ -817,11 +962,12 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('type', 'hidden');
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                    shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
                     shadow_fragment.lastChild.setAttribute('value', shadow_string);
                     shadow_fragment.appendChild(document.createElement('div'));
                     shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
                         '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
-                        '<button id="' + current_date_string + '-shadow-label">' + shadow_string +
+                        '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
                         '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                         '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
                     shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
@@ -834,11 +980,12 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('type', 'hidden');
                     backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                    backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                     backup_fragment.lastChild.setAttribute('value', backup_string);
                     backup_fragment.appendChild(document.createElement('div'));
                     backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
                         '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
-                        '<button id="' + current_date_string + '-backup-label">' + backup_string +
+                        '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
                         '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                         '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
                     backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
@@ -862,7 +1009,9 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('type', 'hidden');
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                    shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
                     shadow_fragment.lastChild.setAttribute('value', '--');
+                    day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                 }
                 if (cal.oncall_groups[group].backup == 1) {
                     backup_fragment = document.createDocumentFragment();
@@ -871,7 +1020,9 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('type', 'hidden');
                     backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                    backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                     backup_fragment.lastChild.setAttribute('value', '--');
+                    day_cell.firstChild.lastChild.appendChild(backup_fragment);
                 }
             }
             week_row.firstChild.appendChild(day_cell);
@@ -922,11 +1073,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         shadow_fragment.appendChild(document.createElement('div'));
                         shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
                             '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-shadow-label">' + shadow_string +
+                            '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                             '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
                         shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
@@ -939,11 +1091,12 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
                         backup_fragment.appendChild(document.createElement('div'));
                         backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
                             '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-backup-label">' + backup_string +
+                            '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                             '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
                         backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
@@ -967,7 +1120,9 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', "--");
+                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         backup_fragment = document.createDocumentFragment();
@@ -976,7 +1131,9 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', "--");
+                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
@@ -1032,7 +1189,9 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('type', 'hidden');
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         backup_fragment = document.createDocumentFragment();
@@ -1041,7 +1200,9 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('type', 'hidden');
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
+                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
