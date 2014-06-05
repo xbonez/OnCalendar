@@ -37,6 +37,7 @@ class config(object):
     EMAIL_HOST          = ''
     # Monitoring System Integration
     MONITOR_TYPE        = ''
+    MONITOR_TEST_MODE   = False
     MONITOR_URL         = ''
     HOST_QUERY          = ''
     HOST_INFO_QUERY     = ''

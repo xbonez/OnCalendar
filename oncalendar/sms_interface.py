@@ -26,7 +26,7 @@ class OnCalendarSMS(object):
         """
         OnCalendarSMS.client = TwilioRestClient(config.TWILIO_SID, config.TWILIO_TOKEN)
         OnCalendarSMS.wordlist = [w.strip() for w in open(oc.config.SMS_WORDLIST_FILE).readlines()]
-        OnCalendarSMS.testing = config.TEST_MODE
+        OnCalendarSMS.testing = config.SMS_TEST_MODE
         OnCalendarSMS.logger = getLogger(__name__)
 
 
@@ -34,10 +34,10 @@ class OnCalendarSMS(object):
     def send_sms(cls, phone_number, body, callback=False):
 
         if cls.testing:
-            cls.logger.debug("SMS message to {0}:, body: {2}").format(
+            cls.logger.debug("SMS message to {0}:, body: {1}".format(
                 phone_number,
                 body
-            )
+            ))
 
             return "TestingSID"
 
@@ -66,7 +66,7 @@ class OnCalendarSMS(object):
     def send_sms_alert(cls, groupid, victimid, phone_number, body, alert_type='UNKNOWN', type='', host='', service='NA', nagios_master=None):
 
         if cls.testing:
-            logger.debug("send_sms_alert: groupid {0}, victimid {1}, alert_type {2}, type {3}, host {4}, service {5}, nagios_master {6}").format(
+            logger.debug("send_sms_alert: groupid {0}, victimid {1}, alert_type {2}, type {3}, host {4}, service {5}, nagios_master {6}".format(
                 groupid,
                 victimid,
                 alert_type,
@@ -74,7 +74,7 @@ class OnCalendarSMS(object):
                 host,
                 service,
                 nagios_master
-            )
+            ))
         else:
             try:
                 ocdb = oc.OnCalendarDB(oc.config)
@@ -110,7 +110,7 @@ class OnCalendarSMS(object):
         message['To'] = address
 
         if cls.testing:
-            logger.debug("send_email: to: {0}, {1}").format([address], message.as_string)
+            logger.debug("send_email: to: {0}, {1}".format([address], message.as_string))
         else:
             try:
                 smtp = smtplib.SMTP(oc.config.EMAIL_HOST)

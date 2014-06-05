@@ -1,4 +1,5 @@
 import datetime as dt
+from logging import getLogger
 import socket
 
 
@@ -13,6 +14,8 @@ class OnCalendarNagiosLivestatus(object):
 
         self.default_port = config.LIVESTATUS_PORT
         self.nagios_masters = config.NAGIOS_MASTERS
+        self.testing = config.MONITOR_TEST_MODE
+        self.logging = getLogger(__name__)
 
 
     @classmethod
@@ -42,7 +45,10 @@ class OnCalendarNagiosLivestatus(object):
         ts = dt.datetime.now()
 
         query = "COMMAND [{0}] {1}\n\n".format(ts.strftime('%s'), command)
-        cls.query_livestatus(nagios_master, port, query, False)
+        if cls.testing:
+            cls.logger.debug("Nagios query: {0}".format(query))
+        else:
+            cls.query_livestatus(nagios_master, port, query, False)
 
 
     @classmethod

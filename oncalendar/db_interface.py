@@ -1,6 +1,6 @@
 import calendar
 import datetime as dt
-import logging
+from logging import getLogger
 import MySQLdb as mysql
 from oncalendar.api_exceptions import OnCalendarAPIError, ocapi_err
 import os
@@ -32,6 +32,7 @@ class OnCalendarDB(object):
             (OnCalendarDBError): Passes the mysql error code and message.
         """
         self.version = None
+        self.logger = getLogger(__name__)
 
         try:
             OnCalendarDB.oncalendar_db = mysql.connect(config.DBHOST, config.DBUSER, config.DBPASSWORD, config.DBNAME)
@@ -1860,7 +1861,7 @@ class OnCalendarDB(object):
             OnCalendarDBError: Passes the mysql error code and message.
         """
         cursor = cls.oncalendar_db.cursor()
-        get_last_sid_query = "SELECT twilio_sms_sid FROM sms_state WHERE name='last_incoming_sms"
+        get_last_sid_query = "SELECT twilio_sms_sid FROM sms_state WHERE name='last_incoming_sms'"
         sid = None
 
         try:

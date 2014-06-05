@@ -26,6 +26,21 @@ ocapp.schedule_log_handler.setFormatter(ocapp.log_formatter)
 ocapp.logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
 ocapp.logger.addHandler(ocapp.app_log_handler)
 
+# Logging for the db_interface
+ocapp.db_logger = logging.getLogger('oncalendar.db_interface')
+ocapp.db_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
+ocapp.db_logger.addHandler(ocapp.app_log_handler)
+
+# Logging for the nagios_interface
+ocapp.nagios_logger = logging.getLogger('oncalendar.nagios_interface')
+ocapp.nagios_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
+ocapp.nagios_logger.addHandler(ocapp.app_log_handler)
+
+# Logging for the sms_interface
+ocapp.sms_logger = logging.getLogger('oncalendar.sms_interface')
+ocapp.sms_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
+ocapp.sms_logger.addHandler(ocapp.app_log_handler)
+
 # Start the scheduler and set up logging for it
 ocapp_scheduler = Scheduler()
 ocapp_scheduler.start()
@@ -150,7 +165,7 @@ def check_calendar_gaps_8hour():
         ocsms = oc.OnCalendarSMS(oc.config)
 
         for group in gap_check.keys:
-            ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}").format(group)
+            ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}".format(group))
             ocsms.send_sms(
                 gap_check[group]['oncall'],
                 "Your oncall schedule has gaps within the next 8 hours!",
@@ -180,12 +195,12 @@ def get_incoming_sms():
         ocapp.aps_logger.debug("Pulled {0} messages from Twilio".format(len(messages)))
         last_incoming_sms = ocdb.get_last_incoming_sms()
     except oc.OnCalendarSMSError as error:
-        ocapp.aps_logger.error("Failed to pull message list from Twilio: {0}").format(error)
+        ocapp.aps_logger.error("Failed to pull message list from Twilio: {0}".format(error))
     except oc.OnCalendarDBError as error:
-        ocapp.aps_logger.error("Failed to get last incoming SMS record - {0}: {1}").format(
+        ocapp.aps_logger.error("Failed to get last incoming SMS record - {0}: {1}".format(
             error.args[0],
             error.args[1]
-        )
+        ))
 
     if messages is not None:
         message_sids = [x.sid for x in messages]
@@ -1919,6 +1934,12 @@ def process_incoming_sms(userid, username, phone, sms):
         'truncate',
         'throttle'
     ]
+
+    ocapp.aps_logger.debug("Checking incoming SMS - hash: {0}, command: {1}, extra: {2}".format(
+        sms['hash'],
+        sms['command'],
+        sms['extra']
+    ))
 
     if sms['hash'] is None:
         sms_response = "No keyword found in message, unable to comply"
