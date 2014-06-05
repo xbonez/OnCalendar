@@ -1,0 +1,11 @@
+uwsgi:
+  socket: /var/www/html/OnCalendar/ocapp.sock
+  pidfile: /var/www/html/OnCalendar/ocapp.pid
+  logto: /var/www/html/OnCalendar/oncalendar/app/log/ocapp_uwsgi.log
+  socket: 127.0.0.1:3031
+  stats: 127.0.0.1:9091
+  vacuum: true
+  chdir: /var/www/html/OnCalendar
+  pypy-wsgi: oncalendar.app:ocapp
+  processes: 4
+  threads: 2
