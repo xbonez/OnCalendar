@@ -215,10 +215,9 @@ def get_incoming_sms():
 
         for message in messages:
             ocapp.aps_logger.debug("Updating last incoming SMS time")
-            ocdb.update_last_sms(message.sid)
+            ocdb.update_last_incoming_sms(message.sid)
 
-            from_number = message.from_
-            message_body = message.body
+            from_number = message.from_.replace('+', '')
             matches = re.search(
                 r'^(?:\s+|)(?:\[\[(?P<hash>\w+)\]\]|)(?:\s+|)(?P<command>\w+)(?:\s+|)(?P<extra>.*)$',
                 message.body
@@ -243,7 +242,7 @@ def get_incoming_sms():
                 ))
                 continue
 
-            if sms_user_info is None:
+            if sms_user_info is None or len(sms_user_info.keys()) == 0:
                 ocsms.send_sms(
                     from_number,
                     "You are not authorized to talk to me.",
@@ -253,9 +252,10 @@ def get_incoming_sms():
 
             k = sms_user_info.keys()[0]
             sms_user_info = sms_user_info[k]
-            sms_response = ocsms.process_incoming_sms(
+            sms_response = process_incoming_sms(
                 sms_user_info['id'],
                 sms_user_info['username'],
+                from_number,
                 matches
             )
 
@@ -2123,3 +2123,15 @@ throttle <#>: Set throttle threshold"""
                 for master in nagios_masters:
                     ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
                     nagios.nagios_command(master, nagios.default_port, command)
+
+    else:
+        ocapp.aps_logger.debug("Invalid command: {0}".format(command))
+        sms_response = """[[<keyword>]] <command>
+help: This output
+ack: Ack an alert
+unack: Unack an alert
+dt|downtime: Downtime problem until 11AM tomorrow
+truncate [on|off]: Set SMS truncate preference
+throttle <#>: Set throttle threshold"""
+
+    return sms_response
