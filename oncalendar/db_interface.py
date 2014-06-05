@@ -589,9 +589,9 @@ class OnCalendarDB(object):
                     if victim is not None:
                         update_month_query += "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
                         if shadow is not None:
-                            update_month_query += ", shadowid=(SELECT id from victims where username='{0}')".format(shadow)
+                            update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
                         if backup is not None:
-                            update_month_query += ", backupid=(SELECT id from victims hwere username='{0}')".format(backup)
+                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
                     elif shadow is not None:
                         update_month_query += " shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
                         if backup is not None:
@@ -1151,7 +1151,8 @@ class OnCalendarDB(object):
             cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to add user to database - {0}'.format(error.args[1]))
 
-        new_victim_id = cursor.fetchone()
+        new_victim_id_tuple = cursor.fetchone()
+        new_victim_id = new_victim_id_tuple[0]
 
         try:
             for group in victim_data['groups']:

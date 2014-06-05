@@ -38,12 +38,12 @@ $('table#calendar-table').on('click', 'span.oncall-option', function() {
     var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
     $('button#' + day_id + '-shadow-label').text($(this).attr('data-victim'))
         .append('<span class="elegant_icons arrow_carrot-down"></span>');
-    $('input.shadow-week-' + $('button#' + day_id + '-shadow-label').attr('data-oncall-week')).attr('value', $(this).attr('data-victim'));
+    $('input.shadow-week-' + $('button#' + day_id + '-shadow-label').attr('data-shadow-week')).attr('value', $(this).attr('data-victim'));
 }).on('click', 'span.backup-option', function() {
     var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
     $('button#' + day_id + '-backup-label').text($(this).attr('data-victim'))
         .append('<span class="elegant_icons arrow_carrot-down"></span>');
-    $('input.backup-week-' + $('button#' + day_id + '-backup-label').attr('data-oncall-week')).attr('value', $(this).attr('data-victim'));
+    $('input.backup-week-' + $('button#' + day_id + '-backup-label').attr('data-backup-week')).attr('value', $(this).attr('data-victim'));
 });
 
 $('button#edit-month-cancel-button').click(function() {
@@ -59,10 +59,10 @@ $('button#edit-month-save-button').click(function() {
             var day_id = $(element).attr('id');
             month_data.days[day_id] = {};
             month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').val();
-            if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
+            if ($(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').length > 0) {
                 month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').val();
             }
-            if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
+            if ($(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').length > 0) {
                 month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').val();
             }
         }
