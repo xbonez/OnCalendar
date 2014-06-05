@@ -8,6 +8,9 @@ $.when(oncalendar.get_group_info()).then(function(data) {
 			oncalendar.oncall_groups[group] = group_info;
 		}
 	});
+	if (typeof oncalendar.oncall_groups === "undefined") {
+		alert('no group info found, please try again');
+	}
     group_count = 0;
     $.each(oncalendar.oncall_groups, function (name, date) {
         if (oncalendar.oncall_groups[name].turnover_hour < 10) {

@@ -138,6 +138,17 @@ class OnCalendarSMS(object):
             cls.send_email(failsafe_email, body, '<<FAILSAFE>> - Paging Issue', True)
 
 
+    @classmethod
+    def get_incoming(cls):
+
+        try:
+            messages = cls.client.sms.messages.list(to=oc.config.TWILIO_NUMBER)
+        except TwilioRestException as error:
+            raise OnCalendarSMSError(error)
+
+        return messages
+
+
 if __name__ == '__main__':
 
     ocsms = OnCalendarSMS(oc.config)

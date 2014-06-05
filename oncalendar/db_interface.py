@@ -1302,6 +1302,32 @@ class OnCalendarDB(object):
 
 
     @classmethod
+    def set_victim_preference(cls, victimid, pref, value):
+        """
+        Updates the preference fields in the user record
+
+        Args:
+            victimid (str): The id of the user to update
+            pref (str): The preference to adjust (truncate, throttle)
+            value (int): The new value (0|1 for truncate, # for throttle)
+
+        Raises:
+            (OnCalendarDBError): Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        update_pref_query = """UPDATE victims SET {0}={1} WHERE id='{2}'""".format(
+            pref,
+            value,
+            victimid
+        )
+
+        try:
+            cursor.execute(update_pref_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+
+    @classmethod
     def get_current_victims(cls, group=False):
         """
         Queries the calendar for the current scheduled victims, optionally filtered by group name.
@@ -1567,6 +1593,94 @@ class OnCalendarDB(object):
         return schedule_status
 
 
+    @classmethod
+    def check_8hour_gaps(cls):
+        """
+        Checks the next 8 hours of all schedules and reports
+        if there are gaps.
+
+        Returns:
+            (dict): The result of the check for each group.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+
+        start = dt.datetime.now()
+        period_delta = dt.timedelta(hours=8)
+        end = start + period_delta
+
+        if start.minute > 29:
+            start = start + dt.timedelta(hours=1)
+            end = end + dt.timedelta(hours=1)
+
+        date_cross = True if end.day != start.day else False
+        gap_check = {}
+
+        cursor = cls.oncalendar_db.cursor()
+
+        if date_cross:
+            today_query = """SELECT g.name, g.id as groupid, c.hour, c.min
+            FROM calendar c, groups g
+            WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+            AND month='{1}' AND day='{2}') AND hour>='{3}'
+            AND c.groupid=g.id AND c.victimid IS NULL""".format(
+                start.year,
+                start.month,
+                start.day,
+                start.hour
+            )
+            tomorrow_query = """SELECT g.name, g.id as groupid, c.hour, c.min
+            FROM calendar c, groups g
+            WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+            AND month='{1}' AND day='{2}') AND hour<'{3}'
+            AND c.groupid=g.id AND c.victimid IS NULL""".format(
+                end.year,
+                end.month,
+                end.day,
+                end.hour
+            )
+            try:
+                cursor.execute(today_query)
+                for row in cursor.fetchall():
+                    if row['name'] in gap_check:
+                        gap_check[row['name']].append(row)
+                    else:
+                        gap_check[row['name']] = [row]
+                cursor.execute(tomorrow_query)
+                for row in cursor.fetchall():
+                    if row in cursor.fetchall():
+                        if row['name'] in gap_check:
+                            gap_check[row['name']].append(row)
+                        else:
+                            gap_check[row['name']] = [row]
+            except mysql.Error as error:
+                raise OnCalendarDBError(error.args[0], error.args[1])
+
+        else:
+            gap_query = """SELECT g.name, g.id as groupid, c.hour, c.min
+            FROM calendar c, group g
+            WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+            AND month='{1}' AND day='{2}') AND hour>='{3}' AND hour<'{4}'
+            AND c.groupid=g.id AND c.victimid IS NULL""".format(
+                start.year,
+                start.month,
+                start.day,
+                start.hour,
+                end.hour
+            )
+            try:
+                cursor.execute(gap_query)
+                for row in cursor.fetchall():
+                    if row['name'] in gap_check:
+                        gap_check[row['name']].append(row)
+                    else:
+                        gap_check[row['name']] = [row]
+            except mysql.Error as error:
+                raise OnCalendarDBError(error.args[0], error.args[1])
+
+        return gap_check
+
 
     @classmethod
     def get_victim_message_count(cls, victim, throttle_time):
@@ -1628,7 +1742,7 @@ class OnCalendarDB(object):
 
 
     @classmethod
-    def add_sms_record(cls, groupid, victimid, alert_type):
+    def add_sms_record(cls, groupid, victimid, alert_type, type, host, service, nagios_master):
         """
         Adds a record for a sent SMS message to the sms_send table.
 
@@ -1641,8 +1755,8 @@ class OnCalendarDB(object):
             OnCalendarDBError: Passes the mysql error code and message.
         """
         cursor = cls.oncalendar_db.cursor()
-        add_record_query = """INSERT INTO sms_send (groupid, victimid, type)
-        VALUES({0}, {1}, '{2}')""".format(groupid, victimid, alert_type)
+        add_record_query = """INSERT INTO sms_send (groupid, victimid, alert_type, type, host, service, nagios_master)
+        VALUES({0}, {1}, '{2}')""".format(groupid, victimid, alert_type, type, host, service, nagios_master)
 
         try:
             cursor.execute(add_record_query)
@@ -1655,6 +1769,37 @@ class OnCalendarDB(object):
         sms_id = cursor.fetchone()
 
         return sms_id
+
+
+    @classmethod
+    def get_sms_record(cls, userid, hash):
+        """
+        Retrieves a record of a sent SMS alert
+
+        Args:
+            userid (str): The id of the user
+            hash (str): The keyword associated with the alert
+
+        Returns:
+            (dict): The record of the sent SMS
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        get_record_query = """SELECT * FROM sms_send
+        WHERE victimid='{0}' AND sms_hash='{1}'""".format(
+            userid,
+            hash
+        )
+
+        try:
+            cursor.execute(get_record_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        row = cursor.fetchone()
+        return row
 
 
     @classmethod
@@ -1700,4 +1845,50 @@ class OnCalendarDB(object):
             cls.oncalendar_db.commit()
         except mysql.Error, error:
             cls.oncalendar_db.rollback()
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+
+    @classmethod
+    def get_last_incoming_sms(cls):
+        """
+        Queries for the Twilio SID of the last incoming SMS that was processed.
+
+        Returns:
+            (str): The Twilio SID
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        get_last_sid_query = "SELECT twilio_sms_sid FROM sms_state WHERE name='last_incoming_sms"
+        sid = None
+
+        try:
+            cursor.execute(get_last_sid_query)
+            row = cursor.fetchone()
+            if row is not None:
+                sid = row[0]
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        return sid
+
+
+    @classmethod
+    def update_last_incoming_sms(cls, sid):
+        """
+        Updates the record for the last processed incoming SMS
+
+        Args:
+            (str): The SID for the message
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+        cursor = cls.oncalendar_db.cursor()
+        update_sid_query = "UPDATE sms_state SET twilio_sms_sid='{0}' WHERE name='last_incoming_sms'".format(sid)
+
+        try:
+            cursor.execute(update_sid_query)
+        except mysql.Error as error:
             raise OnCalendarDBError(error.args[0], error.args[1])

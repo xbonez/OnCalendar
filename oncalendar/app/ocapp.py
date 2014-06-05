@@ -136,6 +136,127 @@ def check_current_victims():
         ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
 
 
+@ocapp_scheduler.interval_schedule(hours=1)
+def check_calendar_gaps_8hour():
+    """
+    Checks the calendar for the next 8 hours and alerts
+    if there are any gaps.
+    """
+
+    ocdb = oc.OnCalendarDB(oc.config)
+    ocapp.aps_logger.debug("Checking for schedule gaps in the next 8 hours")
+    try:
+        gap_check = ocdb.check_8hour_gaps()
+        ocsms = oc.OnCalendarSMS(oc.config)
+
+        for group in gap_check.keys:
+            ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}").format(group)
+            ocsms.send_sms(
+                gap_check[group]['oncall'],
+                "Your oncall schedule has gaps within the next 8 hours!",
+                False
+            )
+    except oc.OnCalendarDBError as error:
+        ocapp.aps_logger.error("8 hour schedule gap check failed - {0}: {1}".format(
+            error.args[0],
+            error.args[1])
+        )
+
+
+@ocapp_scheduler.interval_schedule(seconds=30)
+def get_incoming_sms():
+    """
+    Pulls the recent incoming SMS messages from Twilio for response parsing
+    """
+
+    ocsms = oc.OnCalendarSMS(oc.config)
+    ocdb = oc.OnCalendarDB(oc.config)
+    messages = None
+    last_incoming_sms = None
+
+    try:
+        messages = ocsms.get_incoming()
+        messages.reverse()
+        ocapp.aps_logger.debug("Pulled {0} messages from Twilio".format(len(messages)))
+        last_incoming_sms = ocdb.get_last_incoming_sms()
+    except oc.OnCalendarSMSError as error:
+        ocapp.aps_logger.error("Failed to pull message list from Twilio: {0}").format(error)
+    except oc.OnCalendarDBError as error:
+        ocapp.aps_logger.error("Failed to get last incoming SMS record - {0}: {1}").format(
+            error.args[0],
+            error.args[1]
+        )
+
+    if messages is not None:
+        message_sids = [x.sid for x in messages]
+        if last_incoming_sms in message_sids:
+            ocapp.aps_logger.debug("Last incoming SMS found in messages, adjusting start point")
+            i = message_sids.index(last_incoming_sms)
+            messages = messages[i+1:]
+        else:
+            ocapp.aps_logger.debug("Last incoming SMS not found in messages")
+
+        ocapp.aps_logger.debug("{0} new messages to process".format(len(messages)))
+
+        for message in messages:
+            ocapp.aps_logger.debug("Updating last incoming SMS time")
+            ocdb.update_last_sms(message.sid)
+
+            from_number = message.from_
+            message_body = message.body
+            matches = re.search(
+                r'^(?:\s+|)(?:\[\[(?P<hash>\w+)\]\]|)(?:\s+|)(?P<command>\w+)(?:\s+|)(?P<extra>.*)$',
+                message.body
+            )
+            if matches is None:
+                ocapp.aps_logger.debug("No hash or command found in message")
+                ocsms.send_sms(
+                    from_number,
+                    "Que?",
+                    oc.config.TWILIO_USE_CALLBACK
+                )
+                continue
+            else:
+                matches = matches.groupdict()
+
+            try:
+                sms_user_info = ocdb.get_victim_info('phone', from_number)
+            except oc.OnCalendarDBError as error:
+                ocapp.aps_logger.error("Search for SMS user failed - {0}: {1}".format(
+                    error.args[0],
+                    error.args[1]
+                ))
+                continue
+
+            if sms_user_info is None:
+                ocsms.send_sms(
+                    from_number,
+                    "You are not authorized to talk to me.",
+                    oc.config.TWILIO_USE_CALLBACK
+                )
+                continue
+
+            k = sms_user_info.keys()[0]
+            sms_user_info = sms_user_info[k]
+            sms_response = ocsms.process_incoming_sms(
+                sms_user_info['id'],
+                sms_user_info['username'],
+                matches
+            )
+
+            try:
+                ocsms.send_sms(
+                    from_number,
+                    sms_response,
+                    oc.config.TWILIO_USE_CALLBACK
+                )
+            except oc.OnCalendarSMSError as error:
+                ocapp.aps_logger.error("Response to {0} failed! {1}".format(
+                    sms_user_info['username'],
+                    error
+                ))
+
+
 @login_manager.user_loader
 def load_user(id):
     return auth.User.get('id', id)
@@ -1313,6 +1434,7 @@ def api_send_sms(victim_type, group):
     elif request.form['type'] == 'host':
         try:
             notification_data = parse_host_form(request.form)
+            sms_service = 'NA'
         except OnCalendarFormParseError as error:
             raise OnCalendarBadRequest(
                 payload = {
@@ -1324,6 +1446,7 @@ def api_send_sms(victim_type, group):
     elif request.form['type'] == 'service':
         try:
             notification_data = parse_service_form(request.form)
+            sms_service = notification_data['service']
         except OnCalendarFormParseError as error:
             raise OnCalendarBadRequest(
                 payload = {
@@ -1395,7 +1518,17 @@ def api_send_sms(victim_type, group):
                     panic_status['throttled'] += 1
                 else:
                     try:
-                        ocsms.send_sms_alert(groupid, target['id'], target['phone'], sms_message, notification_data['notification_type'])
+                        ocsms.send_sms_alert(
+                            groupid,
+                            target['id'],
+                            target['phone'],
+                            sms_message,
+                            notification_data['notification_type'],
+                            notification_data['type'],
+                            notification_data['hostname'],
+                            sms_service,
+                            notification_data['nagios_master']
+                        )
                         panic_status['successful'] += 1
                     except oc.OnCalendarSMSError as error:
                         if target['sms_email'] is not None and valid_email_address(target['sms_email']):
@@ -1474,7 +1607,17 @@ def api_send_sms(victim_type, group):
             })
 
         try:
-            ocsms.send_sms_alert(groupid, target['id'], target['phone'], sms_message, notification_data['notification_type'])
+            ocsms.send_sms_alert(
+                groupid,
+                target['id'],
+                target['phone'],
+                sms_message,
+                notification_data['notification_type'],
+                notification_data['type'],
+                notification_data['hostname'],
+                sms_service,
+                notification_data['nagios_master']
+            )
             sms_status = 'SMS handoff to Twilio successful'
         except oc.OnCalendarSMSError, error:
             if target['sms_email'] is not None and valid_email_address(target['sms_email']):
@@ -1498,7 +1641,17 @@ def api_send_sms(victim_type, group):
                 )
 
         if victim_type == 'oncall' and shadow is not None:
-            ocsms.send_sms_alert(groupid, shadow['id'], shadow['phone'], sms_message, notification_data['notification_type'])
+            ocsms.send_sms_alert(
+                groupid,
+                shadow['id'],
+                shadow['phone'],
+                sms_message,
+                notification_data['notification_type'],
+                notification_data['type'],
+                notification_data['hostname'],
+                sms_service,
+                notification_data['nagios_master']
+            )
 
     return json.dumps({'sms_status': sms_status})
 
@@ -1684,7 +1837,8 @@ def parse_host_form(form_data):
         'notification_number': form_data['notification_number'],
         'event_time': form_data['event_time'],
         'info': form_data['info'],
-        'comments': form_data['comments']
+        'comments': form_data['comments'],
+        'nagios_master': form_data['nagios_master']
     }
 
     return notification_data
@@ -1720,7 +1874,8 @@ def parse_service_form(form_data):
         'event_time': form_data['event_time'],
         'info': form_data['info'],
         'notes_url': form_data['notes_url'],
-        'comments': form_data['comments']
+        'comments': form_data['comments'],
+        'nagios_master': form_data['nagios_master']
     }
 
     return notification_data
@@ -1739,3 +1894,211 @@ def valid_email_address(address):
         return False
 
     return True
+
+
+def process_incoming_sms(userid, username, phone, sms):
+    """
+    Process responses to SMS alerts.
+
+    Args:
+        user (str): Username of the responder
+        phone (str): Phone number of the responder
+        sms (dict): The parsed response
+
+    Returns:
+        (str): Result of parsing the command, to send to the user
+    """
+
+    valid_commands = [
+        'help',
+        'ping',
+        'ack',
+        'unack',
+        'dt',
+        'downtime',
+        'truncate',
+        'throttle'
+    ]
+
+    if sms['hash'] is None:
+        sms_response = "No keyword found in message, unable to comply"
+        hash_word = None
+    else:
+        hash_word = sms['hash'].lower()
+
+    command = sms['command'].lower()
+
+    ocdb = oc.OnCalendarDB(oc.config)
+    nagios = oc.OnCalendarNagiosLivestatus(oc.config)
+
+    if command in valid_commands:
+
+        if command == 'ping':
+            sms_response = 'pong'
+
+        elif command == 'help':
+            sms_response = """[[<keyword>]] <command>
+help: This output
+ack: Ack an alert
+unack: Unack an alert
+dt|downtime: Downtime problem until 11AM tomorrow
+truncate [on|off]: Set SMS truncate preference
+throttle <#>: Set throttle threshold"""
+
+        elif command == 'truncate':
+            if not sms['extra'] in ('on', 'off'):
+                sms_response = "Usage: truncate [on|off]"
+            else:
+                truncate = 1 if sms['extra'] == "on" else 0
+                try:
+                    ocdb.set_victim_preference(userid, 'truncate', truncate)
+                    sms_response = "SMS truncate preference updated"
+                except oc.OnCalendarDBError as error:
+                    ocapp.aps_logger.error("DB error updating truncate pref - {0}: {1}".format(
+                        error.args[0],
+                        error.args[1]
+                    ))
+                    sms_response = "There was an error updating your truncate setting, please try again later"
+
+        elif command == "throttle":
+            if re.match('^\d+$', sms['extra']) is None:
+                sms_response = "Usage: throttle [threshold]"
+            else:
+                throttle = int(sms['extra'])
+                if throttle < oc.config.SMS_THROTTLE_MIN:
+                    sms_response = "Throttle setting must be larger than {0}".format(oc.config.SMS_THROTTLE_MIN)
+                else:
+                    try:
+                        ocdb.set_victim_preference(userid, 'throttle', throttle)
+                        sms_response = "SMS throttle setting updated"
+                    except oc.OnCalendarDBError as error:
+                        ocapp.aps_logger.error("DB error updating throttle pref - {0}: {1}".format(
+                            error.args[0],
+                            error.args[1]
+                        ))
+                        sms_response = "There was an error updating your throttle setting, please try again later"
+
+        elif command == 'ack' and hash_word is not None:
+            sms_record = ocdb.get_sms_record(userid, hash_word)
+            if sms_record is None:
+                sms_response = "Alert for keyword {0} was not found.".format(hash_word)
+            else:
+                if sms_record['nagios_master'] is not None:
+                    nagios_masters = [sms_record['nagios_master']]
+                else:
+                    nagios_masters = nagios.nagios_masters
+
+                if len(sms['extra']) == 0:
+                    sms['extra'] = "Acknowledged via SMS by {0}".format(username)
+
+                if sms_record['type'] == "Host":
+                    command = "ACKNOWLEDGE_HOST_PROBLEM;{0};1;1;0;{1};{2}".format(
+                        sms_record['host'],
+                        username,
+                        sms['extra']
+                    )
+                    sms_response = "Alert for host {0} acked by {1}".format(
+                        sms_record['host'],
+                        username
+                    )
+                else:
+                    command = "ACKNOWLEDGE_SVC_PROBLEM;{0};{1};1;1;0;{2};{3}".format(
+                        sms_record['host'],
+                        sms_record['service'],
+                        username,
+                        sms['extra']
+                    )
+                    sms_response = "Alert for service {0} on host {1} acked by {2}".format(
+                        sms_record['service'],
+                        sms_record['host'],
+                        username
+                    )
+
+                for master in nagios_masters:
+                    ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                    nagios.nagios_command(master, nagios.default_port, command)
+
+        elif command == 'unack' and hash_word is not None:
+            sms_record = ocdb.get_sms_record(userid, hash_word)
+            if sms_record is None:
+                sms_response = "Alert for keyword {0} was not found.".format(hash_word)
+            else:
+                if sms_record['nagios_master'] is not None:
+                    nagios_masters = [sms_record['nagios_master']]
+                else:
+                    nagios_masters = nagios.nagios_masters
+
+                if sms_record['type'] == "Host":
+                    command = "REMOVE_HOST_ACKNOWLEDGEMENT;{0}".format(sms_record['host'])
+                    sms_response = "Acknowledgement for host {0} removed by {1}".format(
+                        sms_record['host'],
+                        username
+                    )
+                else:
+                    command = "REMOVE_SVC_ACKNOWLEDGEMENT;{0};{1}".format(
+                        sms_record['host'],
+                        sms_record['service']
+                    )
+                    sms_response = "Acknowledgement for service {0} on host {1} removed by {2}".format(
+                        sms_record['service'],
+                        sms_record['host'],
+                        username
+                    )
+
+                for master in nagios_masters:
+                    ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                    nagios.nagios_command(master, nagios.default_port, command)
+
+        elif command in ('dt', 'downtime') and hash_word is not None:
+            sms_record = ocdb.get_sms_record(userid, hash_word)
+            if sms_record is None:
+                sms_response = "Alert for keyword {0} was not found.".format(hash_word)
+            else:
+                start, end, duration = nagios.calculate_downtime()
+
+                if sms_record['nagios_master'] is not None:
+                    nagios_masters = [sms_record['nagios_master']]
+                else:
+                    nagios_masters = nagios.nagios_masters
+
+                if len(sms['extra']) == 0:
+                    sms['extra'] = "Host downtimed via SMS byb {0}".format(username)
+
+                if sms_record['type'] == "Host":
+                    command = "SCHEDULE_HOST_DOWNTIME;{0};{1};{2};{3};{4};{5};{6};{7}".format(
+                        sms_record['host'],
+                        start,
+                        end,
+                        1,
+                        0,
+                        duration,
+                        username,
+                        phone,
+                        sms['extra']
+                    )
+                    sms_response = "Host {0} downtimed by {1}".format(
+                        sms_record['host'],
+                        username
+                    )
+                else:
+                    command = "SCHEDULE_SVC_DOWNTIME;{0};{1};{2};{3};{4};{5};{6};{7};{8}".format(
+                        sms_record['host'],
+                        sms_record['service'],
+                        start,
+                        end,
+                        1,
+                        0,
+                        duration,
+                        username,
+                        phone,
+                        sms['extra']
+                    )
+                    sms_response = "Service {0} on host {1} downtimed by {2}".format(
+                        sms_record['service'],
+                        sms_record['host'],
+                        username
+                    )
+
+                for master in nagios_masters:
+                    ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                    nagios.nagios_command(master, nagios.default_port, command)
