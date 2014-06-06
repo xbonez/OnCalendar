@@ -1523,7 +1523,7 @@ class OnCalendarDB(object):
                                 'previous': None,
                                 'prev_phone': None,
                                 'new': row['shadowid'],
-                                'new_phone': phone['new_phone']
+                                'new_phone': phone['phone']
                             }
                         else:
                             shadow_phones_query = phones_query.format(
@@ -1563,7 +1563,7 @@ class OnCalendarDB(object):
                                 'previous': None,
                                 'prev_phone': None,
                                 'new': row['backupid'],
-                                'new_phone': phone['new_phone']
+                                'new_phone': phone['phone']
                             }
                         else:
                             backup_phones_query = phones_query.format(
@@ -1891,5 +1891,7 @@ class OnCalendarDB(object):
 
         try:
             cursor.execute(update_sid_query)
+            cls.oncalendar_db.commit()
         except mysql.Error as error:
+            cls.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], error.args[1])
