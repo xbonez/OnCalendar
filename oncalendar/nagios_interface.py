@@ -12,19 +12,22 @@ class OnCalendarNagiosLivestatus(object):
 
     def __init__(self, config):
 
-        self.default_port = config.LIVESTATUS_PORT
-        self.nagios_masters = config.NAGIOS_MASTERS
-        self.testing = config.MONITOR_TEST_MODE
-        self.logging = getLogger(__name__)
+        OnCalendarNagiosLivestatus.default_port = config.LIVESTATUS_PORT
+        OnCalendarNagiosLivestatus.nagios_masters = config.NAGIOS_MASTERS
+        OnCalendarNagiosLivestatus.testing = config.MONITOR_TEST_MODE
+        OnCalendarNagiosLivestatus.logging = getLogger(__name__)
 
 
     @classmethod
     def query_livestatus(cls, nagios_master, port, query, wait=True):
 
-        ls_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ls_socket.connect((nagios_master, int(port)))
-        ls_socket.sendall(query)
-        ls_socket.shutdown(socket.SHUT_WR)
+        try:
+            ls_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            ls_socket.connect((nagios_master, int(port)))
+            ls_socket.sendall(query)
+            ls_socket.shutdown(socket.SHUT_WR)
+        except socket.error as error:
+            raise OnCalendarNagiosError(error.args[0], error.args[1])
 
         query_result = ''
         while wait:
