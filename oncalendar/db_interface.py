@@ -1684,6 +1684,87 @@ class OnCalendarDB(object):
 
 
     @classmethod
+    def check_48hour_gaps(cls):
+        """
+        Checks the next 48 hours of all schedules and reports
+        if there are gaps.
+
+        Returns:
+            (dict): The result of the check for each group.
+
+        Raises:
+            OnCalendarDBError: Passes the mysql error code and message.
+        """
+
+        start = dt.datetime.now() + dt.timedelta(hours=8)
+        mid = start + dt.timedelta(days=1)
+        period_delta = dt.timedelta(hours=40)
+        end = start + period_delta
+
+        if start.minute > 29:
+            start = start + dt.timedelta(hours=1)
+            end = end + dt.timedelta(hours=1)
+
+        gap_check = {}
+
+        cursor = cls.oncalendar_db.cursor()
+
+        day1_query = """SELECT g.name, g.id as groupid, c.hour, c.min
+        FROM calendar c, groups g
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}') AND hour>='{3}'
+        AND c.groupid=g.id AND c.victimid IS NULL""".format(
+            start.year,
+            start.month,
+            start.day,
+            start.hour
+        )
+        day2_query = """SELECT g.name, g.id as groupid, c.hour, c.min
+        FROM calendar c, groups g
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}') AND c.groupid=g.id AND c.victimid IS NULL""".format(
+            mid.year,
+            mid.month,
+            mid.day
+        )
+        day3_query = """SELECT g.name, g.id as groupid, c.hour, c.min
+        FROM calendar c, groups g
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}') AND hour<'{3}'
+        AND c.groupid=g.id AND c.victimid IS NULL""".format(
+            end.year,
+            end.month,
+            end.day,
+            end.hour
+        )
+        try:
+            cursor.execute(day1_query)
+            for row in cursor.fetchall():
+                if row['name'] in gap_check:
+                    gap_check[row['name']].append(row)
+                else:
+                    gap_check[row['name']] = [row]
+            cursor.execute(day2_query)
+            for row in cursor.fetchall():
+                if row in cursor.fetchall():
+                    if row['name'] in gap_check:
+                        gap_check[row['name']].append(row)
+                    else:
+                        gap_check[row['name']] = [row]
+            cursor.execute(day3_query)
+            for row in cursor.fetchall():
+                if row in cursor.fetchall():
+                    if row['name'] in gap_check:
+                        gap_check[row['name']].append(row)
+                    else:
+                        gap_check[row['name']] = [row]
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        return gap_check
+
+
+    @classmethod
     def get_victim_message_count(cls, victim, throttle_time):
         """
         Retrieves the count of SMS messages sent to the user within the

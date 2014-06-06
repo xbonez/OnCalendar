@@ -19,10 +19,8 @@ login_manager.init_app(ocapp)
 
 # Set up logging for the app
 ocapp.app_log_handler = logging.FileHandler(oc.config.APP_LOG_FILE)
-ocapp.schedule_log_handler = logging.FileHandler(oc.config.SCHEDULE_LOG_FILE)
 ocapp.log_formatter = logging.Formatter(oc.config.LOG_FORMAT)
 ocapp.app_log_handler.setFormatter(ocapp.log_formatter)
-ocapp.schedule_log_handler.setFormatter(ocapp.log_formatter)
 ocapp.logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
 ocapp.logger.addHandler(ocapp.app_log_handler)
 
@@ -42,11 +40,51 @@ ocapp.sms_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
 ocapp.sms_logger.addHandler(ocapp.app_log_handler)
 
 # Start the scheduler and set up logging for it
+
+# These jobs run frequently and need to be watch in case they
+# hang up and start missing executions
+ocapp.job_misses = {
+    'check_current_victims': 0,
+    'get_incoming_sms': 0
+}
+ocapp.job_failures = {
+    'check_current_victims': 0,
+    'get_incoming_sms': 0
+}
+
 ocapp_scheduler = Scheduler()
-ocapp_scheduler.start()
 ocapp.aps_logger = logging.getLogger('apscheduler')
 ocapp.aps_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
-ocapp.aps_logger.addHandler(ocapp.schedule_log_handler)
+ocapp.aps_logger.addHandler(ocapp.app_log_handler)
+
+def scheduled_job_listener(event):
+    """
+    Listener for scheduled job events, watches for the frequently firing
+    events and restarts the scheduler if they get hung up
+
+    Args:
+        (JobEvent): The event fired by the scheduled job
+    """
+    jobname = event.job.__str__().split()[0]
+    ocapp.aps_logger.debug("Job {0} has fired".format(jobname))
+    if jobname in ocapp.job_misses:
+        if event.exception:
+            ocapp.job_misses[jobname] += 1
+            ocapp.aps_logger.debug("Job {0} has missed {1} consecutive runs".format(jobname, ocapp.job_misses[jobname]))
+            if ocapp.job_misses[jobname] > 10:
+                ocapp.aps_logger.error("Job {0} has more than 10 consecutive misses, restarting scheduler".format(jobname))
+                ocapp_scheduler.shutdown(wait=False)
+                ocapp_scheduler.start()
+                ocapp.job_misses = 0
+        else:
+            if ocapp.job_misses[jobname] > 0:
+                ocapp.aps_logger.debug("Job {0} running successfully again, resetting miss count".format(jobname))
+                ocapp.job_misses[jobname] = 0
+
+
+# event 64 = EVENT_JOB_EXECUTED, 256 = EVENT_JOB_MISSED
+ocapp_scheduler.add_listener(scheduled_job_listener, 64|256)
+ocapp_scheduler.start()
 
 
 class OnCalendarFileWriteError(Exception):
@@ -85,7 +123,7 @@ class OnCalendarAppError(Exception):
         self.payload = payload
 
 
-@ocapp_scheduler.interval_schedule(minutes=1)
+@ocapp_scheduler.interval_schedule(minutes=1, coalesce=True)
 def check_current_victims():
     """
     Scheduled job to check the current oncall/shadow/backup for each
@@ -141,14 +179,18 @@ def check_current_victims():
                         rotate_off_message.format('backup', group),
                         False
                     )
+        if ocapp.job_failures['check_current_victims'] > 0:
+            ocapp.job_failures['check_current_victims'] = 0
 
     except oc.OnCalendarDBError as error:
+        ocapp.job_failures['check_current_victims'] += 1
         ocapp.aps_logger.error("Oncall rotation checked failed - {0}: {1}".format(
             error.args[0],
             error.args[1])
         )
-        ocsms = oc.OnCalendarSMS(oc.config)
-        ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
+        if ocapp.job_failures['check_current_victims'] > 10:
+            ocsms = oc.OnCalendarSMS(oc.config)
+            ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
 
 
 @ocapp_scheduler.interval_schedule(hours=1)
@@ -164,7 +206,7 @@ def check_calendar_gaps_8hour():
         gap_check = ocdb.check_8hour_gaps()
         ocsms = oc.OnCalendarSMS(oc.config)
 
-        for group in gap_check.keys:
+        for group in gap_check.keys():
             ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}".format(group))
             ocsms.send_sms(
                 gap_check[group]['oncall'],
@@ -174,11 +216,39 @@ def check_calendar_gaps_8hour():
     except oc.OnCalendarDBError as error:
         ocapp.aps_logger.error("8 hour schedule gap check failed - {0}: {1}".format(
             error.args[0],
-            error.args[1])
-        )
+            error.args[1]
+        ))
 
 
-@ocapp_scheduler.interval_schedule(seconds=30)
+@ocapp_scheduler.cron_schedule(hour='9,12,15,18')
+def check_calendar_gaps_48hour():
+    """
+    Checks the calendar for the next 48 hours and emails
+    if there are any gaps.
+    """
+
+    ocdb = oc.OnCalendarDB(oc.config)
+    ocapp.aps_logger.debug("Checking for schedule gaps in the next 48 hours")
+    try:
+        gap_check = ocdb.check_48hour_gaps()
+        ocsms = oc.OnCalendarSMS(oc.config)
+
+        for group in gap_check.keys():
+            ocapp.aps_logger.error("Schedule gap in the next 48 hours detected for group {0}".format(group))
+            ocsms.send_email(
+                gap_check[group]['email'],
+                "Your oncall schedule has gaps within the next 48 hours,\nplease login to OnCalendar and correct those.",
+                "Oncall schedule gaps detected",
+                'plain'
+            )
+    except oc.OnCalendarDBError as error:
+        ocapp.aps_logger.error("48 hour schedule gap check failed - {0}: {1}".format(
+            error.args[0],
+            error.args[1]
+        ))
+
+
+@ocapp_scheduler.interval_schedule(seconds=30, coalesce=True)
 def get_incoming_sms():
     """
     Pulls the recent incoming SMS messages from Twilio for response parsing
@@ -194,6 +264,7 @@ def get_incoming_sms():
         messages.reverse()
         ocapp.aps_logger.debug("Pulled {0} messages from Twilio".format(len(messages)))
         last_incoming_sms = ocdb.get_last_incoming_sms()
+        ocapp.aps_logger.debug("Last saved SID is {0}".format(last_incoming_sms))
     except oc.OnCalendarSMSError as error:
         ocapp.aps_logger.error("Failed to pull message list from Twilio: {0}".format(error))
     except oc.OnCalendarDBError as error:
@@ -2036,8 +2107,14 @@ throttle <#>: Set throttle threshold"""
                     )
 
                 for master in nagios_masters:
-                    ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
-                    nagios.nagios_command(master, nagios.default_port, command)
+                    try:
+                        ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                        nagios.nagios_command(master, nagios.default_port, command)
+                    except oc.OnCalendarNagiosError as error:
+                        ocapp.aps_logger.error("Nagios command failed - {0}: {1}".format(
+                            error.args[0],
+                            error.args[1]
+                        ))
 
         elif command == 'unack' and hash_word is not None:
             sms_record = ocdb.get_sms_record(userid, hash_word)
@@ -2135,3 +2212,4 @@ truncate [on|off]: Set SMS truncate preference
 throttle <#>: Set throttle threshold"""
 
     return sms_response
+
