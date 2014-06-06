@@ -66,7 +66,7 @@ class OnCalendarSMS(object):
     def send_sms_alert(cls, groupid, victimid, phone_number, body, alert_type='UNKNOWN', type='', host='', service='NA', nagios_master=None):
 
         if cls.testing:
-            logger.debug("send_sms_alert: groupid {0}, victimid {1}, alert_type {2}, type {3}, host {4}, service {5}, nagios_master {6}".format(
+            cls.logger.debug("send_sms_alert: groupid {0}, victimid {1}, alert_type {2}, type {3}, host {4}, service {5}, nagios_master {6}".format(
                 groupid,
                 victimid,
                 alert_type,
@@ -110,7 +110,7 @@ class OnCalendarSMS(object):
         message['To'] = address
 
         if cls.testing:
-            logger.debug("send_email: to: {0}, {1}".format([address], message.as_string))
+            cls.logger.debug("send_email: to: {0}, {1}".format([address], message.as_string))
         else:
             try:
                 smtp = smtplib.SMTP(oc.config.EMAIL_HOST)

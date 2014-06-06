@@ -17,7 +17,7 @@ class config(object):
     LDAP_USERATTR       = ''
     # Logging options
     LOG_LEVEL           = ''
-    LOG_FORMAT          = '%(asctime)s %(levelname)s: %(message)s:'
+    LOG_FORMAT          = '%(asctime)s %(name)s [%(levelname)s]: %(message)s:'
     APP_LOG_FILE        = ''
     SCHEDULE_LOG_FILE   = ''
     # SMS Notification configs
