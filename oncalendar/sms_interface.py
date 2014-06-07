@@ -1,7 +1,8 @@
 from email.mime.text import MIMEText
 from logging import getLogger
 import MySQLdb as mysql
-import oncalendar as oc
+from oncalendar.oc_config import config
+from oncalendar.db_interface import OnCalendarDB, OnCalendarDBError
 import os
 import smtplib
 import sys
@@ -25,7 +26,7 @@ class OnCalendarSMS(object):
         Initialize the Twilio client object
         """
         OnCalendarSMS.client = TwilioRestClient(config.TWILIO_SID, config.TWILIO_TOKEN)
-        OnCalendarSMS.wordlist = [w.strip() for w in open(oc.config.SMS_WORDLIST_FILE).readlines()]
+        OnCalendarSMS.wordlist = [w.strip() for w in open(config.SMS_WORDLIST_FILE).readlines()]
         OnCalendarSMS.testing = config.SMS_TEST_MODE
         OnCalendarSMS.logger = getLogger(__name__)
 
@@ -46,14 +47,14 @@ class OnCalendarSMS(object):
                 if callback:
                     msg = cls.client.sms.messages.create(
                         to=phone_number,
-                        from_=oc.config.TWILIO_NUMBER,
+                        from_=config.TWILIO_NUMBER,
                         body=body,
-                        status_callback=oc.config.TWILIO_CALLBACK_URL
+                        status_callback=config.TWILIO_CALLBACK_URL
                     )
                 else:
                     msg = cls.client.sms.messages.create(
                         to=phone_number,
-                        from_=oc.config.TWILIO_NUMBER,
+                        from_=config.TWILIO_NUMBER,
                         body=body
                     )
             except TwilioRestException as error:
@@ -77,20 +78,20 @@ class OnCalendarSMS(object):
             ))
         else:
             try:
-                ocdb = oc.OnCalendarDB(oc.config)
+                ocdb = OnCalendarDB(config)
                 sms_id = ocdb.add_sms_record(groupid, victimid, alert_type, type, host, service, nagios_master)[0]
                 sms_hash = cls.wordlist[sms_id % len(cls.wordlist)]
                 ocdb.set_sms_hash(sms_id, sms_hash)
-            except oc.OnCalendarDBError, error:
+            except OnCalendarDBError, error:
                 raise OnCalendarSMSError([error.args[0], error.args[1]])
 
             response_key = "[[{0}]]\n".format(sms_hash)
-            body = response_key + body[:oc.config.SMS_CLIP - len(response_key)]
+            body = response_key + body[:config.SMS_CLIP - len(response_key)]
 
             try:
                 sms_sid = cls.send_sms(phone_number, body, False)
                 ocdb.set_sms_sid(sms_id, sms_sid)
-            except oc.OnCalendarDBError, error:
+            except OnCalendarDBError, error:
                 raise OnCalendarSMSError([error.args[0], error.args[1]])
             except TwilioRestException as error:
                 raise OnCalendarSMSError(error)
@@ -106,15 +107,15 @@ class OnCalendarSMS(object):
             message = MIMEText(body)
 
         message['Subject'] = subject
-        message['From'] = oc.config.EMAIL_FROM
+        message['From'] = config.EMAIL_FROM
         message['To'] = address
 
         if cls.testing:
             cls.logger.debug("send_email: to: {0}, {1}".format([address], message.as_string))
         else:
             try:
-                smtp = smtplib.SMTP(oc.config.EMAIL_HOST)
-                smtp.sendmail(oc.config.EMAIL_FROM, [address], message.as_string())
+                smtp = smtplib.SMTP(config.EMAIL_HOST)
+                smtp.sendmail(config.EMAIL_FROM, [address], message.as_string())
                 smtp.quit()
             except IOError as error:
                 raise OnCalendarSMSError(error.args[0], error.args[1])
@@ -126,7 +127,7 @@ class OnCalendarSMS(object):
     def send_email_alert(cls, address, body, clip=False):
 
         if clip:
-            body = body[:oc.config.SMS_CLIP]
+            body = body[:config.SMS_CLIP]
 
         cls.send_email(address, body, '', 'plain')
 
@@ -134,7 +135,7 @@ class OnCalendarSMS(object):
     @classmethod
     def send_failsafe(cls, body):
 
-        for failsafe_email in oc.config.SMS_FAILSAFES:
+        for failsafe_email in config.SMS_FAILSAFES:
             cls.send_email(failsafe_email, body, '<<FAILSAFE>> - Paging Issue', True)
 
 
@@ -142,7 +143,7 @@ class OnCalendarSMS(object):
     def get_incoming(cls):
 
         try:
-            messages = cls.client.sms.messages.list(to=oc.config.TWILIO_NUMBER)
+            messages = cls.client.sms.messages.list(to=config.TWILIO_NUMBER)
         except TwilioRestException as error:
             raise OnCalendarSMSError(error)
 
@@ -151,6 +152,6 @@ class OnCalendarSMS(object):
 
 if __name__ == '__main__':
 
-    ocsms = OnCalendarSMS(oc.config)
+    ocsms = OnCalendarSMS(config)
     ocsms.send_failsafe('Test message from OnCalendar notification system.')
 

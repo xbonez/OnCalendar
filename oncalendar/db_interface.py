@@ -31,15 +31,15 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        self.version = None
-        self.logger = getLogger(__name__)
+        OnCalendarDB.version = None
+        OnCalendarDB.logger = getLogger(__name__)
 
         try:
             OnCalendarDB.oncalendar_db = mysql.connect(config.DBHOST, config.DBUSER, config.DBPASSWORD, config.DBNAME)
             cursor = OnCalendarDB.oncalendar_db.cursor()
             cursor.execute("SELECT VERSION()")
 
-            self.version = cursor.fetchone()
+            OnCalendarDB.version = cursor.fetchone()
         except mysql.Error, error:
             raise OnCalendarDBError(error.args[0], error.args[1])
 
@@ -67,7 +67,7 @@ class OnCalendarDB(object):
         ]
         table_list = []
         missing_tables = 0
-        initcheck = '{0}/oncalendar/app/etc/.db_init'.format(os.getcwd())
+        initcheck = '{0}/oncalendar/etc/.db_init'.format(os.getcwd())
         db_init_ts = 0
         if os.path.isfile(initcheck):
             with open(initcheck, 'r') as f:

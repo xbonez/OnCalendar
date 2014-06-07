@@ -9,7 +9,7 @@ $default-box-shadow-color: rgb(0, 0, 0);
 $default-box-shadow-blur: 3px;
 
 @import "compass";
-@import "_colors";
+@import "colors";
 
 @charset "utf-8";
 
@@ -188,19 +188,19 @@ p {
 }
 
 /* Dropdown menus */
-@import "_dropdown";
+@import "dropdown";
 
 /* Popup dialogs */
-@import "_popup";
+@import "popup";
 
 /* Tab interface */
-@import "_tabs";
+@import "tabs";
 
 /* Embedded fonts */
-@import "_fonts";
+@import "fonts";
 
 /* Tooltips */
-@import "_tooltips";
+@import "tooltips";
 
 /* Item-specific styles */
 div#login-box {

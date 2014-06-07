@@ -1,43 +1,35 @@
 from apscheduler.scheduler import Scheduler
-import datetime as dt
 from flask import Flask, render_template, url_for, request, flash, redirect, g
 import flask.ext.login as flogin
 import json
 import logging
 import MySQLdb as mysql
-import oncalendar as oc
-from oncalendar.app import forms
-from oncalendar.app import auth
 import os
 import re
 
+from oncalendar import default_log_handler
+from oncalendar.api_exceptions import OnCalendarAPIError, OnCalendarAuthError, ocapi_err
+import oncalendar.auth as auth
+from oncalendar.db_interface import OnCalendarDB, OnCalendarDBError, OnCalendarDBInitTSError
+import oncalendar.forms as forms
+from oncalendar.nagios_interface import OnCalendarNagiosLivestatus, OnCalendarNagiosError
+from oncalendar.oc_config import config
+from oncalendar.sms_interface import OnCalendarSMS, OnCalendarSMSError
+
 ocapp = Flask(__name__)
-ocapp.config.from_object(oc.config)
+ocapp.config.from_object(config)
 login_manager = flogin.LoginManager()
 login_manager.login_view = 'oc_login'
 login_manager.init_app(ocapp)
 
-# Set up logging for the app
-ocapp.app_log_handler = logging.FileHandler(oc.config.APP_LOG_FILE)
-ocapp.log_formatter = logging.Formatter(oc.config.LOG_FORMAT)
-ocapp.app_log_handler.setFormatter(ocapp.log_formatter)
-ocapp.logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
-ocapp.logger.addHandler(ocapp.app_log_handler)
+if not ocapp.debug:
+    del ocapp.logger.handlers[:]
+    ocapp.logger.addHandler(default_log_handler)
 
-# Logging for the db_interface
-ocapp.db_logger = logging.getLogger('oncalendar.db_interface')
-ocapp.db_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
-ocapp.db_logger.addHandler(ocapp.app_log_handler)
+ocapp.aps_logger = logging.getLogger('apscheduler')
+ocapp.aps_logger.setLevel(getattr(logging, config.LOG_LEVEL))
+ocapp.aps_logger.addHandler(default_log_handler)
 
-# Logging for the nagios_interface
-ocapp.nagios_logger = logging.getLogger('oncalendar.nagios_interface')
-ocapp.nagios_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
-ocapp.nagios_logger.addHandler(ocapp.app_log_handler)
-
-# Logging for the sms_interface
-ocapp.sms_logger = logging.getLogger('oncalendar.sms_interface')
-ocapp.sms_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
-ocapp.sms_logger.addHandler(ocapp.app_log_handler)
 
 # Start the scheduler and set up logging for it
 
@@ -53,38 +45,13 @@ ocapp.job_failures = {
 }
 
 ocapp_scheduler = Scheduler()
-ocapp.aps_logger = logging.getLogger('apscheduler')
-ocapp.aps_logger.setLevel(getattr(logging, oc.config.LOG_LEVEL))
-ocapp.aps_logger.addHandler(ocapp.app_log_handler)
-
-def scheduled_job_listener(event):
-    """
-    Listener for scheduled job events, watches for the frequently firing
-    events and restarts the scheduler if they get hung up
-
-    Args:
-        (JobEvent): The event fired by the scheduled job
-    """
-    jobname = event.job.__str__().split()[0]
-    ocapp.aps_logger.debug("Job {0} has fired".format(jobname))
-    if jobname in ocapp.job_misses:
-        if event.exception:
-            ocapp.job_misses[jobname] += 1
-            ocapp.aps_logger.debug("Job {0} has missed {1} consecutive runs".format(jobname, ocapp.job_misses[jobname]))
-            if ocapp.job_misses[jobname] > 10:
-                ocapp.aps_logger.error("Job {0} has more than 10 consecutive misses, restarting scheduler".format(jobname))
-                ocapp_scheduler.shutdown(wait=False)
-                ocapp_scheduler.start()
-                ocapp.job_misses = 0
-        else:
-            if ocapp.job_misses[jobname] > 0:
-                ocapp.aps_logger.debug("Job {0} running successfully again, resetting miss count".format(jobname))
-                ocapp.job_misses[jobname] = 0
-
 
 # event 64 = EVENT_JOB_EXECUTED, 256 = EVENT_JOB_MISSED
 ocapp_scheduler.add_listener(scheduled_job_listener, 64|256)
-ocapp_scheduler.start()
+
+# Only start the scheduler on the master server, to avoid conflicts
+if config.JOB_MASTER:
+    ocapp_scheduler.start()
 
 
 class OnCalendarFileWriteError(Exception):
@@ -132,14 +99,14 @@ def check_current_victims():
     SMS of their new status.
     """
 
-    ocdb = oc.OnCalendarDB(oc.config)
+    ocdb = OnCalendarDB(config)
     ocapp.aps_logger.debug("Checking oncall schedules")
     try:
         oncall_check_status = ocdb.check_schedule()
         rotate_on_message = "You are now {0} oncall for group {1}"
         rotate_off_message = "You are no longer {0} oncall for group {1}"
 
-        ocsms = oc.OnCalendarSMS(oc.config)
+        ocsms = OnCalendarSMS(config)
 
         for group in oncall_check_status.keys():
             if oncall_check_status[group]['oncall']['updated']:
@@ -182,14 +149,14 @@ def check_current_victims():
         if ocapp.job_failures['check_current_victims'] > 0:
             ocapp.job_failures['check_current_victims'] = 0
 
-    except oc.OnCalendarDBError as error:
+    except OnCalendarDBError as error:
         ocapp.job_failures['check_current_victims'] += 1
         ocapp.aps_logger.error("Oncall rotation checked failed - {0}: {1}".format(
             error.args[0],
             error.args[1])
         )
         if ocapp.job_failures['check_current_victims'] > 10:
-            ocsms = oc.OnCalendarSMS(oc.config)
+            ocsms = OnCalendarSMS(config)
             ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
 
 
@@ -200,11 +167,11 @@ def check_calendar_gaps_8hour():
     if there are any gaps.
     """
 
-    ocdb = oc.OnCalendarDB(oc.config)
+    ocdb = OnCalendarDB(config)
     ocapp.aps_logger.debug("Checking for schedule gaps in the next 8 hours")
     try:
         gap_check = ocdb.check_8hour_gaps()
-        ocsms = oc.OnCalendarSMS(oc.config)
+        ocsms = OnCalendarSMS(config)
 
         for group in gap_check.keys():
             ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}".format(group))
@@ -213,7 +180,7 @@ def check_calendar_gaps_8hour():
                 "Your oncall schedule has gaps within the next 8 hours!",
                 False
             )
-    except oc.OnCalendarDBError as error:
+    except OnCalendarDBError as error:
         ocapp.aps_logger.error("8 hour schedule gap check failed - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -227,11 +194,11 @@ def check_calendar_gaps_48hour():
     if there are any gaps.
     """
 
-    ocdb = oc.OnCalendarDB(oc.config)
+    ocdb = OnCalendarDB(config)
     ocapp.aps_logger.debug("Checking for schedule gaps in the next 48 hours")
     try:
         gap_check = ocdb.check_48hour_gaps()
-        ocsms = oc.OnCalendarSMS(oc.config)
+        ocsms = OnCalendarSMS(config)
 
         for group in gap_check.keys():
             ocapp.aps_logger.error("Schedule gap in the next 48 hours detected for group {0}".format(group))
@@ -241,7 +208,7 @@ def check_calendar_gaps_48hour():
                 "Oncall schedule gaps detected",
                 'plain'
             )
-    except oc.OnCalendarDBError as error:
+    except OnCalendarDBError as error:
         ocapp.aps_logger.error("48 hour schedule gap check failed - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -254,8 +221,8 @@ def get_incoming_sms():
     Pulls the recent incoming SMS messages from Twilio for response parsing
     """
 
-    ocsms = oc.OnCalendarSMS(oc.config)
-    ocdb = oc.OnCalendarDB(oc.config)
+    ocsms = OnCalendarSMS(config)
+    ocdb = OnCalendarDB(config)
     messages = None
     last_incoming_sms = None
 
@@ -265,9 +232,9 @@ def get_incoming_sms():
         ocapp.aps_logger.debug("Pulled {0} messages from Twilio".format(len(messages)))
         last_incoming_sms = ocdb.get_last_incoming_sms()
         ocapp.aps_logger.debug("Last saved SID is {0}".format(last_incoming_sms))
-    except oc.OnCalendarSMSError as error:
+    except OnCalendarSMSError as error:
         ocapp.aps_logger.error("Failed to pull message list from Twilio: {0}".format(error))
-    except oc.OnCalendarDBError as error:
+    except OnCalendarDBError as error:
         ocapp.aps_logger.error("Failed to get last incoming SMS record - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -298,7 +265,7 @@ def get_incoming_sms():
                 ocsms.send_sms(
                     from_number,
                     "Que?",
-                    oc.config.TWILIO_USE_CALLBACK
+                    config.TWILIO_USE_CALLBACK
                 )
                 continue
             else:
@@ -306,7 +273,7 @@ def get_incoming_sms():
 
             try:
                 sms_user_info = ocdb.get_victim_info('phone', from_number)
-            except oc.OnCalendarDBError as error:
+            except OnCalendarDBError as error:
                 ocapp.aps_logger.error("Search for SMS user failed - {0}: {1}".format(
                     error.args[0],
                     error.args[1]
@@ -317,7 +284,7 @@ def get_incoming_sms():
                 ocsms.send_sms(
                     from_number,
                     "You are not authorized to talk to me.",
-                    oc.config.TWILIO_USE_CALLBACK
+                    config.TWILIO_USE_CALLBACK
                 )
                 continue
 
@@ -334,9 +301,9 @@ def get_incoming_sms():
                 ocsms.send_sms(
                     from_number,
                     sms_response,
-                    oc.config.TWILIO_USE_CALLBACK
+                    config.TWILIO_USE_CALLBACK
                 )
-            except oc.OnCalendarSMSError as error:
+            except OnCalendarSMSError as error:
                 ocapp.aps_logger.error("Response to {0} failed! {1}".format(
                     sms_user_info['username'],
                     error
@@ -431,8 +398,8 @@ def oc_login():
             user = auth.ldap_auth.authenticate_user(form.username.data, form.password.data)
             flogin.login_user(user)
             return redirect(request.args.get('next') or url_for('root'))
-        except oc.OnCalendarAuthError, error:
-            raise oc.OnCalendarAuthError(error[0]['desc'])
+        except OnCalendarAuthError, error:
+            raise OnCalendarAuthError(error[0]['desc'])
 
     js = render_template('main_login.js.jinja2')
     login_next = ''
@@ -631,9 +598,9 @@ def api_get_ldap_groups():
 def api_get_calendar(year=None, month=None, group=None):
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         victims = ocdb.get_calendar(year, month, group)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -646,16 +613,16 @@ def api_calendar_update_month():
     month_data = request.get_json()
     if not month_data:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
         update_group = month_data['filter_group']
         days = month_data['days']
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         response = ocdb.update_calendar_month(update_group, days)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         ocapp.logger.error("Could not update month - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -685,10 +652,10 @@ def api_get_cal_boundaries():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         cal_start = ocdb.get_caldays_start()
         cal_end = ocdb.get_caldays_end()
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -717,9 +684,9 @@ def api_get_cal_end():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         cal_end = ocdb.get_caldays_end()
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -745,9 +712,9 @@ def api_get_cal_start():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         cal_start = ocdb.get_caldays_start()
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -762,13 +729,13 @@ def api_calendar_update_day():
     update_day_data = request.get_json()
     if not update_day_data:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         response = ocdb.update_calendar_day(update_day_data)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         ocapp.logger.error("Could not update calendar day - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -793,9 +760,9 @@ def api_get_all_groups_info():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         groups = ocdb.get_group_info()
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -819,9 +786,9 @@ def api_get_group_info_by_name(group=None):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         group_info = ocdb.get_group_info(False, group)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -845,9 +812,9 @@ def api_get_group_info_by_id(gid=None):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         group_info = ocdb.get_group_info(gid, False)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -871,9 +838,9 @@ def api_get_group_victims(group=None):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         group_victims = ocdb.get_group_victims(group)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -895,9 +862,9 @@ def api_get_all_victims_info():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         victims = ocdb.get_victim_info()
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -918,9 +885,9 @@ def api_get_current_victims(group=None):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         victims = ocdb.get_current_victims(group)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -940,9 +907,9 @@ def api_suggest_victims():
     query = request.args['query']
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         suggested_victims = ocdb.get_suggested_victims(query)
-    except oc.OnCalendarDBError as error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -967,11 +934,11 @@ def api_get_victim_info(key=None, id=None):
     """
 
     if key not in ['id', 'username']:
-        return json.dumps(oc.ocapi_err.NOPARAM, 'Invalid search key: {0}'.format(key))
+        return json.dumps(ocapi_err.NOPARAM, 'Invalid search key: {0}'.format(key))
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         victim_info = ocdb.get_victim_info(key, id)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -994,7 +961,7 @@ def api_get_config():
         (string): JSON formatted app config.
     """
 
-    config_vars = [attr for attr in dir(oc.config()) if not attr.startswith('__')]
+    config_vars = [attr for attr in dir(config()) if not attr.startswith('__')]
     oc_config = {}
     for cv in config_vars:
         oc_config[cv] = ocapp.config[cv]
@@ -1018,7 +985,7 @@ def api_update_config():
     """
 
     config_file = '{0}/oncalendar/oc_config.py'.format(os.getcwd())
-    config_vars = [attr for attr in dir(oc.config()) if not attr.startswith('__')]
+    config_vars = [attr for attr in dir(config()) if not attr.startswith('__')]
     updates = [key for key in request.form if request.form[key]]
     current_config = {}
     for cv in config_vars:
@@ -1040,7 +1007,7 @@ def api_update_config():
     else:
         error_string = 'Config file {0} does not exist'.format(config_file)
         raise OnCalendarAppError(
-            payload = [oc.API_NOCONFIG, error_string]
+            payload = [API_NOCONFIG, error_string]
         )
 
     return json.dumps(current_config)
@@ -1080,7 +1047,7 @@ def api_add_group():
     }
     if not request.form:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
         form_keys = [key for key in request.form if request.form[key]]
@@ -1089,9 +1056,9 @@ def api_add_group():
         group_data[key] = request.form[key]
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         new_group = ocdb.add_group(group_data)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1115,9 +1082,9 @@ def api_delete_group(group_id):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         group_count = ocdb.delete_group(group_id)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1141,7 +1108,7 @@ def api_update_group():
 
     if not request.form:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
         form_keys = [key for key in request.form if request.form[key]]
@@ -1169,9 +1136,9 @@ def api_update_group():
     print group_data
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         group_info = ocdb.update_group(group_data)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1192,15 +1159,15 @@ def api_group_victims():
 
     if not request.json:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_error.NOPOSTDATA, 'No data received']
+            payload = [ocapi_error.NOPOSTDATA, 'No data received']
         )
     else:
         group_victims_data = request.json
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         group_victims = ocdb.update_group_victims(group_victims_data)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1236,7 +1203,7 @@ def api_add_victim():
     }
     if not request.form:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
         form_keys = [key for key in request.form if request.form[key]]
@@ -1250,9 +1217,9 @@ def api_add_victim():
             victim_data[key] = request.form[key]
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         new_victim = ocdb.add_victim(victim_data)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1276,9 +1243,9 @@ def api_delete_victim(victim_id):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         victim_count = ocdb.delete_victim(victim_id)
-    except (oc.OnCalendarDBError, oc.OnCalendarAPIError), error:
+    except (OnCalendarDBError, OnCalendarAPIError), error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1302,7 +1269,7 @@ def api_update_victim():
 
     if not request.form:
         raise OnCalendarAppError(
-            payload = [oc.ocapi_err.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
         form_keys = [key for key in request.form if request.form[key]]
@@ -1326,9 +1293,9 @@ def api_update_victim():
             victim_data[key] = request.form[key]
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         victim_info = ocdb.update_victim(victim_data)
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1354,8 +1321,8 @@ def db_extend(days):
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
-    except oc.OnCalendarDBError, error:
+        ocdb = OnCalendarDB(config)
+    except OnCalendarDBError, error:
         ocapp.logger.error("Unable to extend calendar - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -1368,7 +1335,7 @@ def db_extend(days):
         new_end = ocdb.extend_caldays(int(days))
         end_tuple = new_end.timetuple()
         year, month, day = end_tuple[0:3]
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1392,9 +1359,9 @@ def api_db_verify():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         init_status = ocdb.verify_database()
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1422,7 +1389,7 @@ def api_create_db():
     """
 
     try:
-        db = mysql.connect(oc.config.DBHOST, request.form['mysql_user'], request.form['mysql_password'])
+        db = mysql.connect(config.DBHOST, request.form['mysql_user'], request.form['mysql_password'])
         cursor = db.cursor()
         cursor.execute('CREATE DATABASE OnCalendar')
     except mysql.Error, error:
@@ -1448,9 +1415,9 @@ def api_db_init():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         init_status = ocdb.initialize_database()
-    except (oc.OnCalendarDBError, oc.OnCalendarDBInitTSError), error:
+    except (OnCalendarDBError, OnCalendarDBInitTSError), error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1475,9 +1442,9 @@ def api_db_init_force():
     """
 
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         init_status = ocdb.initialize_database(True)
-    except (oc.OnCalendarDBError, oc.OnCalendarDBInitTSError), error:
+    except (OnCalendarDBError, OnCalendarDBInitTSError), error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
@@ -1506,7 +1473,7 @@ def api_send_sms(victim_type, group):
         raise OnCalendarBadRequest(
             payload = {
                 'sms_status': 'ERROR',
-                'sms_error': "{0}: Unknown SMS target: {1}".format(oc.ocapi_err.NOPARAM, victim_type)
+                'sms_error': "{0}: Unknown SMS target: {1}".format(ocapi_err.NOPARAM, victim_type)
             }
         )
 
@@ -1514,7 +1481,7 @@ def api_send_sms(victim_type, group):
         raise OnCalendarBadRequest(
             payload = {
                 'sms_status': 'ERROR',
-                'sms_error': "{0}: No data received".format(oc.ocapi_err.NOPOSTDATA)
+                'sms_error': "{0}: No data received".format(ocapi_err.NOPOSTDATA)
             }
         )
     elif request.form['type'] == 'host':
@@ -1545,7 +1512,7 @@ def api_send_sms(victim_type, group):
         raise OnCalendarBadRequest(
             payload = {
                 'sms_status': 'ERROR',
-                'sms_error': "{0}: Request my specify either host or service type".format(oc.ocapi_err.NOPARAM)
+                'sms_error': "{0}: Request my specify either host or service type".format(ocapi_err.NOPARAM)
             }
         )
 
@@ -1556,11 +1523,11 @@ def api_send_sms(victim_type, group):
     if victim_type == 'group':
         print "Panic page for group {0}".format(group)
         try:
-            ocdb = oc.OnCalendarDB(oc.config)
+            ocdb = OnCalendarDB(config)
             group_info = ocdb.get_group_info(group_name=group)
             groupid = group_info[group]['id']
             victim_ids = group_info[group]['victims'].keys()
-        except oc.OnCalendarDBError as error:
+        except OnCalendarDBError as error:
             raise OnCalendarAppError(
                 payload = {
                     'sms_status': 'ERROR',
@@ -1568,7 +1535,7 @@ def api_send_sms(victim_type, group):
                 }
             )
 
-        ocsms = oc.OnCalendarSMS(oc.config)
+        ocsms = OnCalendarSMS(config)
         panic_status = {
             'throttled': 0,
             'successful': 0,
@@ -1581,9 +1548,9 @@ def api_send_sms(victim_type, group):
                 try:
                     target_sent_messages = ocdb.get_victim_message_count(
                         target['username'],
-                        oc.config.SMS_THROTTLE_TIME
+                        config.SMS_THROTTLE_TIME
                     )[0]
-                except oc.OnCalendarDBError as error:
+                except OnCalendarDBError as error:
                     raise OnCalendarAppError(
                         payload = {
                             'sms_status': 'ERROR',
@@ -1592,8 +1559,8 @@ def api_send_sms(victim_type, group):
                     )
                 if target_sent_messages >= target['throttle']:
                     try:
-                        ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
-                    except oc.OnCalendarDBError as error:
+                        ocdb.set_throttle(target['username'], config.SMS_THROTTLE_TIME)
+                    except OnCalendarDBError as error:
                         raise OnCalendarAppError(
                             payload = {
                                 'sms_status': 'Error',
@@ -1616,11 +1583,11 @@ def api_send_sms(victim_type, group):
                             notification_data['nagios_master']
                         )
                         panic_status['successful'] += 1
-                    except oc.OnCalendarSMSError as error:
+                    except OnCalendarSMSError as error:
                         if target['sms_email'] is not None and valid_email_address(target['sms_email']):
                             try:
                                 ocsms.send_email_alert(target['sms_email'], sms_message, target['truncate'])
-                            except oc.OnCalendarSMSError, error:
+                            except OnCalendarSMSError, error:
                                 panic_status['sms_errors'] += 1
                         else:
                             panic_status['sms_errors'] += 1
@@ -1635,7 +1602,7 @@ def api_send_sms(victim_type, group):
         )
     else:
         try:
-            ocdb = oc.OnCalendarDB(oc.config)
+            ocdb = OnCalendarDB(config)
             current_victims = ocdb.get_current_victims(group)
             groupid = current_victims[group]['groupid']
             if victim_type == 'backup':
@@ -1644,7 +1611,7 @@ def api_send_sms(victim_type, group):
                 target = current_victims[group]['oncall']
                 if current_victims[group]['shadow'] is not None:
                     shadow = current_victims[group]['shadow']
-        except oc.OnCalendarDBError, error:
+        except OnCalendarDBError, error:
             raise OnCalendarAppError(
                 payload = {
                     'sms_status': 'ERROR',
@@ -1652,7 +1619,7 @@ def api_send_sms(victim_type, group):
                 }
             )
 
-        ocsms = oc.OnCalendarSMS(oc.config)
+        ocsms = OnCalendarSMS(config)
 
         if target['throttle_time_remaining'] > 0:
             return json.dumps({
@@ -1662,8 +1629,8 @@ def api_send_sms(victim_type, group):
             })
 
         try:
-            target_sent_messages = ocdb.get_victim_message_count(target['username'], oc.config.SMS_THROTTLE_TIME)[0]
-        except oc.OnCalendarDBError, error:
+            target_sent_messages = ocdb.get_victim_message_count(target['username'], config.SMS_THROTTLE_TIME)[0]
+        except OnCalendarDBError, error:
             raise OnCalendarAppError(
                 payload = {
                     'sms_status': 'ERROR',
@@ -1673,8 +1640,8 @@ def api_send_sms(victim_type, group):
 
         if target_sent_messages >= target['throttle']:
             try:
-                ocdb.set_throttle(target['username'], oc.config.SMS_THROTTLE_TIME)
-            except oc.OnCalendarDBError, error:
+                ocdb.set_throttle(target['username'], config.SMS_THROTTLE_TIME)
+            except OnCalendarDBError, error:
                 raise OnCalendarAppError(
                     payload = {
                         'sms_status': 'ERROR',
@@ -1705,12 +1672,12 @@ def api_send_sms(victim_type, group):
                 notification_data['nagios_master']
             )
             sms_status = 'SMS handoff to Twilio successful'
-        except oc.OnCalendarSMSError, error:
+        except OnCalendarSMSError, error:
             if target['sms_email'] is not None and valid_email_address(target['sms_email']):
                 try:
                     ocsms.send_email_alert(target['sms_email'], sms_message, target['truncate'])
                     sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
-                except oc.OnCalendarSMSError, error:
+                except OnCalendarSMSError, error:
                     ocsms.send_failsafe(sms_message)
                     raise OnCalendarAppError(
                         payload = {
@@ -1767,12 +1734,12 @@ def api_send_email(victim_type, group):
 
     if victim_type not in ('oncall', 'backup', 'group'):
         raise OnCalendarBadRequest(
-            payload = {'email_status': 'ERROR', 'email_error': "{0}: Unknown email target {1}".format(oc.ocapi_err.NOPARAM, victim_type)}
+            payload = {'email_status': 'ERROR', 'email_error': "{0}: Unknown email target {1}".format(ocapi_err.NOPARAM, victim_type)}
         )
 
     if not request.form:
         raise OnCalendarAppError(
-            payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(oc.ocapi_err.NOPOSTDATA, 'No data received')}
+            payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(ocapi_err.NOPOSTDATA, 'No data received')}
         )
     if request.form['type'] == 'host':
         try:
@@ -1789,11 +1756,11 @@ def api_send_email(victim_type, group):
         )
         if 'format' in request.form and request.form['format'] == 'html':
             message_format = 'html'
-            host_query = oc.config.MONITOR_URL + oc.config.HOST_QUERY
+            host_query = config.MONITOR_URL + config.HOST_QUERY
             host_query = host_query.format(notification_data['host_address'])
-            host_info = oc.config.MONITOR_URL + oc.config.HOST_INFO_QUERY
+            host_info = config.MONITOR_URL + config.HOST_INFO_QUERY
             host_info = host_info.format(notification_data['host_address'])
-            hostgroup_query = oc.config.MONITOR_URL + oc.config.HOSTGROUP_QUERY
+            hostgroup_query = config.MONITOR_URL + config.HOSTGROUP_QUERY
             hostgroup_query = hostgroup_query.format(notification_data['hostgroup'])
             email_message = render_template('host_email_html.jinja2',
                                             data=notification_data,
@@ -1820,12 +1787,12 @@ def api_send_email(victim_type, group):
         )
         if 'format' in request.form and request.form['format'] == 'html':
             message_format = 'html'
-            service_query = oc.config.MONITOR_URL + oc.config.SERVICE_QUERY
+            service_query = config.MONITOR_URL + config.SERVICE_QUERY
             service_query = service_query.format(
                 notification_data['host_address'],
                 notification_data['service']
             )
-            host_query = oc.config.MONITOR_URL + oc.config.HOST_QUERY
+            host_query = config.MONITOR_URL + config.HOST_QUERY
             host_query = host_query.format(notification_data['host_address'])
             email_message = render_template('service_email_html.jinja2',
                                             data=notification_data,
@@ -1839,22 +1806,22 @@ def api_send_email(victim_type, group):
         raise OnCalendarAppError(
             payload = {
                 'email_status': 'ERROR',
-                'email_error': "{0}: {1}".format(oc.ocapi_err.NOPARAM, 'Request must specify either host or service type')
+                'email_error': "{0}: {1}".format(ocapi_err.NOPARAM, 'Request must specify either host or service type')
             }
         )
 
-    ocsms = oc.OnCalendarSMS(oc.config)
+    ocsms = OnCalendarSMS(config)
 
     shadow = None
     try:
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         current_victims = ocdb.get_current_victims(group)
         if victim_type == 'backup':
             target = current_victims[group]['backup']
         elif victim_type == 'group':
             try:
                 group_info = ocdb.get_group_info(group_name=group)
-            except oc.OnCalendarDBError as error:
+            except OnCalendarDBError as error:
                 raise OnCalendarAppError(
                     payload = {
                         'email_status': 'ERROR',
@@ -1874,7 +1841,7 @@ def api_send_email(victim_type, group):
             target = current_victims[group]['oncall']
             if current_victims[group]['shadow'] is not None:
                 shadow = current_victims[group]['shadow']
-    except oc.OnCalendarDBError, error:
+    except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = {
                 'email_status': 'ERROR',
@@ -1886,7 +1853,7 @@ def api_send_email(victim_type, group):
         ocsms.send_email(target['email'], email_message, email_subject, message_format)
         if victim_type == 'oncall' and shadow is not None:
             ocsms.send_email(shadow['email'], email_message, email_subject, message_format)
-    except oc.OnCalendarSMSError, error:
+    except OnCalendarSMSError, error:
         raise OnCalendarAppError(
             payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
         )
@@ -1910,7 +1877,7 @@ def parse_host_form(form_data):
 
     for field in required_fields:
         if not field in form_data or form_data[field] is None:
-            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
+            raise OnCalendarFormParseError(ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
 
     notification_data = {
         'type': 'Host',
@@ -1946,7 +1913,7 @@ def parse_service_form(form_data):
 
     for field in required_fields:
         if not field in form_data or form_data[field] is None:
-            raise OnCalendarFormParseError(oc.ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
+            raise OnCalendarFormParseError(ocapi_err.NOPARAM, 'Required field {0} missing'.format(field))
 
     notification_data = {
         'type': 'Service',
@@ -1965,21 +1932,6 @@ def parse_service_form(form_data):
     }
 
     return notification_data
-
-
-def valid_email_address(address):
-    """
-    Simple validation of email address format
-
-    Args:
-        address (str): The address to check
-    """
-
-    email_checker = re.compile("^[^\s]+@[^\s]+\.[^\s]{2,3}$")
-    if email_checker.search(address) == None:
-        return False
-
-    return True
 
 
 def process_incoming_sms(userid, username, phone, sms):
@@ -2006,7 +1958,7 @@ def process_incoming_sms(userid, username, phone, sms):
         'throttle'
     ]
 
-    ocapp.aps_logger.debug("Checking incoming SMS - hash: {0}, command: {1}, extra: {2}".format(
+    ocapp.logger.debug("Checking incoming SMS - hash: {0}, command: {1}, extra: {2}".format(
         sms['hash'],
         sms['command'],
         sms['extra']
@@ -2020,8 +1972,8 @@ def process_incoming_sms(userid, username, phone, sms):
 
     command = sms['command'].lower()
 
-    ocdb = oc.OnCalendarDB(oc.config)
-    nagios = oc.OnCalendarNagiosLivestatus(oc.config)
+    ocdb = OnCalendarDB(config)
+    nagios = OnCalendarNagiosLivestatus(config)
 
     if command in valid_commands:
 
@@ -2045,8 +1997,8 @@ throttle <#>: Set throttle threshold"""
                 try:
                     ocdb.set_victim_preference(userid, 'truncate', truncate)
                     sms_response = "SMS truncate preference updated"
-                except oc.OnCalendarDBError as error:
-                    ocapp.aps_logger.error("DB error updating truncate pref - {0}: {1}".format(
+                except OnCalendarDBError as error:
+                    ocapp.logger.error("DB error updating truncate pref - {0}: {1}".format(
                         error.args[0],
                         error.args[1]
                     ))
@@ -2057,14 +2009,14 @@ throttle <#>: Set throttle threshold"""
                 sms_response = "Usage: throttle [threshold]"
             else:
                 throttle = int(sms['extra'])
-                if throttle < oc.config.SMS_THROTTLE_MIN:
-                    sms_response = "Throttle setting must be larger than {0}".format(oc.config.SMS_THROTTLE_MIN)
+                if throttle < config.SMS_THROTTLE_MIN:
+                    sms_response = "Throttle setting must be larger than {0}".format(config.SMS_THROTTLE_MIN)
                 else:
                     try:
                         ocdb.set_victim_preference(userid, 'throttle', throttle)
                         sms_response = "SMS throttle setting updated"
-                    except oc.OnCalendarDBError as error:
-                        ocapp.aps_logger.error("DB error updating throttle pref - {0}: {1}".format(
+                    except OnCalendarDBError as error:
+                        ocapp.logger.error("DB error updating throttle pref - {0}: {1}".format(
                             error.args[0],
                             error.args[1]
                         ))
@@ -2108,10 +2060,10 @@ throttle <#>: Set throttle threshold"""
 
                 for master in nagios_masters:
                     try:
-                        ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                        ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
                         nagios.nagios_command(master, nagios.default_port, command)
-                    except oc.OnCalendarNagiosError as error:
-                        ocapp.aps_logger.error("Nagios command failed - {0}: {1}".format(
+                    except OnCalendarNagiosError as error:
+                        ocapp.logger.error("Nagios command failed - {0}: {1}".format(
                             error.args[0],
                             error.args[1]
                         ))
@@ -2144,7 +2096,7 @@ throttle <#>: Set throttle threshold"""
                     )
 
                 for master in nagios_masters:
-                    ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                    ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
                     nagios.nagios_command(master, nagios.default_port, command)
 
         elif command in ('dt', 'downtime') and hash_word is not None:
@@ -2198,11 +2150,11 @@ throttle <#>: Set throttle threshold"""
                     )
 
                 for master in nagios_masters:
-                    ocapp.aps_logger.debug("Sending command {0} to {1}".format(command, master))
+                    ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
                     nagios.nagios_command(master, nagios.default_port, command)
 
     else:
-        ocapp.aps_logger.debug("Invalid command: {0}".format(command))
+        ocapp.logger.debug("Invalid command: {0}".format(command))
         sms_response = """[[<keyword>]] <command>
 help: This output
 ack: Ack an alert
@@ -2212,4 +2164,44 @@ truncate [on|off]: Set SMS truncate preference
 throttle <#>: Set throttle threshold"""
 
     return sms_response
+
+
+def scheduled_job_listener(event, misses):
+    """
+    Listener for scheduled job events, watches for the frequently firing
+    events and restarts the scheduler if they get hung up
+
+    Args:
+        (JobEvent): The event fired by the scheduled job
+    """
+    jobname = event.job.__str__().split()[0]
+    ocapp.aps_logger.debug("Job {0} has fired".format(jobname))
+    if jobname in ocapp.job_misses:
+        if event.exception:
+            ocapp.job_misses[jobname] += 1
+            ocapp.aps_logger.debug("Job {0} has missed {1} consecutive runs".format(jobname, ocapp.job_misses[jobname]))
+            if ocapp.job_misses[jobname] > 10:
+                ocapp.aps_logger.error("Job {0} has more than 10 consecutive misses, restarting scheduler".format(jobname))
+                # ocapp_scheduler.shutdown(wait=False)
+                # ocapp_scheduler.start()
+                # ocapp.job_misses = 0
+        else:
+            if ocapp.job_misses[jobname] > 0:
+                ocapp.aps_logger.debug("Job {0} running successfully again, resetting miss count".format(jobname))
+                ocapp.job_misses[jobname] = 0
+
+
+def valid_email_address(address):
+    """
+    Simple validation of email address format
+
+    Args:
+        address (str): The address to check
+    """
+
+    email_checker = re.compile("^[^\s]+@[^\s]+\.[^\s]{2,3}$")
+    if email_checker.search(address) == None:
+        return False
+
+    return True
 
