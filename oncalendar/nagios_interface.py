@@ -15,7 +15,7 @@ class OnCalendarNagiosLivestatus(object):
         OnCalendarNagiosLivestatus.default_port = config.LIVESTATUS_PORT
         OnCalendarNagiosLivestatus.nagios_masters = config.NAGIOS_MASTERS
         OnCalendarNagiosLivestatus.testing = config.MONITOR_TEST_MODE
-        OnCalendarNagiosLivestatus.logging = getLogger(__name__)
+        OnCalendarNagiosLivestatus.logger = getLogger(__name__)
 
 
     @classmethod

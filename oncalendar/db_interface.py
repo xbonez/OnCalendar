@@ -1460,7 +1460,7 @@ class OnCalendarDB(object):
         try:
             cursor.execute(calendar_victims_query)
         except mysql.Error as error:
-            raise OnCalendarDBError(error.args[0], error.args[1])
+            raise OnCalendarDBError(error.args[0], error.args[1] + ' calendar_victims_query')
 
         schedule_status = {}
         phone_query = "SELECT phone FROM victims WHERE id='{0}'"
@@ -1507,7 +1507,7 @@ class OnCalendarDB(object):
                         cursor.execute(update_victim_query)
                         cls.oncalendar_db.commit()
                     except mysql.Error as error:
-                        raise OnCalendarDBError(error.args[0], error.args[1])
+                        raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking primary for {0})'.format(row['name']))
                 else:
                     schedule_status[row['name']]['oncall'] = {'updated': False}
 
@@ -1547,7 +1547,7 @@ class OnCalendarDB(object):
                         cursor.execute(update_shadow_query)
                         cls.oncalendar_db.commit()
                     except mysql.Error as error:
-                        raise OnCalendarDBError(error.args[0], error.args[1])
+                        raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking shadow for {0})'.format(row['name']))
                 else:
                     schedule_status[row['name']]['shadow'] = {'updated': False}
 
@@ -1587,7 +1587,7 @@ class OnCalendarDB(object):
                         cursor.execute(update_backup_query)
                         cls.oncalendar_db.commit()
                     except mysql.Error as error:
-                        raise OnCalendarDBError(error.args[0], error.args[1])
+                        raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking backup for {0})'.format(row['name']))
                 else:
                     schedule_status[row['name']]['backup'] = {'updated': False}
 
