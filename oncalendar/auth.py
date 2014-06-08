@@ -1,5 +1,7 @@
 import ldap
-import oncalendar as oc
+from oncalendar.db_interface import OnCalendarDB, OnCalendarDBError
+from oncalendar.oc_config import config
+from oncalendar.api_exceptions import OnCalendarAuthError
 
 class User(object):
     id = ''
@@ -14,7 +16,7 @@ class User(object):
 
     @classmethod
     def test(cls):
-        ocdb = oc.OnCalendarDB(oc.config)
+        ocdb = OnCalendarDB(config)
         print ocdb.version
 
 
@@ -22,10 +24,10 @@ class User(object):
     def get(cls, search_key=False, search_value=False):
         if search_value:
             try:
-                ocdb = oc.OnCalendarDB(oc.config)
+                ocdb = OnCalendarDB(config)
                 victim_info = ocdb.get_victim_info(search_key, search_value)
-            except oc.OnCalendarDBError, error:
-                raise oc.OnCalendarDBError(error.args[0], error.args[1])
+            except OnCalendarDBError, error:
+                raise OnCalendarDBError(error.args[0], error.args[1])
             for id in victim_info:
                 cls.id = unicode(id)
                 cls.username = victim_info[id]['username']
@@ -74,11 +76,11 @@ class ldap_auth(object):
         user = User.get('username', username)
         if user is not None:
             try:
-                ocldap = ldap.initialize(oc.config.LDAP_URL)
-                ocldap.bind_s(oc.config.LDAP_BINDDN, oc.config.LDAP_BINDPW)
-                user_info = ocldap.search_s(oc.config.LDAP_BASEDN, ldap.SCOPE_SUBTREE, 'uid={0}'.format(username))
+                ocldap = ldap.initialize(config.LDAP_URL)
+                ocldap.bind_s(config.LDAP_BINDDN, config.LDAP_BINDPW)
+                user_info = ocldap.search_s(config.LDAP_BASEDN, ldap.SCOPE_SUBTREE, 'uid={0}'.format(username))
                 user_dn =  user_info[0][0]
-                user_groups = ocldap.search_s(oc.config.LDAP_GROUPSDN, ldap.SCOPE_SUBTREE, 'memberUid={0}'.format(username), attrlist=['cn'])
+                user_groups = ocldap.search_s(config.LDAP_GROUPSDN, ldap.SCOPE_SUBTREE, 'memberUid={0}'.format(username), attrlist=['cn'])
                 for group in user_groups:
                     group_entry = group[1]
                     user.ldap_groups.append(group_entry['cn'][0])
@@ -87,6 +89,6 @@ class ldap_auth(object):
                 return user
             except ldap.LDAPError, error:
                 ocldap.unbind_s
-                raise oc.OnCalendarAuthError(error[0])
+                raise OnCalendarAuthError(error[0])
         else:
-            raise oc.OnCalendarAuthError('Invalid login')
+            raise OnCalendarAuthError('Invalid login')

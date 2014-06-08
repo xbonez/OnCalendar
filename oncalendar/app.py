@@ -24,6 +24,7 @@ login_manager.init_app(ocapp)
 
 if not ocapp.debug:
     del ocapp.logger.handlers[:]
+    ocapp.logger.setLevel(getattr(logging, config.LOG_LEVEL))
     ocapp.logger.addHandler(default_log_handler)
 
 ocapp.aps_logger = logging.getLogger('apscheduler')
@@ -43,6 +44,32 @@ ocapp.job_failures = {
     'check_current_victims': 0,
     'get_incoming_sms': 0
 }
+
+
+def scheduled_job_listener(event):
+    """
+    Listener for scheduled job events, watches for the frequently firing
+    events and restarts the scheduler if they get hung up
+
+    Args:
+        (JobEvent): The event fired by the scheduled job
+    """
+    jobname = event.job.__str__().split()[0]
+    ocapp.aps_logger.debug("Job {0} has fired".format(jobname))
+    if jobname in ocapp.job_misses:
+        if event.exception:
+            ocapp.job_misses[jobname] += 1
+            ocapp.aps_logger.debug("Job {0} has missed {1} consecutive runs".format(jobname, ocapp.job_misses[jobname]))
+            if ocapp.job_misses[jobname] > 10:
+                ocapp.aps_logger.error("Job {0} has more than 10 consecutive misses, restarting scheduler".format(jobname))
+                # ocapp_scheduler.shutdown(wait=False)
+                # ocapp_scheduler.start()
+                # ocapp.job_misses = 0
+        else:
+            if ocapp.job_misses[jobname] > 0:
+                ocapp.aps_logger.debug("Job {0} running successfully again, resetting miss count".format(jobname))
+                ocapp.job_misses[jobname] = 0
+
 
 ocapp_scheduler = Scheduler()
 
@@ -2164,31 +2191,6 @@ truncate [on|off]: Set SMS truncate preference
 throttle <#>: Set throttle threshold"""
 
     return sms_response
-
-
-def scheduled_job_listener(event, misses):
-    """
-    Listener for scheduled job events, watches for the frequently firing
-    events and restarts the scheduler if they get hung up
-
-    Args:
-        (JobEvent): The event fired by the scheduled job
-    """
-    jobname = event.job.__str__().split()[0]
-    ocapp.aps_logger.debug("Job {0} has fired".format(jobname))
-    if jobname in ocapp.job_misses:
-        if event.exception:
-            ocapp.job_misses[jobname] += 1
-            ocapp.aps_logger.debug("Job {0} has missed {1} consecutive runs".format(jobname, ocapp.job_misses[jobname]))
-            if ocapp.job_misses[jobname] > 10:
-                ocapp.aps_logger.error("Job {0} has more than 10 consecutive misses, restarting scheduler".format(jobname))
-                # ocapp_scheduler.shutdown(wait=False)
-                # ocapp_scheduler.start()
-                # ocapp.job_misses = 0
-        else:
-            if ocapp.job_misses[jobname] > 0:
-                ocapp.aps_logger.debug("Job {0} running successfully again, resetting miss count".format(jobname))
-                ocapp.job_misses[jobname] = 0
 
 
 def valid_email_address(address):
