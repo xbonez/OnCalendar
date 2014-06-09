@@ -117,6 +117,12 @@ class OnCalendarDB(object):
         """
         # Table structure of the OnCalendar database.
         expected_tables = {
+            'auth': [
+                "id int(11) unsigned NOT NULL",
+                "passwd varchar(64) DEFAULT NULL",
+                "PRIMARY key (id)",
+                "CONSTRAINT fk_auth_id FOREIGN KEY (id) REFERENCES victims (id) ON DELETE CASCADE"
+            ],
             'caldays': [
                 "id int(11) unsigned NOT NULL AUTO_INCREMENT",
                 "year int(4) NOT NULL",
@@ -149,15 +155,24 @@ class OnCalendarDB(object):
                 "turnover_day int(2) DEFAULT 1",
                 "turnover_hour int(2) DEFAULT 9",
                 "turnover_min int(2) DEFAULT 30",
+                "victimid int(11) unsigned DEFAULT NULL",
                 "backup tinyint(1) DEFAULT 0",
+                "backupid int(11) unsigned DEFAULT NULL",
                 "shadow tinyint(1) DEFAULT 0",
+                "shadowid int(11) unsigned DEFAULT NULL",
                 "failsafe int(1) DEFAULT 0",
                 "alias varchar(128) DEFAULT NULL",
                 "backup_alias varchar(128) DEFAULT NULL",
                 "failsafe_alias varchar(128) DEFAULT NULL",
                 "email varchar(128) DEFAULT NULL",
                 "auth_group varchar(128) DEFAULT NULL",
-                "PRIMARY KEY (id)"
+                "PRIMARY KEY (id)",
+                "KEY FK_current_victim (victimid)",
+                "KEY FK_current_shadow (shadowid)",
+                "KEY FK_current_backup (backupid)",
+                "CONSTRAINT FK_current_victim FOREIGN KEY (victimid) REFERENCES victims (id)",
+                "CONSTRAINT FK_current_shadow FOREIGN KEY (shadowid) REFERENCES victims (id)",
+                "CONSTRAINT FK_current_backup FOREIGN KEY (backupid) REFERENCES victims (id)"
             ],
             'victims': [
                 "id int(11) unsigned NOT NULL AUTO_INCREMENT",
