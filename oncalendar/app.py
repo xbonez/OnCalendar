@@ -136,7 +136,9 @@ def check_current_victims():
         ocsms = OnCalendarSMS(config)
 
         for group in oncall_check_status.keys():
+            ocapp.aps_logger.debug('Checking primary for group {0}'.format(group))
             if oncall_check_status[group]['oncall']['updated']:
+                ocapp.aps_logger.debug('-- Primary has changed, now {0}'.format(oncall_check_status[group]['oncall']['new']))
                 ocapp.aps_logger.info("{0} primary oncall updated".format(group))
                 ocsms.send_sms(
                     oncall_check_status[group]['oncall']['new_phone'],

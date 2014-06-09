@@ -1485,9 +1485,11 @@ class OnCalendarDB(object):
         rotate_query = "UPDATE groups SET {0}='{1}' WHERE id='{2}'"
 
         for row in cursor.fetchall():
+            cls.logger.debug('db_interface: checking primary for {0}'.format(row['name']))
             schedule_status[row['name']] = {}
             if row['victimid'] is not None:
                 if row['victimid'] != current_victims[row['name']]['victimid']:
+                    cls.logger.debug('db_interface: New primary found, updating')
                     try:
                         if current_victims[row['name']]['victimid'] is None:
                             victim_phone_query = phone_query.format(row['victimid'])
@@ -1519,8 +1521,11 @@ class OnCalendarDB(object):
                             row['victimid'],
                             row['groupid']
                         )
+                        cls.logger.debug('Update query for {0}: {1}'.format(
+                            row['name'],
+                            update_victim_query,
+                        ))
                         cursor.execute(update_victim_query)
-                        cls.oncalendar_db.commit()
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking primary for {0})'.format(row['name']))
                 else:
@@ -1606,6 +1611,7 @@ class OnCalendarDB(object):
                 else:
                     schedule_status[row['name']]['backup'] = {'updated': False}
 
+        cls.oncalendar_db.commit()
         return schedule_status
 
 
