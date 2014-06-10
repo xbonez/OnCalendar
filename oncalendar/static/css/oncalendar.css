@@ -95,7 +95,7 @@ p {
 }
 
 /* line 91, ../scss/oncalendar.scss */
-.alert-box {
+.alert-box, .info-box {
   border: 1px solid #ff2020;
   background-color: rgba(255, 32, 32, 0.5);
   color: whitesmoke;
@@ -105,52 +105,64 @@ p {
   position: relative;
   top: 10px;
   width: 50%;
+  text-align: center;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   -ms-border-radius: 3px;
   -o-border-radius: 3px;
   border-radius: 3px;
+  -webkit-transition: opacity 0.25s linear;
+  -moz-transition: opacity 0.25s linear;
+  -ms-transition: opacity 0.25s linear;
+  -o-transition: opacity 0.25s linear;
+  transition: opacity 0.25s linear;
 }
 
-/* line 104, ../scss/oncalendar.scss */
+/* line 110, ../scss/oncalendar.scss */
+.info-box {
+  border: 1px solid #2020ff;
+  background-color: rgba(32, 32, 255, 0.5);
+}
+
+/* line 116, ../scss/oncalendar.scss */
 .horshack {
   font-weight: bold;
   font-size: 1.05em;
 }
 
-/* line 109, ../scss/oncalendar.scss */
+/* line 121, ../scss/oncalendar.scss */
 .expander {
   cursor: pointer;
   padding-bottom: 3px;
 }
 
-/* line 114, ../scss/oncalendar.scss */
+/* line 126, ../scss/oncalendar.scss */
 .expander.open {
   background-color: white;
 }
 
-/* line 118, ../scss/oncalendar.scss */
+/* line 130, ../scss/oncalendar.scss */
 .expander-arrow {
   color: rgba(0, 0, 0, 0.5);
   font-size: 0.8em;
 }
 
-/* line 123, ../scss/oncalendar.scss */
+/* line 135, ../scss/oncalendar.scss */
 .expander-arrow:hover {
   color: black;
 }
 
-/* line 127, ../scss/oncalendar.scss */
+/* line 139, ../scss/oncalendar.scss */
 .prev-arrow-button, .next-arrow-button {
   cursor: pointer;
 }
 
-/* line 131, ../scss/oncalendar.scss */
+/* line 143, ../scss/oncalendar.scss */
 .inline {
   display: inline-block;
 }
 
-/* line 135, ../scss/oncalendar.scss */
+/* line 147, ../scss/oncalendar.scss */
 .input-menu {
   -moz-border-radius-topright: 3px;
   -webkit-border-top-right-radius: 3px;
@@ -163,58 +175,63 @@ p {
   padding: 2px 4px 4px 4px;
 }
 
-/* line 146, ../scss/oncalendar.scss */
+/* line 158, ../scss/oncalendar.scss */
 .caps {
   text-transform: capitalize;
 }
 
-/* line 150, ../scss/oncalendar.scss */
+/* line 162, ../scss/oncalendar.scss */
 .divider-bullet {
   font-size: 0.5em;
   margin-right: 10px;
 }
 
-/* line 155, ../scss/oncalendar.scss */
+/* line 167, ../scss/oncalendar.scss */
 .error-text {
   color: red;
 }
 
-/* line 159, ../scss/oncalendar.scss */
+/* line 171, ../scss/oncalendar.scss */
 .hide {
   display: none;
 }
 
-/* line 163, ../scss/oncalendar.scss */
+/* line 175, ../scss/oncalendar.scss */
 .oc-checkbox, .oc-radio {
   padding: 4px 6px;
   cursor: pointer;
 }
 
-/* line 168, ../scss/oncalendar.scss */
+/* line 180, ../scss/oncalendar.scss */
 .oc-checkbox:hover, .oc-checkbox:focus {
   color: black;
   background-color: transparent;
 }
 
-/* line 173, ../scss/oncalendar.scss */
+/* line 185, ../scss/oncalendar.scss */
 .oc-checkbox:active {
   background-color: transparent;
 }
 
-/* line 177, ../scss/oncalendar.scss */
+/* line 189, ../scss/oncalendar.scss */
 .page-title {
   position: relative;
   color: whitesmoke;
   margin: 8px 1% 20px 1%;
 }
-/* line 181, ../scss/oncalendar.scss */
+/* line 193, ../scss/oncalendar.scss */
 .page-title h2 {
   margin: 20px 0 0 10px;
 }
 
-/* line 186, ../scss/oncalendar.scss */
+/* line 198, ../scss/oncalendar.scss */
 .strikethrough {
   text-decoration: line-through;
+}
+
+/* line 202, ../scss/oncalendar.scss */
+.transparent {
+  opacity: 0;
 }
 
 /* Dropdown menus */
@@ -593,15 +610,15 @@ li.tab {
   -webkit-border-top-right-radius: 3px;
   border-top-right-radius: 3px;
 }
-/* line 48, ../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/typography/lists/_horizontal-list.scss */
+/* line 48, ../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/typography/lists/_horizontal-list.scss */
 li.tab:first-child, li.tab.first {
   padding-left: 0;
 }
-/* line 49, ../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/typography/lists/_horizontal-list.scss */
+/* line 49, ../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/typography/lists/_horizontal-list.scss */
 li.tab:last-child {
   padding-right: 0;
 }
-/* line 50, ../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/typography/lists/_horizontal-list.scss */
+/* line 50, ../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.12.2/frameworks/compass/stylesheets/compass/typography/lists/_horizontal-list.scss */
 li.tab.last {
   padding-right: 0;
 }
@@ -895,7 +912,7 @@ div.tab-panel-buttons {
 }
 
 /* Item-specific styles */
-/* line 206, ../scss/oncalendar.scss */
+/* line 222, ../scss/oncalendar.scss */
 div#login-box {
   position: relative;
   width: 20%;
@@ -913,14 +930,14 @@ div#login-box {
   box-shadow: 0px 0px 3px black;
 }
 
-/* line 217, ../scss/oncalendar.scss */
+/* line 233, ../scss/oncalendar.scss */
 div.login-label {
   position: relative;
   width: 99%;
   margin: 20px 0;
 }
 
-/* line 223, ../scss/oncalendar.scss */
+/* line 239, ../scss/oncalendar.scss */
 div.login-label-text {
   position: relative;
   display: inline-block;
@@ -929,45 +946,45 @@ div.login-label-text {
   margin-right: 5px;
 }
 
-/* line 231, ../scss/oncalendar.scss */
+/* line 247, ../scss/oncalendar.scss */
 div#login-label input {
   position: relative;
   width: 45%;
 }
 
-/* line 236, ../scss/oncalendar.scss */
+/* line 252, ../scss/oncalendar.scss */
 div#login-form-buttons {
   position: relative;
   text-align: right;
 }
 
-/* line 241, ../scss/oncalendar.scss */
+/* line 257, ../scss/oncalendar.scss */
 div#db-init-prompt p {
   display: inline-block;
 }
 
-/* line 245, ../scss/oncalendar.scss */
+/* line 261, ../scss/oncalendar.scss */
 span#init-db-button {
   display: inline-block;
   margin-left: 10px;
 }
 
-/* line 250, ../scss/oncalendar.scss */
+/* line 266, ../scss/oncalendar.scss */
 div#create-db-popup {
   width: 30%;
   text-align: left;
 }
 
-/* line 256, ../scss/oncalendar.scss */
+/* line 272, ../scss/oncalendar.scss */
 div#delete-groups-confirm-popup p {
   font-size: 0.8em;
 }
-/* line 259, ../scss/oncalendar.scss */
+/* line 275, ../scss/oncalendar.scss */
 div#delete-groups-confirm-popup p#delete-groups-list {
   margin: 10px 0 10px 10px;
 }
 
-/* line 264, ../scss/oncalendar.scss */
+/* line 280, ../scss/oncalendar.scss */
 div.outer-container {
   position: relative;
   margin: 0 1%;
@@ -983,7 +1000,7 @@ div.outer-container {
   box-shadow: 0px 0px 3px black;
 }
 
-/* line 273, ../scss/oncalendar.scss */
+/* line 289, ../scss/oncalendar.scss */
 div.inner-container {
   position: relative;
   margin: 1% 2% 2% 2%;
@@ -999,39 +1016,39 @@ div.inner-container {
   box-shadow: 0px 0px 3px black;
 }
 
-/* line 282, ../scss/oncalendar.scss */
+/* line 298, ../scss/oncalendar.scss */
 div#admin-function-container {
   min-height: 300px;
 }
 
-/* line 286, ../scss/oncalendar.scss */
+/* line 302, ../scss/oncalendar.scss */
 div.tab-panel {
   min-height: 300px;
 }
 
-/* line 291, ../scss/oncalendar.scss */
+/* line 307, ../scss/oncalendar.scss */
 tr#add-group, tr#edit-group-form,
 tr#add-victim, tr#edit-victim-form {
   border-top: 1px solid rgba(64, 64, 64, 0.75);
 }
 
-/* line 296, ../scss/oncalendar.scss */
+/* line 312, ../scss/oncalendar.scss */
 tr#add-group-buttons, tr#edit-group-buttons,
 tr#add-victim-buttons, tr#edit-victim-buttons {
   border-bottom: 1px solid rgba(64, 64, 64, 0.75);
 }
 
-/* line 300, ../scss/oncalendar.scss */
+/* line 316, ../scss/oncalendar.scss */
 .admin-table {
   border-collapse: collapse;
 }
 
-/* line 304, ../scss/oncalendar.scss */
+/* line 320, ../scss/oncalendar.scss */
 .admin-table th {
   text-align: left;
 }
 
-/* line 308, ../scss/oncalendar.scss */
+/* line 324, ../scss/oncalendar.scss */
 .admin-table th, .admin-table td {
   border: 0;
   padding: 8px;
@@ -1039,42 +1056,42 @@ tr#add-victim-buttons, tr#edit-victim-buttons {
   white-space: nowrap;
 }
 
-/* line 315, ../scss/oncalendar.scss */
+/* line 331, ../scss/oncalendar.scss */
 .admin-panel-actions {
   font-size: 0.8em;
   margin: 15px 20px;
 }
 
-/* line 320, ../scss/oncalendar.scss */
+/* line 336, ../scss/oncalendar.scss */
 .admin-user-menu, .user-menu {
   margin: 5px 10px 0 10px;
   cursor: pointer;
   color: rgba(245, 245, 245, 0.5);
 }
 
-/* line 326, ../scss/oncalendar.scss */
+/* line 342, ../scss/oncalendar.scss */
 .admin-user-menu:hover, .user-menu:hover {
   color: whitesmoke;
 }
 
-/* line 330, ../scss/oncalendar.scss */
+/* line 346, ../scss/oncalendar.scss */
 span#username {
   cursor: pointer;
 }
 
-/* line 334, ../scss/oncalendar.scss */
+/* line 350, ../scss/oncalendar.scss */
 div#calendar-link {
   display: inline-block;
 }
 
-/* line 339, ../scss/oncalendar.scss */
+/* line 355, ../scss/oncalendar.scss */
 div#calendar-link a,
 div#calendar-link a:visited {
   color: black;
   text-decoration: none;
 }
 
-/* line 344, ../scss/oncalendar.scss */
+/* line 360, ../scss/oncalendar.scss */
 div#calendar-header {
   position: relative;
   margin-left: auto;
@@ -1082,53 +1099,53 @@ div#calendar-header {
   text-align: center;
 }
 
-/* line 351, ../scss/oncalendar.scss */
+/* line 367, ../scss/oncalendar.scss */
 div#calendar-box {
   padding: 0 2% 1% 2%;
 }
 
-/* line 355, ../scss/oncalendar.scss */
+/* line 371, ../scss/oncalendar.scss */
 div#group-legend {
   margin: 5px 0 0 35px;
 }
-/* line 357, ../scss/oncalendar.scss */
+/* line 373, ../scss/oncalendar.scss */
 div#group-legend span.group-legend-entry {
   margin: 0 3px 0 0;
   font-weight: bold;
   font-size: 0.8em;
 }
-/* line 362, ../scss/oncalendar.scss */
+/* line 378, ../scss/oncalendar.scss */
 div#group-legend .expander {
   display: inline-block;
   margin: 0 1px 2px 1px;
   border: 1px solid rgba(255, 255, 255, 0);
 }
-/* line 367, ../scss/oncalendar.scss */
+/* line 383, ../scss/oncalendar.scss */
 div#group-legend .expander:hover {
   border: 1px solid white;
 }
 
-/* line 372, ../scss/oncalendar.scss */
+/* line 388, ../scss/oncalendar.scss */
 table#calendar-table {
   width: 95%;
   margin: 0 auto 1% auto;
 }
-/* line 375, ../scss/oncalendar.scss */
+/* line 391, ../scss/oncalendar.scss */
 table#calendar-table span.edit-day-menu {
   position: absolute;
   top: 0;
   right: 0;
 }
-/* line 379, ../scss/oncalendar.scss */
+/* line 395, ../scss/oncalendar.scss */
 table#calendar-table span.edit-day-menu button {
   padding: 2px;
   font-size: 0.8em;
 }
-/* line 384, ../scss/oncalendar.scss */
+/* line 400, ../scss/oncalendar.scss */
 table#calendar-table td, table#calendar-table th {
   width: 14.28%;
 }
-/* line 387, ../scss/oncalendar.scss */
+/* line 403, ../scss/oncalendar.scss */
 table#calendar-table td {
   position: relative;
   border: 1px solid rgba(64, 64, 64, 0.75);
@@ -1136,53 +1153,53 @@ table#calendar-table td {
   white-space: nowrap;
   padding: 8px;
 }
-/* line 394, ../scss/oncalendar.scss */
+/* line 410, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day {
   vertical-align: top;
 }
-/* line 396, ../scss/oncalendar.scss */
+/* line 412, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day div {
   margin-top: 8px;
   display: inline-block;
   vertical-align: top;
 }
-/* line 401, ../scss/oncalendar.scss */
+/* line 417, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day div.calendar-day-victims {
   margin-left: 5px;
 }
-/* line 403, ../scss/oncalendar.scss */
+/* line 419, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day div.calendar-day-victims p {
   margin-bottom: 3px;
   cursor: default;
 }
-/* line 410, ../scss/oncalendar.scss */
+/* line 426, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day.prev-day,
 table#calendar-table td.calendar-day.post-day {
   color: rgba(0, 0, 0, 0.5);
   background-color: rgba(42, 70, 97, 0.1);
 }
-/* line 414, ../scss/oncalendar.scss */
+/* line 430, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day.null-day {
   background-color: null;
   border: none;
 }
-/* line 418, ../scss/oncalendar.scss */
+/* line 434, ../scss/oncalendar.scss */
 table#calendar-table td.calendar-day.today {
   background-color: rgba(220, 80, 80, 0.1);
   border-color: red;
 }
-/* line 422, ../scss/oncalendar.scss */
+/* line 438, ../scss/oncalendar.scss */
 table#calendar-table tr {
   min-height: 25px;
   position: relative;
 }
 
-/* line 428, ../scss/oncalendar.scss */
+/* line 444, ../scss/oncalendar.scss */
 div#edit-month-actions {
   margin: 10px 0 10px 30px;
 }
 
-/* line 432, ../scss/oncalendar.scss */
+/* line 448, ../scss/oncalendar.scss */
 div#group-info-box {
   background-color: white;
   margin-top: 5px;
@@ -1190,13 +1207,18 @@ div#group-info-box {
   border-top: 1px solid rgba(64, 64, 64, 0.75);
   border-bottom: 1px solid rgba(64, 64, 64, 0.75);
 }
-/* line 438, ../scss/oncalendar.scss */
+/* line 454, ../scss/oncalendar.scss */
 div#group-info-box div#group-info-box-buttons {
   font-size: 0.8em;
   margin: 20px 0 0 50px;
 }
+/* line 459, ../scss/oncalendar.scss */
+div#group-info-box button.page-primary-button,
+div#group-info-box button.panic-page-button {
+  font-size: 0.75em;
+}
 
-/* line 444, ../scss/oncalendar.scss */
+/* line 464, ../scss/oncalendar.scss */
 div#group-info-box-head h2 {
   margin: 0;
   margin-left: 35px;
@@ -1204,30 +1226,30 @@ div#group-info-box-head h2 {
   display: inline-block;
 }
 
-/* line 451, ../scss/oncalendar.scss */
+/* line 471, ../scss/oncalendar.scss */
 span#edit-group-info {
   font-size: 0.8em;
 }
 
-/* line 455, ../scss/oncalendar.scss */
+/* line 475, ../scss/oncalendar.scss */
 table#edit-group-info-table {
   margin-bottom: 25px;
 }
 
-/* line 460, ../scss/oncalendar.scss */
+/* line 480, ../scss/oncalendar.scss */
 div#edit-group-victims-popup div#group-victims-list-form {
   position: relative;
 }
-/* line 462, ../scss/oncalendar.scss */
+/* line 482, ../scss/oncalendar.scss */
 div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table {
   position: relative;
 }
-/* line 464, ../scss/oncalendar.scss */
+/* line 484, ../scss/oncalendar.scss */
 div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table div#victim-username-textbox {
   position: relative;
 }
 
-/* line 471, ../scss/oncalendar.scss */
+/* line 491, ../scss/oncalendar.scss */
 table#group-info-data {
   width: 90%;
   margin: 0;
@@ -1236,49 +1258,49 @@ table#group-info-data {
   text-align: left;
 }
 
-/* line 479, ../scss/oncalendar.scss */
+/* line 499, ../scss/oncalendar.scss */
 div#edit-day-popup {
   max-height: 650px;
 }
-/* line 481, ../scss/oncalendar.scss */
+/* line 501, ../scss/oncalendar.scss */
 div#edit-day-popup h3 {
   height: 25px;
   margin: 0 0 15px;
 }
-/* line 485, ../scss/oncalendar.scss */
+/* line 505, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-form {
   max-height: 550px;
   overflow: auto;
   border-top: 1px solid rgba(42, 70, 97, 0.1);
   border-bottom: 1px solid rgba(42, 70, 97, 0.1);
 }
-/* line 491, ../scss/oncalendar.scss */
+/* line 511, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table {
   width: 100%;
 }
-/* line 493, ../scss/oncalendar.scss */
+/* line 513, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table tr.shadow-row {
   border-bottom: 1px solid black;
 }
-/* line 496, ../scss/oncalendar.scss */
+/* line 516, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table td {
   padding: 0;
 }
 
-/* line 502, ../scss/oncalendar.scss */
+/* line 522, ../scss/oncalendar.scss */
 .autocomplete-selected {
   background-color: rgba(40, 70, 97, 0.75);
   color: whitesmoke;
 }
 
-/* line 507, ../scss/oncalendar.scss */
+/* line 527, ../scss/oncalendar.scss */
 .autocomplete-suggestion {
   overflow: hidden;
   margin-bottom: 1px;
   padding-left: 8px;
 }
 
-/* line 513, ../scss/oncalendar.scss */
+/* line 533, ../scss/oncalendar.scss */
 .autocomplete-suggestion:hover {
   cursor: pointer;
   background-color: rgba(40, 70, 97, 0.75);

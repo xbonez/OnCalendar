@@ -1,5 +1,6 @@
 var current_user = {{ user_json }};
 
+// Set up group turnover info and color key
 oncalendar.group_color_map = {};
 $.when(oncalendar.get_group_info()).then(function(data) {
     oncalendar.oncall_groups = {};
@@ -49,6 +50,7 @@ for (i = 0; i <= 23; i++) {
             '<button id="slot-' + i + '-30-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-30">--</button></span>' +
             '<ul id="slot-' + i + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
 }
+
 $(document).ready(function() {
 {% if month is defined and year is defined %}
     var incoming_month = {{ month }};
@@ -75,6 +77,7 @@ $(document).ready(function() {
         }
     );
 {% endif %}
+    // Autocomplete suggestions for adding victims to a group
     $('input#add-victim-username').autocomplete({
         minChars: 2,
         serviceUrl: '/api/victims/suggest',
@@ -143,6 +146,7 @@ var edit_calday = function(target_group, calday, cal_date) {
     });
 };
 
+// Populate the info in the group info panels
 var populate_group_info = function(target_group) {
 
     $('div#group-info-box-head').empty().append('<h2>' + target_group + '</h2>');
@@ -173,16 +177,19 @@ var populate_group_info = function(target_group) {
     $('td#group-autorotate').text(oncalendar.oncall_groups[target_group].autorotate ? 'Active' : 'Inactive');
     $('td#group-shadow').text(oncalendar.oncall_groups[target_group].shadow ? 'Enabled' : 'Not Enabled');
     $('td#group-alias').text(oncalendar.oncall_groups[target_group].alias + '@oncall.inside-box.net');
-    if (oncalendar.oncall_groups[target_group].backup) {
-        $('td#group-backup-alias').text(oncalendar.oncall_groups[target_group].backup_alias + '@oncall.inside-box.net');
-    } else {
-        $('td#group-backup-alias').text('Not Enabled');
+    $('td#group-backup').text(oncalendar.oncall_groups[target_group].backup ? 'Enabled' : 'Not Enabled')
+    var current_oncall = oncalendar.oncall_groups[target_group].victimid
+    $('td#group-current-oncall').text(
+        oncalendar.oncall_groups[target_group].victims[current_oncall].firstname + ' ' +
+        oncalendar.oncall_groups[target_group].victims[current_oncall].lastname + ' '
+    );
+    if (current_user.username !== "anonymous") {
+        $('td#group-current-oncall').append(
+            '<span>&bull;<button id="page-oncall-button" class="page-primary-button" data-target="' + target_group + '">Send Page</button>' +
+			'</span><span>&bull;<button id="panic-page-group-button" class="panic-page-button" data-target="' + target_group + '">Panic Page to Group</button></span>'
+        );
     }
-    if (oncalendar.oncall_groups[target_group].failsafe) {
-        $('td#group-failsafe-alias').text(oncalendar.oncall_groups[target_group].failsafe_alias + '@oncall.inside-box.net');
-    } else {
-        $('td#group-failsafe-alias').text('Not Enabled');
-    }
+
     oncalendar.oncall_groups[target_group].active_victims = [];
     $.each(oncalendar.oncall_groups[target_group].victims, function(id, victim) {
         if (victim.group_active == 1) {
@@ -251,7 +258,17 @@ $('#group-legend').on('click', 'div.expander', function() {
 
 
 $('#group-info-box').on('click', 'div.alert-box', function() {
-    $(this).remove();
+    var alert_box = $(this);
+    alert_box.addClass('transparent');
+    setTimeout(function() {
+        alert_box.remove();
+    }, 250);
+}).on('click', 'div.info-box', function() {
+    var info_box = $(this);
+    info_box.addClass('transparent');
+    setTimeout(function() {
+        info_box.remove();
+    }, 250);
 });
 
 $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
@@ -414,6 +431,83 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
     $.each(Object.keys(oncalendar.oncall_groups), function(i, group) {
         sessionStorage[group] = 'on';
     });
+}).on('click', 'button#page-oncall-button', function() {
+	target_group = $(this).attr('data-target');
+    $('input#oncall-page-originator').attr('value', current_user.username);
+    $('input#oncall-page-group').attr('value', target_group);
+
+    $.magnificPopup.open({
+        items: {
+            src: '#send-oncall-page-popup',
+            type: 'inline'
+        },
+        preloader: false,
+        removalDelay: 300,
+        mainClass: 'popup-animate',
+        callbacks: {
+            close: function() {
+                $('input#oncall-page-originator').removeAttr('value');
+                $('input#oncall-page-group').removeAttr('value');
+            }
+        }
+    });
+
+}).on('click', 'button#panic-page-group-button', function() {
+    target_group = $(this).attr('data-target');
+    $('input#panic-page-originator').attr('value', current_user.username);
+    $('input#panic-page-group').attr('value', target_group);
+
+    $.magnificPopup.open({
+        items: {
+            src: '#send-panic-page-popup',
+            type: 'inline'
+        },
+        preloader: false,
+        removalDelay: 300,
+        mainClass: 'popup-animate',
+        callbacks: {
+            close: function() {
+                $('input#panic-page-originator').removeAttr('value');
+                $('input#panic-page-group').removeAttr('value');
+            }
+        }
+    });
+});
+
+$('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page', function() {
+    $.magnificPopup.close();
+}).on('click', 'button#send-oncall-page-button', function() {
+	var group = $('input#oncall-page-group').val();
+    var sender = $('input#oncall-page-originator').val();
+    var message_text = $('textarea#page-primary-body').val();
+    $.when(oncalendar.send_oncall_sms(group, sender, message_text)).then(
+        function(data) {
+            $.magnificPopup.close();
+            $('#group-info-box').prepend('<div class="info-box">Your page has been sent.</div>');
+        },
+        function(data) {
+            $.magnificPopup.close();
+            $('#group-info-box').prepend('<div class="alert-box">Failure to page oncall: ' + data + '</div>');
+        }
+    );
+});
+
+$('#send-panic-page-popup').on('click', 'button#cancel-panic-page-button', function() {
+    $.magnificPopup.close();
+}).on('click', 'button#send-panic-page-button', function() {
+    var group = $('input#panic-page-group').val();
+    var sender = $('input#panic-page-originator').val();
+    var message_text = $('textarea#panic-page-body').val();
+    $.when(oncalendar.send_panic_sms(group, sender, message_text)).then(
+        function(data) {
+            $.magnificPopup.close();
+            $('#group-info-box').prepend('<div class="info-box">Your page has been sent.</div>');
+        },
+        function(data) {
+            $.magnificPopup.close();
+            $('group-info-box').prepend('<div class="alert-box">Failure to send panic page: ' + data + '</div>');
+        }
+    );
 });
 
 $('#edit-group-turnover-day-options').on('click', 'span', function() {

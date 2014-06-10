@@ -98,7 +98,7 @@ class OnCalendarSMS(object):
 
 
     @classmethod
-    def send_email(cls, address, body, subject='', format='html'):
+    def send_email(cls, address, body, subject='', format='html', sender=None):
 
         if format == 'html':
             message = MIMEText(body, 'html')
@@ -107,7 +107,7 @@ class OnCalendarSMS(object):
             message = MIMEText(body)
 
         message['Subject'] = subject
-        message['From'] = config.EMAIL_FROM
+        message['From'] = sender if sender is not None else config.EMAIL_FROM
         message['To'] = address
 
         if cls.testing:

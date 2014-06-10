@@ -1501,5 +1501,63 @@ var oncalendar = {
             });
 
         return update_day_object.promise();
+    },
+    send_oncall_sms: function(group, sender, message) {
+        var send_oncall_sms_object = new $.Deferred();
+        var send_oncall_sms_url = window.location.origin + '/api/notification/sms/oncall/' + group;
+        var oncall_sms_data = {
+            type: 'adhoc',
+            sender: sender,
+            body: message
+        };
+        var send_oncall_sms_request = $.ajax({
+            url: send_oncall_sms_url,
+            type: 'POST',
+            data: oncall_sms_data,
+            dataType: 'json'
+        }),
+            chain = send_oncall_sms_request.then(function(data) {
+                return data;
+            });
+
+        chain
+            .done(function(data) {
+                send_oncall_sms_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = $.parseJSON(data.responseText);
+                send_oncall_sms_object.reject(error.sms_error);
+            });
+
+        return send_oncall_sms_object.promise();
+    },
+    send_panic_sms: function(group, sender, message) {
+        var send_panic_sms_object = new $.Deferred();
+        var send_panic_sms_url = window.location.origin + '/api/notification/sms/group/' + group;
+        var panic_sms_data = {
+            type: 'adhoc',
+            sender: sender,
+            body: message
+        };
+        var send_panic_sms_request = $.ajax({
+            url: send_panic_sms_url,
+            type: 'POST',
+            data: panic_sms_data,
+            dataType: 'json'
+        }),
+            chain = send_panic_sms_request.then(function(data) {
+                return data;
+            });
+
+        chain
+            .done(function(data) {
+                send_panic_sms_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = $.parseJSON(data.responseText);
+                send_panic_sms_object.reject(error.sms_error);
+            });
+
+        return send_panic_sms_object.promise();
     }
 };

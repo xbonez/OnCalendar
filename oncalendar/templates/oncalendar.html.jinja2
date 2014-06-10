@@ -44,9 +44,8 @@
                 <th>Email</th>
                 <th>Auto-Rotation</th>
                 <th>Oncall Shadowing</th>
-                <th>Pager Address</th>
-                <th>Backup Pager</th>
-                <th>Panic Pager</th>
+                <th>Backup Oncall</th>
+                <th>Current Oncall</th>
               </tr>
             </thead>
             <tbody>
@@ -56,9 +55,8 @@
                 <td id="group-email-address"></td>
                 <td id="group-autorotate"></td>
                 <td id="group-shadow"></td>
-                <td id="group-alias"></td>
-                <td id="group-backup-alias"></td>
-                <td id="group-failsafe-alias"></td>
+                <td id="group-backup"></td>
+                <td id="group-current-oncall"></td>
               </tr>
               <tr>
                 <th id="group-members-head" colspan=7>Members</th>
@@ -253,6 +251,30 @@
             <td width="25%" align="right"><button id="edit-day-save-button">Save</button></td>
           </tr>
         </table>
+      </div>
+    </div>
+    <div id="send-oncall-page-popup" class="popup mfp-hide">
+      <h3>Page Primary Oncall For <span class="page-primary-groupname"></span></h3>
+      <div id="page-primary-form">
+        <input type="hidden" id="oncall-page-originator" name="oncall-page-originator" value="">
+        <input type="hidden" id="oncall-page-group" name="oncall-page-group" value="">
+        <textarea id="page-primary-body" name="page-primary-body" value=""></textarea>
+      </div>
+      <div id="send-oncall-page-action-buttons">
+        <span id="cancel-oncall-page"><button id="cancel-oncall-page-button">Cancel</button></span>
+        <span><button id="send-oncall-page-button">Send</button></span>
+      </div>
+    </div>
+    <div id="send-panic-page-popup" class="popup mfp-hide">
+      <h3>Send Panic Page to <span class="panic-page-groupname"></span></h3>
+      <div id="panic-page-form">
+        <input type="hidden" id="panic-page-originator" name="panic-page-originator" value="">
+        <input type="hidden" id="panic-page-group" name="panic-page-group" value="">
+        <textarea id="panic-page-body" name="panic-page-body" value=""></textarea>
+      </div>
+      <div id="send-panic-page-action-buttons">
+        <span id="cancel-panic-page"><button id="cancel-panic-page-button">Cancel</button></span>
+        <span id="send-panic-page"><button id="send-panic-page-button">Send Panic Page</button></span>
       </div>
     </div>
     <script type="text/javascript">

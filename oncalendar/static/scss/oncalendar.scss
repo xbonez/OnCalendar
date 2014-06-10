@@ -98,7 +98,19 @@ p {
     position: relative;
     top: 10px;
     width: 50%;
+    text-align: center;
     @include border-radius;
+    -webkit-transition: opacity 0.25s linear;
+    -moz-transition: opacity 0.25s linear;
+    -ms-transition: opacity 0.25s linear;
+    -o-transition: opacity 0.25s linear;
+    transition: opacity 0.25s linear;
+}
+
+.info-box {
+    @extend .alert-box;
+    border: 1px solid $info_border;
+    background-color: $info_bg;
 }
 
 .horshack {
@@ -185,6 +197,10 @@ p {
 
 .strikethrough {
     text-decoration: line-through;
+}
+
+.transparent {
+    opacity: 0;
 }
 
 /* Dropdown menus */
@@ -438,6 +454,10 @@ div#group-info-box {
     div#group-info-box-buttons {
         font-size: 0.8em;
         margin: 20px 0 0 50px;
+    }
+    button.page-primary-button,
+    button.panic-page-button {
+        font-size: 0.75em;
     }
 }
 
