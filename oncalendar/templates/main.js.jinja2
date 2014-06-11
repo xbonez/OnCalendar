@@ -427,6 +427,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
     }
 }).on('click', 'button#hide-others-button', function() {
     var target_group = $(this).attr('data-target');
+    $('button#toggle-group-button').text('Hide This Group').attr('data-state', 'on');
     $.each($('p.victim-group'), function(i, element) {
         if ($(element).attr('data-group') === target_group) {
             $(element).removeClass('hide');
