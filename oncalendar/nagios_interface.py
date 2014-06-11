@@ -12,9 +12,9 @@ class OnCalendarNagiosLivestatus(object):
 
     def __init__(self, config):
 
-        OnCalendarNagiosLivestatus.default_port = config.LIVESTATUS_PORT
-        OnCalendarNagiosLivestatus.nagios_masters = config.NAGIOS_MASTERS
-        OnCalendarNagiosLivestatus.testing = config.MONITOR_TEST_MODE
+        OnCalendarNagiosLivestatus.default_port = config['LIVESTATUS_PORT']
+        OnCalendarNagiosLivestatus.nagios_masters = config['NAGIOS_MASTERS']
+        OnCalendarNagiosLivestatus.testing = config['MONITOR_TEST_MODE']
         OnCalendarNagiosLivestatus.logger = getLogger(__name__)
 
 

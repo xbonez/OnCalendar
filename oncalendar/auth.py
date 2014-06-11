@@ -16,7 +16,7 @@ class User(object):
 
     @classmethod
     def test(cls):
-        ocdb = OnCalendarDB(config)
+        ocdb = OnCalendarDB(config.database)
         print ocdb.version
 
 
@@ -24,7 +24,7 @@ class User(object):
     def get(cls, search_key=False, search_value=False):
         if search_value:
             try:
-                ocdb = OnCalendarDB(config)
+                ocdb = OnCalendarDB(config.database)
                 victim_info = ocdb.get_victim_info(search_key, search_value)
             except OnCalendarDBError, error:
                 raise OnCalendarDBError(error.args[0], error.args[1])

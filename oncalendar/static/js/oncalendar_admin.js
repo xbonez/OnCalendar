@@ -40,7 +40,7 @@ var oncalendar_admin = {
         var expected_keys = ['DBHOST', 'DBUSER', 'DBPASSWORD', 'DBNAME'];
         var missing_keys = [];
         $.each(expected_keys, function(i, key) {
-            if (typeof oca.config_data[key] === "undefined") {
+            if (typeof oca.config_data.database[key] === "undefined") {
                 missing_keys.push(key);
             }
         });
@@ -63,11 +63,12 @@ var oncalendar_admin = {
             'shadow',
             'backup',
             'failsafe',
+            'email'
+        ];
+        var group_display_keys_email_gateway = [
             'alias',
             'backup_alias',
-            'failsafe_alias',
-            'email',
-            'auth_group'
+            'failsafe_alias'
         ];
         var victim_display_keys = [
             'id',
@@ -86,14 +87,14 @@ var oncalendar_admin = {
         $('#config-tab').addClass('selected');
         $('#config-panel-data').append('<table id="config-table" class="admin-table"></table>');
         var config_table = $('table#config-table');
-        config_table.append('<tr class="config-item"><th class="config-key">DB Host</th>' +
-            '<td id="config-dbhost" class="config-value">' + oca.config_data.DBHOST + '</td></tr>');
-        config_table.append('<tr class="config-item"><th class="config-key">DB User</th>' +
-            '<td id="config-dbuser" class="config-value">' + oca.config_data.DBUSER + '</td></tr>');
-        config_table.append('<tr class="config-item"><th class="config-key">DB Password</th>' +
-            '<td id="config-dbpassword" class="config-value">********</td></tr>');
-        config_table.append('<tr class="config-item"><th class="config-key">DB Name</th>' +
-            '<td id="config-dbname" class="config-value">' + oca.config_data.DBNAME + '</td></tr>');
+        $.each(oca.config_data, function(key, value) {
+            var text_entry = value;
+            if (key.match(/DBPASSWORD/) || key.match(/BINDPW/)) {
+                text_entry = '********';
+            }
+            config_table.append('<tr class="config-item"><th class="config-key caps">' + key.replace('_', ' ') + '</th>' +
+                '<td id="config-' + key + '" class="config-value">' + text_entry + '</td></tr>');
+        });
 
         $('#config-edit').click(function() {
             var td_host = $('td#config-dbhost'),
@@ -172,6 +173,11 @@ var oncalendar_admin = {
                     $.each(group_display_keys, function(i, key) {
                         $('#groups-table-header').append('<th class="caps">' + key.replace('_',' ') +'</th>');
                     });
+                    if (oca.config_data.EMAIL_GATEWAY) {
+                        $.each(group_display_keys_email_gateway, function(i, key) {
+                            $('#groups-table-header').append('<th class="caps">' + key.replace('_',' ') + '</th>');
+                        });
+                    }
                     $.each(data, function(index, row) {
                         groups_list[row.name] = row.id;
                         $('#groups-table').append('<tr id="group' + row.id + '"></tr>');
@@ -196,12 +202,14 @@ var oncalendar_admin = {
                             '<td class="group-shadow">' + basic_boolean[row.shadow] + '</td>' +
                             '<td class="group-backup">' + basic_boolean[row.backup] + '</td>' +
                             '<td class="group-failsafe">' + basic_boolean[row.failsafe] + '</td>' +
-                            '<td class="group-alias">' + row.alias + '</td>' +
-                            '<td class="group-backup-alias">' + row.backup_alias + '</td>' +
-                            '<td class="group-failsafe-alias">' + row.failsafe_alias + '</td>' +
-                            '<td class="group-email">' + row.email + '</td>' +
-                            '<td class="group-auth-group">' + row.auth_group + '</td>'
+                            '<td class="group-email">' + row.email + '</td>'
                         );
+                        if (oca.config_data.EMAIL_GATEWAY) {
+                            table_row.append('<td class="group-alias">' + row.alias + '</td>' +
+                                '<td class="group-backup-alias">' + row.backup_alias + '</td>' +
+                                '<td class="group-failsafe-alias">' + row.failsafe_alias + '</td>'
+                            );
+                        }
                     });
                 }
             },
@@ -221,11 +229,12 @@ var oncalendar_admin = {
             group_data.shadow = group_row.children('td.group-shadow').text();
             group_data.backup = group_row.children('td.group-backup').text();
             group_data.failsafe = group_row.children('td.group-failsafe').text();
-            group_data.alias = group_row.children('td.group-alias').text();
-            group_data.backup_alias = group_row.children('td.group-backup-alias').text();
-            group_data.failsafe_alias = group_row.children('td.group-failsafe-alias').text();
             group_data.email = group_row.children('td.group-email').text();
-            group_data.auth_group = group_row.children('td.group-auth-group').text();
+            if (oca.config_data.EMAIL_GATEWAY) {
+                group_data.alias = group_row.children('td.group-alias').text();
+                group_data.backup_alias = group_row.children('td.group-backup-alias').text();
+                group_data.failsafe_alias = group_row.children('td.group-failsafe-alias').text();
+            }
 
             group_row.before('<tr id="edit-group-form"></tr>');
             $('tr#edit-group-form').append('<td colspan="2"></td>' +
@@ -286,12 +295,14 @@ var oncalendar_admin = {
                 '<input type="hidden" id="edit-group-backup" name="edit-group-backup" value="0"></td>' +
                 '<td><button id="edit-group-failsafe-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-failsafe" data-checked="no"></button>' +
                 '<input type="hidden" id="edit-group-failsafe" name="edit-group-failsafe" value="0"></td>' +
-                '<td><input type="text" id="edit-group-alias" name="edit-group-alias" value=""></td>' +
-                '<td><input type="text" id="edit-group-backup-alias" name="edit-group-backup-alias" value=""></td>' +
-                '<td><input type="text" id="edit-group-failsafe-alias" name="edit-group-failsafe-alias" value=""></td>' +
-                '<td><input type="text" id="edit-group-email" name="edit-group-email" value=""></td>' +
-                '<td><input type="text" id="edit-group-auth-group" name="edit-group-auth-group" value=""></td>'
+                '<td><input type="text" id="edit-group-email" name="edit-group-email" value=""></td>'
             );
+            if (oca.config_data.EMAIL_GATEWAY) {
+                $('tr#edit-group-form').append('<td><input type="text" id="edit-group-alias" name="edit-group-alias" value=""></td>' +
+                    '<td><input type="text" id="edit-group-backup-alias" name="edit-group-backup-alias" value=""></td>' +
+                    '<td><input type="text" id="edit-group-failsafe-alias" name="edit-group-failsafe-alias" value=""></td>'
+                );
+            }
             $('tr#edit-group-form').after('<tr id="edit-group-buttons">' +
                 '<td colspan="3"></td>' +
                 '<td><button id="cancel-edit-group">Cancel</button></td>' +
@@ -1140,7 +1151,7 @@ var oncalendar_admin = {
     get_config_data: function() {
         var config_data = {};
         var config_request = $.ajax({
-            url: window.location.origin + '/api/admin/get_config',
+            url: window.location.origin + '/api/admin/config',
             type: 'GET',
             async: false,
             dataType: 'json'
@@ -1154,7 +1165,7 @@ var oncalendar_admin = {
 
     },
     update_configuration: function(new_config_data) {
-        var update_config_url = window.location.origin + '/api/admin/update_config';
+        var update_config_url = window.location.origin + '/api/admin/config';
         var update_config_object = new $.Deferred();
         var update_config_request = $.ajax({
             url: update_config_url,

@@ -24,7 +24,7 @@ class OnCalendarDB(object):
     Class to handle interactions with the OnCalendar database
     """
 
-    def __init__(self, config):
+    def __init__(self, dbconfig):
         """
         Create the connection to the OnCalendar database.
 
@@ -35,7 +35,7 @@ class OnCalendarDB(object):
         OnCalendarDB.logger = getLogger(__name__)
 
         try:
-            OnCalendarDB.oncalendar_db = mysql.connect(config.DBHOST, config.DBUSER, config.DBPASSWORD, config.DBNAME)
+            OnCalendarDB.oncalendar_db = mysql.connect(dbconfig['DBHOST'], dbconfig['DBUSER'], dbconfig['DBPASSWORD'], dbconfig['DBNAME'])
             cursor = OnCalendarDB.oncalendar_db.cursor()
             cursor.execute("SELECT VERSION()")
 
