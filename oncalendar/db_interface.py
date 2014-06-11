@@ -825,13 +825,20 @@ class OnCalendarDB(object):
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
         group_info_query = 'SELECT * FROM groups'
         if group_id:
+            cls.logger.debug("Getting group info for group id {0}".format(group_id))
             group_info_query += ' WHERE id={0}'.format(group_id)
         elif group_name:
+            cls.logger.debug("Getting group info for group {0}".format(group_name))
             group_info_query += " WHERE name='{0}'".format(group_name)
 
         try:
             cursor.execute(group_info_query)
         except mysql.Error, error:
+            cls.logger.error("Failed to get group info for {0} = {1}: {2}".format(
+                group_id if group_id else group_name,
+                error.args[0],
+                error.args[1]
+            ))
             raise OnCalendarDBError(error.args[0], error.args[1])
 
         groups = {}

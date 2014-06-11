@@ -42,7 +42,9 @@ ocapp.job_misses = {
 }
 ocapp.job_failures = {
     'check_current_victims': 0,
-    'get_incoming_sms': 0
+    'get_incoming_sms': 0,
+    'check_calendar_gaps_8hour': 0,
+    'check_calendar_gaps_48hour': 0
 }
 
 
@@ -180,7 +182,8 @@ def check_current_victims():
 
     except OnCalendarDBError as error:
         ocapp.job_failures['check_current_victims'] += 1
-        ocapp.aps_logger.error("Oncall rotation checked failed - {0}: {1}".format(
+        ocapp.aps_logger.error("Oncall rotation checked failed ({0} consecutive failures) - {1}: {2}".format(
+            ocapp.job_failures['check_current_victims'],
             error.args[0],
             error.args[1])
         )
@@ -209,7 +212,12 @@ def check_calendar_gaps_8hour():
                 "Your oncall schedule has gaps within the next 8 hours!",
                 False
             )
+
+        if ocapp.job_failures['check_calendar_gaps_8hour'] > 0:
+            ocapp.job_failures['check_calendar_gaps_8hour'] = 0
+
     except OnCalendarDBError as error:
+        ocapp.job_failures['check_calendar_gaps_8hour'] += 1
         ocapp.aps_logger.error("8 hour schedule gap check failed - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -237,7 +245,12 @@ def check_calendar_gaps_48hour():
                 "Oncall schedule gaps detected",
                 'plain'
             )
+
+        if ocapp.job_failures['check_calendar_gaps_48hour'] > 0:
+            ocapp.job_failures['check_calendar_gaps_48hour'] = 0
+
     except OnCalendarDBError as error:
+        ocapp.job_failures['check_calendar_gaps_48hour'] += 1
         ocapp.aps_logger.error("48 hour schedule gap check failed - {0}: {1}".format(
             error.args[0],
             error.args[1]
@@ -395,6 +408,7 @@ def root():
 
     return render_template('oncalendar.html.jinja2',
                            anonymous=is_anonymous,
+                           email_gateway=config.EMAIL_GATEWAY,
                            main_js=js,
                            stylesheet_url=url_for('static', filename='css/oncalendar.css'),
                            jquery_url=url_for('static', filename='js/jquery.js'),
@@ -784,8 +798,8 @@ def api_get_all_groups_info():
     Returns:
         (string): The dict of all configured groups rendered as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
