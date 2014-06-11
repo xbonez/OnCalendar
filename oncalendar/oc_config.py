@@ -2,6 +2,8 @@ class config(object):
     # App basic config
     SECRET_KEY          = ''
     APP_BASE_DIR        = ''
+    JOB_MASTER          = True
+    EMAIL_DOMAIN        = ''
     # Database config
     DBUSER              = 'oncalendar'
     DBHOST              = 'localhost'
@@ -22,6 +24,7 @@ class config(object):
     SCHEDULE_LOG_FILE   = ''
     # SMS Notification configs
     SMS_TEST_MODE       = False
+    EMAIL_GATEWAY       = False
     TWILIO_NUMBER       = ''
     TWILIO_SID          = ''
     TWILIO_TOKEN        = ''

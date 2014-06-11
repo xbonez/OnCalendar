@@ -77,6 +77,7 @@ $(document).ready(function() {
         }
     );
 {% endif %}
+  
     // Autocomplete suggestions for adding victims to a group
     $('input#add-victim-username').autocomplete({
         minChars: 2,
@@ -209,6 +210,15 @@ var populate_group_info = function(target_group) {
     $('button#hide-others-button').attr('data-target', target_group);
 };
 
+var valid_email = function(email_address) {
+    valid = email_address.match(/^[^\s]+@[^\s]+\.[^\s]{2,3}$/);
+    if (valid !== null) {
+        return true;
+    } else {
+        return false;
+    }
+};
+
 $('#prev-month-button').click(function() {
     oncalendar.go_to_prev_month();
 });
@@ -273,22 +283,18 @@ $('#group-info-box').on('click', 'div.alert-box', function() {
 
 $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
     target_group = $(this).attr('data-target');
+    $('span#edit-group-info-title-name').text(target_group);
     $('input#edit-group-id').attr('value', oncalendar.oncall_groups[target_group].id);
     $('input#edit-group-name').attr('value', oncalendar.oncall_groups[target_group].name);
     $('input#edit-group-auth-group').attr('value', oncalendar.oncall_groups[target_group].auth_group)
-    $('button#edit-group-turnover-day-label').prepend(oc.day_strings[oncalendar.oncall_groups[target_group].turnover_day]);
+    $('button#edit-group-turnover-day-label').empty()
+        .append(oc.day_strings[oncalendar.oncall_groups[target_group].turnover_day] +
+        '<span class="elegant_icons arrow_carrot-down"></span>');
     $('input#edit-group-turnover-day').attr('value', oncalendar.oncall_groups[target_group].turnover_day);
     $('button#edit-group-turnover-hour-label').text(oncalendar.oncall_groups[target_group].turnover_hour + ' ').append('<span class="elegant_icons arrow_carrot-down"></span>');
     $('input#edit-group-turnover-hour').attr('value', oncalendar.oncall_groups[target_group].turnover_hour);
     $('button#edit-group-turnover-min-label').text(oncalendar.oncall_groups[target_group].turnover_min + ' ').append('<span class="elegant_icons arrow_carrot-down"></span>');
     $('input#edit-group-turnover-min').attr('value', oncalendar.oncall_groups[target_group].turnover_min);
-    if (oncalendar.oncall_groups[target_group].autorotate) {
-        $('button#edit-group-autorotate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
-        $('input#edit-group-autorotate').attr('value', 1);
-    } else {
-        $('button#edit-group-autorotate-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-        $('input#edit-group-autorotate').attr('value', 0);
-    }
     if (oncalendar.oncall_groups[target_group].shadow) {
         $('button#edit-group-shadow-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#edit-group-shadow').attr('value', 1);
@@ -325,12 +331,19 @@ $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
         },
         preloader: false,
         removalDelay: 300,
-        mainClass: 'popup-animate'
-    })
+        mainClass: 'popup-animate',
+        callbacks: {
+            close: function() {
+				$('input#edit-group-email').removeClass('missing-input');
+				$('span#edit-group-info-title-name').text('');
+            }
+        }
+	});
 });
 
 $('#group-info-box-info').on('click', 'button#edit-members', function() {
     target_group = $(this).attr('data-target');
+    $('span#edit-group-victims-title-name').text(target_group);
     victims = oncalendar.oncall_groups[target_group].victims;
     victims_table = $('table#group-victims-list-table');
 
@@ -344,6 +357,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
         mainClass: 'popup-animate',
         callbacks: {
             close: function() {
+                $('span#edit-group-victims-title-name').text('');
                 $('tr.victim-row').remove();
                 $('tr#edit-victims-form-buttons').remove();
                 $('tr#victim-table-divider').remove();
@@ -555,42 +569,45 @@ $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function()
     $.magnificPopup.close();
 }).on('click', 'button#edit-group-save-button', function() {
     var group_data = {};
-    $.each($('table#edit-group-info-table').children('tbody').children('tr').children('td').has('input'), function(index, element) {
-        if ($(element).attr('id') === "group-uneditable") {
-            group_data.active = 1;
-            group_data.name = $(element).children('input#edit-group-name').val();
-            group_data.id = $(element).children('input#edit-group-id').val();
-            group_data.auth_group = $(element).children('input#edit-group-auth-group').val();
-        } else {
-            var el_input = $(element).children('input');
-            if (el_input.length > 1) {
+	if (! valid_email($('input#edit-group-email').val())) {
+		$('input#edit-group-email').addClass('missing-input');
+	} else {
+	    $.each($('table#edit-group-info-table').children('tbody').children('tr').children('td').has('input'), function(index, element) {
+	        if ($(element).attr('id') === "group-uneditable") {
+	            group_data.active = 1;
+	            group_data.name = $(element).children('input#edit-group-name').val();
+	            group_data.id = $(element).children('input#edit-group-id').val();
+	            group_data.auth_group = $(element).children('input#edit-group-auth-group').val();
+				group_data.autorotate = $(element).children('input#edit-group-autorotate').val();
+	        } else if ($(element).attr('id') === "turnover-time-cell") {
                 group_data.turnover_hour = $(element).children('input#edit-group-turnover-hour').val();
                 group_data.turnover_min = $(element).children('input#edit-group-turnover-min').val();
                 group_data.turnover_time = [group_data.turnover_hour, group_data.turnover_min].join(':');
             } else {
-                var form_key = el_input.attr('id').replace('edit-group-', '').replace('-', '_');
-                group_data[form_key] = el_input.val();
+                var form_key = $(element).children('input').attr('id').replace('edit-group-', '').replace('-', '_');
+                group_data[form_key] = $(element).children('input').val();
             }
-        }
-    });
-    $.when(oncalendar.update_group(group_data)).then(
-        function(data) {
-            if (data.turnover_hour < 10) {
-                data.turnover_hour = '0' + data.turnover_hour;
-            }
-            if (data.turnover_min < 10) {
-                data.turnover_min = '0' + data.turnover_min;
-            }
-            data.turnover_time = [data.turnover_hour, data.turnover_min].join(':');
-            data.victims = oncalendar.oncall_groups[data.name].victims;
-            oncalendar.oncall_groups[data.name] = data;
-            populate_group_info(data.name);
-            $.magnificPopup.close();
-        },
-        function(data) {
-            $('div#edit-group-popup').prepend('<div class="alert-box">Update failed: ' + data[1] + '</div>');
-        }
-    );
+	    });
+	    $.when(oncalendar.update_group(group_data)).then(
+	        function(data) {
+	            if (data.turnover_hour < 10) {
+	                data.turnover_hour = '0' + data.turnover_hour;
+	            }
+	            if (data.turnover_min < 10) {
+	                data.turnover_min = '0' + data.turnover_min;
+	            }
+	            data.turnover_time = [data.turnover_hour, data.turnover_min].join(':');
+	            data.victims = oncalendar.oncall_groups[data.name].victims;
+	            oncalendar.oncall_groups[data.name] = data;
+	            populate_group_info(data.name);
+	            $.magnificPopup.close();
+				$('div#group-info-box').prepend('<div class="info-box">Changes have been saved</div>');
+	        },
+	        function(data) {
+	            $('div#edit-group-popup').prepend('<div class="alert-box">Update failed: ' + data[1] + '</div>');
+	        }
+	    );
+	}
 
 });
 
@@ -613,15 +630,6 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     }
 }).on('click', 'button#edit-group-victims-cancel', function() {
     $.magnificPopup.close();
-}).on('click', 'button#edit-group-victims-save', function() {
-    var victims_data = {};
-    $.each($('tr.victim-row'), function() {
-        var victim = $(this).attr('data-victim-id');
-        victims_data[victim] = {
-            remove: $('input#target-victim' + victim).val(),
-            active: $('input#target-victim' + victim).val()
-        };
-    });
 }).on('blur', 'input#add-victim-username', function() {
     if ($('input#add-victim-email').val().length < 9) {
 		$('input#add-victim-email').val($(this).val() + '@box.com');
@@ -729,8 +737,12 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
             var group_name = $('div#group-info-box-head').children('h2').text();
             oncalendar.oncall_groups[group_name].victims = data;
             populate_group_info(group_name);
+			$('#group-info-box').prepend('<div class="info-box">Group member changes saved</div>');
             $.magnificPopup.close();
-        }
+        },
+		function(data) {
+			$('#edit-group-victims-popup').prepend('<div class="alert-box">Unable to save changes: ' + data[1] +'</div>');
+		}
     );
 });
 

@@ -77,6 +77,14 @@ input[type="color"],
     box-shadow: none;
 }
 
+input.missing-input {
+    border-color: red;
+}
+
+input.missing-input:focus {
+    outline-color: red;
+}
+
 p {
     -webkit-margin-before: 0;
     -webkit-margin-after: 0;
