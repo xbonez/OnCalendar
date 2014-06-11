@@ -1447,7 +1447,8 @@ class OnCalendarDB(object):
                     victims if there was a change.
         """
         cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        current_victims_query = "SELECT name, id, victimid, shadowid, backupid FROM groups"
+        current_victims_query = """SELECT name, id, victimid, shadowid, backupid
+        FROM groups WHERE autorotate=1"""
         try:
             cursor.execute(current_victims_query)
         except mysql.Error as error:
@@ -1465,7 +1466,7 @@ class OnCalendarDB(object):
         FROM calendar c, groups g
         WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
         AND month='{1}' AND day='{2}')
-        AND hour='{3}' AND min='{4}' AND c.groupid=g.id""".format(
+        AND hour='{3}' AND min='{4}' AND c.groupid=g.id AND g.autorotate=1""".format(
             today.year,
             today.month,
             today.day,

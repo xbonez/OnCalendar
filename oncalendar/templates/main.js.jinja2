@@ -5,7 +5,7 @@ oncalendar.group_color_map = {};
 $.when(oncalendar.get_group_info()).then(function(data) {
     oncalendar.oncall_groups = {};
 	$.each(data, function(group, group_info) {
-		if (group_info.active == 1) {
+		if (group_info.active == 1 && group_info.autorotate == 1) {
 			oncalendar.oncall_groups[group] = group_info;
 		}
 	});
@@ -13,7 +13,7 @@ $.when(oncalendar.get_group_info()).then(function(data) {
 		alert('no group info found, please try again');
 	}
     group_count = 0;
-    $.each(oncalendar.oncall_groups, function (name, date) {
+    $.each(Object.keys(oncalendar.oncall_groups).sort(), function (i, name) {
         if (oncalendar.oncall_groups[name].turnover_hour < 10) {
             oncalendar.oncall_groups[name].turnover_hour = '0' + oncalendar.oncall_groups[name].turnover_hour;
         }
@@ -23,7 +23,10 @@ $.when(oncalendar.get_group_info()).then(function(data) {
         oncalendar.oncall_groups[name].turnover_string = oncalendar.oncall_groups[name].turnover_hour + '-' + oncalendar.oncall_groups[name].turnover_min;
         oncalendar.group_color_map[name] = color_wheel.Wheel[5][group_count];
         group_count++;
-    });
+		$('div#group-legend').append('<div class="expander"><span class="expander-arrow elegant_icons arrow_carrot-right" ' +
+            'data-state="closed"  data-group="' + name + '" data-groupid="' + oncalendar.oncall_groups[name].id + '"></span>' +
+            '<span class="group-legend-entry" style="color: '+ oncalendar.group_color_map[name] + ';">' + name + '</span></div>');
+	});
 });
 
 {% block page_script %}
@@ -58,26 +61,16 @@ $(document).ready(function() {
     $.when(oncalendar.build_calendar(incoming_year, incoming_month)).then(
         function() {
             oncalendar.display_calendar();
-            $.each(oncalendar.oncall_groups, function(name, date) {
-                $('div#group-legend').append('<div class="expander"><span class="expander-arrow elegant_icons arrow_carrot-right" ' +
-                    'data-state="closed"  data-group="' + name + '" data-groupid="' + oncalendar.oncall_groups[name].id + '"></span>' +
-                    '<span class="group-legend-entry" style="color: '+ oncalendar.group_color_map[name] + ';">' + name + '</span></div>');
-            });
         }
     );
 {% else %}
     $.when(oncalendar.build_calendar()).then(
         function() {
             oncalendar.display_calendar();
-            $.each(oncalendar.oncall_groups, function(name, date) {
-                $('div#group-legend').append('<div class="expander"><span class="expander-arrow elegant_icons arrow_carrot-right" ' +
-                    'data-state="closed"  data-group="' + name + '" data-groupid="' + oncalendar.oncall_groups[name].id + '"></span>' +
-                    '<span class="group-legend-entry" style="color: '+ oncalendar.group_color_map[name] + ';">' + name + '</span></div>');
-            });
         }
     );
 {% endif %}
-  
+
     // Autocomplete suggestions for adding victims to a group
     $('input#add-victim-username').autocomplete({
         minChars: 2,
@@ -98,6 +91,7 @@ $(document).ready(function() {
     });
 });
 
+// Edit the schedule for a specific day
 var edit_calday = function(target_group, calday, cal_date) {
 
     $('#edit-day-group').text(' - ' + target_group);
@@ -177,18 +171,19 @@ var populate_group_info = function(target_group) {
     $('td#group-email-address').text(oncalendar.oncall_groups[target_group].email);
     $('td#group-autorotate').text(oncalendar.oncall_groups[target_group].autorotate ? 'Active' : 'Inactive');
     $('td#group-shadow').text(oncalendar.oncall_groups[target_group].shadow ? 'Enabled' : 'Not Enabled');
-    $('td#group-alias').text(oncalendar.oncall_groups[target_group].alias + '@oncall.inside-box.net');
     $('td#group-backup').text(oncalendar.oncall_groups[target_group].backup ? 'Enabled' : 'Not Enabled')
-    var current_oncall = oncalendar.oncall_groups[target_group].victimid
-    $('td#group-current-oncall').text(
-        oncalendar.oncall_groups[target_group].victims[current_oncall].firstname + ' ' +
-        oncalendar.oncall_groups[target_group].victims[current_oncall].lastname + ' '
-    );
-    if (current_user.username !== "anonymous") {
-        $('td#group-current-oncall').append(
-            '<span>&bull;<button id="page-oncall-button" class="page-primary-button" data-target="' + target_group + '">Send Page</button>' +
-			'</span><span>&bull;<button id="panic-page-group-button" class="panic-page-button" data-target="' + target_group + '">Panic Page to Group</button></span>'
+    if (oncalendar.oncall_groups[target_group].victimid !== null) {
+        var current_oncall = oncalendar.oncall_groups[target_group].victimid
+        $('td#group-current-oncall').text(
+            oncalendar.oncall_groups[target_group].victims[current_oncall].firstname + ' ' +
+            oncalendar.oncall_groups[target_group].victims[current_oncall].lastname + ' '
         );
+        if (current_user.username !== "anonymous") {
+            $('td#group-current-oncall').append(
+                '<span>&bull;<button id="page-oncall-button" class="page-primary-button" data-target="' + target_group + '">Send Page</button>' +
+				'</span><span>&bull;<button id="panic-page-group-button" class="panic-page-button" data-target="' + target_group + '">Panic Page to Group</button></span>'
+            );
+        }
     }
 
     oncalendar.oncall_groups[target_group].active_victims = [];
@@ -210,6 +205,7 @@ var populate_group_info = function(target_group) {
     $('button#hide-others-button').attr('data-target', target_group);
 };
 
+// Simple validation for email addresses
 var valid_email = function(email_address) {
     valid = email_address.match(/^[^\s]+@[^\s]+\.[^\s]{2,3}$/);
     if (valid !== null) {
