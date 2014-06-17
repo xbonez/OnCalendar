@@ -11,7 +11,6 @@ class User(object):
     lastname = ''
     app_role = ''
     groups = []
-    ldap_groups = []
 
 
     @classmethod
@@ -76,14 +75,10 @@ class ldap_auth(object):
         user = User.get('username', username)
         if user is not None:
             try:
-                ocldap = ldap.initialize(config.LDAP_URL)
-                ocldap.bind_s(config.LDAP_BINDDN, config.LDAP_BINDPW)
-                user_info = ocldap.search_s(config.LDAP_BASEDN, ldap.SCOPE_SUBTREE, 'uid={0}'.format(username))
+                ocldap = ldap.initialize(config.ldap_auth['LDAP_URL'])
+                ocldap.bind_s(config.ldap_auth['LDAP_BINDDN'], config.ldap_auth['LDAP_BINDPW'])
+                user_info = ocldap.search_s(config.ldap_auth['LDAP_BASEDN'], ldap.SCOPE_SUBTREE, 'uid={0}'.format(username))
                 user_dn =  user_info[0][0]
-                user_groups = ocldap.search_s(config.LDAP_GROUPSDN, ldap.SCOPE_SUBTREE, 'memberUid={0}'.format(username), attrlist=['cn'])
-                for group in user_groups:
-                    group_entry = group[1]
-                    user.ldap_groups.append(group_entry['cn'][0])
                 ocldap.bind_s(user_dn, password)
                 ocldap.unbind_s()
                 return user
