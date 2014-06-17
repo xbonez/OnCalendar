@@ -56,10 +56,11 @@ def scheduled_job_listener(event):
     Args:
         (JobEvent): The event fired by the scheduled job
     """
-    jobname = event.job.__str__().split()[0]
+    job = event.job.__str__().split()
+    jobname = job[0]
     ocapp.aps_logger.debug("Job {0} has fired".format(jobname))
     if jobname in ocapp.job_misses:
-        if event.exception:
+        if 'skipped:' in job:
             ocapp.job_misses[jobname] += 1
             ocapp.aps_logger.debug("Job {0} has missed {1} consecutive runs".format(jobname, ocapp.job_misses[jobname]))
             if ocapp.job_misses[jobname] > 10:
