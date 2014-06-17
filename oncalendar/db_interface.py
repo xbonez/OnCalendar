@@ -292,7 +292,7 @@ class OnCalendarDB(object):
         try:
             fetch_cursor.execute('SELECT * FROM caldays WHERE id=(SELECT MIN(id) FROM caldays)')
         except mysql.Error, error:
-            raise OnCalendarDBError(error.args[0], error.argw[1])
+            raise OnCalendarDBError(error.args[0], error.args[1])
 
         row = fetch_cursor.fetchone()
         current_start = dt.date(
@@ -1491,6 +1491,8 @@ class OnCalendarDB(object):
         FROM victims v1, victims v2
         WHERE v1.id='{0}' AND v2.id='{1}'"""
         rotate_query = "UPDATE groups SET {0}='{1}' WHERE id='{2}'"
+        phone_cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        rotate_cursor = cls.oncalendar_db.cursor()
 
         for row in cursor.fetchall():
             cls.logger.debug('db_interface: checking primary for {0}'.format(row['name']))
@@ -1501,8 +1503,8 @@ class OnCalendarDB(object):
                     try:
                         if current_victims[row['name']]['victimid'] is None:
                             victim_phone_query = phone_query.format(row['victimid'])
-                            cursor.execute(victim_phone_query)
-                            phone = cursor.fetchone()
+                            phone_cursor.execute(victim_phone_query)
+                            phone = phone_cursor.fetchone()
                             schedule_status[row['name']]['oncall'] = {
                                 'updated': True,
                                 'previous': None,
@@ -1515,8 +1517,8 @@ class OnCalendarDB(object):
                                 row['victimid'],
                                 current_victims[row['name']]['victimid']
                             )
-                            cursor.execute(victim_phones_query)
-                            phones = cursor.fetchone()
+                            phone_cursor.execute(victim_phones_query)
+                            phones = phone_cursor.fetchone()
                             schedule_status[row['name']]['oncall'] = {
                                 'updated': True,
                                 'previous': current_victims[row['name']]['victimid'],
@@ -1533,7 +1535,7 @@ class OnCalendarDB(object):
                             row['name'],
                             update_victim_query,
                         ))
-                        cursor.execute(update_victim_query)
+                        rotate_cursor.execute(update_victim_query)
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking primary for {0})'.format(row['name']))
                 else:
@@ -1544,8 +1546,8 @@ class OnCalendarDB(object):
                     try:
                         if current_victims[row['name']]['shadowid'] is None:
                             shadow_phone_query = phone_query.format(row['shadowid'])
-                            cursor.execute(shadow_phone_query)
-                            phone = cursor.fetchone()
+                            phone_cursor.execute(shadow_phone_query)
+                            phone = phone_cursor.fetchone()
                             schedule_status[row['name']]['shadow'] = {
                                 'updated': True,
                                 'previous': None,
@@ -1558,8 +1560,8 @@ class OnCalendarDB(object):
                                 row['shadowid'],
                                 current_victims[row['name']]['shadowid']
                             )
-                            cursor.execute(shadow_phones_query)
-                            phones = cursor.fetchone()
+                            phone_cursor.execute(shadow_phones_query)
+                            phones = phone_cursor.fetchone()
                             schedule_status[row['name']]['shadow'] = {
                                 'updated': True,
                                 'previous': current_victims[row['name']]['shadowid'],
@@ -1572,8 +1574,7 @@ class OnCalendarDB(object):
                             row['shadowid'],
                             row['groupid']
                         )
-                        cursor.execute(update_shadow_query)
-                        cls.oncalendar_db.commit()
+                        rotate_cursor.execute(update_shadow_query)
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking shadow for {0})'.format(row['name']))
                 else:
@@ -1584,8 +1585,8 @@ class OnCalendarDB(object):
                     try:
                         if current_victims[row['name']]['backupid'] is None:
                             backup_phone_query = phone_query.format(row['backupid'])
-                            cursor.execute(backup_phone_query)
-                            phone = cursor.fetchone()
+                            phone_cursor.execute(backup_phone_query)
+                            phone = phone_cursor.fetchone()
                             schedule_status[row['name']]['backup'] = {
                                 'updated': True,
                                 'previous': None,
@@ -1598,8 +1599,8 @@ class OnCalendarDB(object):
                                 row['backupid'],
                                 current_victims[row['name']]['backupid']
                             )
-                            cursor.execute(backup_phones_query)
-                            phones = cursor.fetchone()
+                            phone_cursor.execute(backup_phones_query)
+                            phones = phone_cursor.fetchone()
                             schedule_status[row['name']]['backup'] = {
                                 'updated': True,
                                 'previous': current_victims[row['name']]['backupid'],
@@ -1612,8 +1613,7 @@ class OnCalendarDB(object):
                             row['backupid'],
                             row['groupid']
                         )
-                        cursor.execute(update_backup_query)
-                        cls.oncalendar_db.commit()
+                        rotate_cursor.execute(update_backup_query)
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking backup for {0})'.format(row['name']))
                 else:
