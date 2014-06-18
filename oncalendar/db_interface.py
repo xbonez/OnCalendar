@@ -140,6 +140,8 @@ class OnCalendarDB(object):
                 "KEY FK_victimid (victimid)",
                 "KEY FK_shadowid (shadowid)",
                 "KEY FK_backupid (backupid)",
+                "KEY FK_groupid (groupid)",
+                "CONSTRAINT FK_groupid FOREIGN KEY (groupid) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE",
                 "CONSTRAINT FK_backupid FOREIGN KEY (backupid) REFERENCES victims (id) ON DELETE SET NULL ON UPDATE SET NULL",
                 "CONSTRAINT FK_calday FOREIGN KEY (calday) REFERENCES caldays (id) ON DELETE CASCADE ON UPDATE CASCADE",
                 "CONSTRAINT FK_shadowid FOREIGN KEY (shadowid) REFERENCES victims (id) ON DELETE SET NULL ON UPDATE SET NULL",
