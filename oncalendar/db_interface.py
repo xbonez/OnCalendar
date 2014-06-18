@@ -31,21 +31,20 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        OnCalendarDB.version = None
-        OnCalendarDB.logger = getLogger(__name__)
+        self.version = None
+        self.logger = getLogger(__name__)
 
         try:
-            OnCalendarDB.oncalendar_db = mysql.connect(dbconfig['DBHOST'], dbconfig['DBUSER'], dbconfig['DBPASSWORD'], dbconfig['DBNAME'])
-            cursor = OnCalendarDB.oncalendar_db.cursor()
+            self.oncalendar_db = mysql.connect(dbconfig['DBHOST'], dbconfig['DBUSER'], dbconfig['DBPASSWORD'], dbconfig['DBNAME'])
+            cursor = self.oncalendar_db.cursor()
             cursor.execute("SELECT VERSION()")
 
-            OnCalendarDB.version = cursor.fetchone()
+            self.version = cursor.fetchone()
         except mysql.Error, error:
             raise OnCalendarDBError(error.args[0], error.args[1])
 
 
-    @classmethod
-    def verify_database(cls):
+    def verify_database(self):
         """
         Verify the table structure of the OnCalendar database
 
@@ -74,7 +73,7 @@ class OnCalendarDB(object):
                 db_init_ts = f.read()
                 f.close()
 
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         try:
             cursor.execute('SHOW TABLES')
         except mysql.Error, error:
@@ -88,8 +87,7 @@ class OnCalendarDB(object):
         return {'missing_tables': missing_tables, 'db_init_ts': db_init_ts}
 
 
-    @classmethod
-    def initialize_database(cls, force_init=False):
+    def initialize_database(self, force_init=False):
         """
         Initialize the table structure of the OnCalendar database.
 
@@ -226,9 +224,9 @@ class OnCalendarDB(object):
         if db_init_ts and not force_init:
             raise OnCalendarDBError(OCDB_ERROR, 'DB Already Initialized at {0}'.format(db_init_ts))
         else:
-            with cls.oncalendar_db:
+            with self.oncalendar_db:
                 for table in expected_tables:
-                    cursor = cls.oncalendar_db.cursor()
+                    cursor = self.oncalendar_db.cursor()
                     try:
                         cursor.execute('DROP TABLE IF EXISTS {0}'.format(table))
                         cursor.execute('CREATE TABLE {0}({1})'.format(table,",".join(expected_tables[table])))
@@ -248,8 +246,7 @@ class OnCalendarDB(object):
         return {'init_status': 'OK', 'db_init_ts': db_init_ts}
 
 
-    @classmethod
-    def get_caldays_end(cls):
+    def get_caldays_end(self):
         """
         Get the last configured day in the caldays table.
 
@@ -260,7 +257,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        fetch_cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        fetch_cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         try:
             fetch_cursor.execute('SELECT * FROM caldays WHERE id=(SELECT MAX(id) FROM caldays)')
         except mysql.Error, error:
@@ -276,8 +273,7 @@ class OnCalendarDB(object):
         return current_end
 
 
-    @classmethod
-    def get_caldays_start(cls):
+    def get_caldays_start(self):
         """
         Get the first configured day in the caldays table.
 
@@ -288,7 +284,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        fetch_cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        fetch_cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         try:
             fetch_cursor.execute('SELECT * FROM caldays WHERE id=(SELECT MIN(id) FROM caldays)')
         except mysql.Error, error:
@@ -304,8 +300,7 @@ class OnCalendarDB(object):
         return current_start
 
 
-    @classmethod
-    def extend_caldays(cls, days):
+    def extend_caldays(self, days):
         """
         Extend the caldays table
 
@@ -318,7 +313,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        current_end = cls.get_caldays_end()
+        current_end = self.get_caldays_end()
         end_tuple = current_end.timetuple()
         end_year, end_month, end_day = end_tuple[0:3]
         day = dt.timedelta(days=1)
@@ -328,7 +323,7 @@ class OnCalendarDB(object):
             day=int(end_day)
         ) + day
 
-        insert_cursor = cls.oncalendar_db.cursor()
+        insert_cursor = self.oncalendar_db.cursor()
 
         for i in range(days):
             insert_query = "INSERT INTO caldays (year,month,day) VALUES({0},{1},{2})".format(
@@ -339,18 +334,17 @@ class OnCalendarDB(object):
             try:
                 insert_cursor.execute(insert_query)
             except mysql.Error, error:
-                cls.oncalendar_db.rollback()
+                self.oncalendar_db.rollback()
                 raise OnCalendarDBError(error.args[0], error.args[1])
             insert_date = insert_date + day
 
-        cls.oncalendar_db.commit()
+        self.oncalendar_db.commit()
 
-        new_end = cls.get_caldays_end()
+        new_end = self.get_caldays_end()
         return new_end
 
 
-    @classmethod
-    def get_calendar(cls, year, month, group=None):
+    def get_calendar(self, year, month, group=None):
         year = int(year)
         month = int(month)
         start_dow, month_days = calendar.monthrange(year, month)
@@ -377,8 +371,8 @@ class OnCalendarDB(object):
             post_differential = dt.timedelta(days=post_days)
 
 
-        calendar_start = cls.get_caldays_start().timetuple()
-        calendar_end = cls.get_caldays_end().timetuple()
+        calendar_start = self.get_caldays_start().timetuple()
+        calendar_end = self.get_caldays_end().timetuple()
 
         # If the month is in the same year, but more than one month before
         # the start of the calendar we're out of bounds
@@ -465,7 +459,7 @@ class OnCalendarDB(object):
                 day=month_days
             ) + post_differential
 
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         try:
             cursor.execute('SELECT id FROM caldays WHERE \
                             id >= (SELECT id from caldays WHERE year={0} AND month={1} AND day={2}) AND \
@@ -478,7 +472,6 @@ class OnCalendarDB(object):
                 last_day.day
             ))
         except mysql.Error, error:
-            error_string = "Database error {0}: {1}".format(error.args[0], error.args[1])
             raise OnCalendarDBError(error.args[0], error.args[1])
 
         rows = cursor.fetchall()
@@ -491,7 +484,7 @@ class OnCalendarDB(object):
             view_days.append(str(row[0]))
             cal_month[row[0]] = { 'slots': {}}
 
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
 
         query_string = """SELECT c.calday, d.year, d.month, d.day, c.hour, c.min, g.name as group_name,
         v1.username AS victim, v1.firstname as victim_first, v1.lastname as victim_last,
@@ -544,10 +537,9 @@ class OnCalendarDB(object):
         return cal_month
 
 
-    @classmethod
-    def update_calendar_month(cls, group_name=False, update_day_data=False):
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        group_info = cls.get_group_info(False, group_name)
+    def update_calendar_month(self, group_name=False, update_day_data=False):
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        group_info = self.get_group_info(False, group_name)
         day_slots = [[group_info[group_name]['turnover_hour'], group_info[group_name]['turnover_min']]]
         post_slots = [[0, 0], [0, 30]]
         if day_slots[0][1] == 0:
@@ -719,13 +711,12 @@ class OnCalendarDB(object):
                 except mysql.Error, error:
                     raise OnCalendarDBError(error.args[0], error.args[1])
 
-        cls.oncalendar_db.commit()
+        self.oncalendar_db.commit()
 
         return "Success"
 
 
-    @classmethod
-    def update_calendar_day(cls, update_day_data):
+    def update_calendar_day(self, update_day_data):
         """
         Update specific oncall/shadow slots for a given day
 
@@ -738,7 +729,7 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         update_group = update_day_data['group']
         update_calday = update_day_data['calday']
         update_slots = update_day_data['slots']
@@ -771,7 +762,7 @@ class OnCalendarDB(object):
             except mysql.Error, error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
-        cls.oncalendar_db.commit()
+        self.oncalendar_db.commit()
 
         new_day_query = """SELECT c.hour, c.min,
         v1.username AS victim, v1.firstname AS victim_first, v1.lastname AS victim_last,
@@ -807,8 +798,7 @@ class OnCalendarDB(object):
         return slots
 
 
-    @classmethod
-    def get_group_info(cls, group_id=False, group_name=False):
+    def get_group_info(self, group_id=False, group_name=False):
         """
         Get information on all groups, or a single group if
         group_id is provided
@@ -822,19 +812,19 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         group_info_query = 'SELECT * FROM groups'
         if group_id:
-            cls.logger.debug("Getting group info for group id {0}".format(group_id))
+            self.logger.debug("Getting group info for group id {0}".format(group_id))
             group_info_query += ' WHERE id={0}'.format(group_id)
         elif group_name:
-            cls.logger.debug("Getting group info for group {0}".format(group_name))
+            self.logger.debug("Getting group info for group {0}".format(group_name))
             group_info_query += " WHERE name='{0}'".format(group_name)
 
         try:
             cursor.execute(group_info_query)
         except mysql.Error, error:
-            cls.logger.error("Failed to get group info for {0} = {1}: {2}".format(
+            self.logger.error("Failed to get group info for {0} = {1}: {2}".format(
                 group_id if group_id else group_name,
                 error.args[0],
                 error.args[1]
@@ -847,14 +837,13 @@ class OnCalendarDB(object):
             groups[row['name']]['victims'] = {}
 
         for group in groups:
-            group_victims = cls.get_group_victims(group)
+            group_victims = self.get_group_victims(group)
             groups[group]['victims'] = group_victims
 
         return groups
 
 
-    @classmethod
-    def get_group_victims(cls, group_name):
+    def get_group_victims(self, group_name):
         """
         Get all victims associated with a group.
 
@@ -867,7 +856,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes MySQL error code and message.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         group_victim_query = "SELECT v.id, v.username, v.firstname,\
         v.lastname, v.phone, v.email, v.sms_email, v.app_role, v.throttle,\
         IFNULL(TIMESTAMPDIFF(SECOND, NOW(), throttle_until), 0) AS throttle_time_remaining,\
@@ -886,8 +875,7 @@ class OnCalendarDB(object):
         return group_victims
 
 
-    @classmethod
-    def add_group(cls, group_data):
+    def add_group(self, group_data):
         """
         Insert a new group record in the OnCalendar database.
 
@@ -903,7 +891,7 @@ class OnCalendarDB(object):
 
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         add_group_query = 'INSERT INTO groups (name, active, autorotate, turnover_day, turnover_hour, turnover_min, backup, shadow, failsafe, alias, backup_alias, failsafe_alias, email, auth_group) \
             VALUES(\'{0}\',\'{1}\',\'{2}\',\'{3}\',\'{4}\',\'{5}\',\'{6}\',\'{7}\',\'{8}\',\'{9}\',\'{10}\',\'{11}\',\'{12}\',\'{13}\')'.format(
                 group_data['name'],
@@ -929,8 +917,8 @@ class OnCalendarDB(object):
             if rows:
                 raise OnCalendarDBError(ocapi_err.GROUPEXISTS, 'Group {0} already exists'.format(group_data['name']))
             cursor.execute(add_group_query)
-            cls.oncalendar_db.commit()
-            cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+            self.oncalendar_db.commit()
+            cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
             cursor.execute('SELECT * FROM groups WHERE name=\'{0}\''.format(group_data['name']))
             row = cursor.fetchone()
             return row
@@ -938,8 +926,7 @@ class OnCalendarDB(object):
             raise OnCalendarDBError(error.args[0], 'Failed to add group to database - {0}'.format(error.args[1]))
 
 
-    @classmethod
-    def delete_group(cls, group_id=False):
+    def delete_group(self, group_id=False):
         """
         Delete a group record from the OnCalendar database.
 
@@ -952,13 +939,13 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         if group_id:
             try:
                 cursor.execute('DELETE FROM groups WHERE id={0}'.format(group_id))
-                cls.oncalendar_db.commit()
+                self.oncalendar_db.commit()
             except mysql.Error, error:
-                cls.oncalendar_db.rollback()
+                self.oncalendar_db.rollback()
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
             cursor.execute('SELECT COUNT(*) FROM groups')
@@ -968,8 +955,7 @@ class OnCalendarDB(object):
             raise OnCalendarAPIError(ocapi_err.NOPARAM, 'No group id given for deletion')
 
 
-    @classmethod
-    def update_group(cls, group_data):
+    def update_group(self, group_data):
         """
         Update the information for a group in the OnCalendar database.
 
@@ -982,7 +968,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         update_query = "UPDATE groups SET name='{0}',active='{1}',autorotate='{2}',turnover_day='{3}',\
                        turnover_hour='{4}',turnover_min='{5}',shadow='{6}',backup='{7}',failsafe='{8}',\
                        alias='{9}',backup_alias='{10}',failsafe_alias='{11}',email='{12}' \
@@ -1004,8 +990,8 @@ class OnCalendarDB(object):
         )
         try:
             cursor.execute(update_query)
-            cls.oncalendar_db.commit()
-            cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+            self.oncalendar_db.commit()
+            cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
             cursor.execute('SELECT * FROM groups WHERE id=\'{0}\''.format(group_data['id']))
         except mysql.Error, error:
             raise OnCalendarDBError(error.args[0], error.args[1])
@@ -1014,8 +1000,7 @@ class OnCalendarDB(object):
         return row
 
 
-    @classmethod
-    def update_group_victims(cls, group_victim_changes):
+    def update_group_victims(self, group_victim_changes):
         """
         Change the active status or remove a user from the group.
 
@@ -1025,7 +1010,7 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the MySQL error code and message.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         for victim in group_victim_changes['victims']:
             if victim['remove']:
                 try:
@@ -1046,7 +1031,7 @@ class OnCalendarDB(object):
                 except mysql.Error, error:
                     raise OnCalendarDBError(error.args[0], error.args[1])
 
-        cls.oncalendar_db.commit()
+        self.oncalendar_db.commit()
 
         try:
             cursor.execute("SELECT v.id, v.username, v.firstname,\
@@ -1074,8 +1059,7 @@ class OnCalendarDB(object):
         return victims
 
 
-    @classmethod
-    def get_victim_info(cls, search_key=False, search_value=False):
+    def get_victim_info(self, search_key=False, search_value=False):
         """
         Get information on all victims, or a single victim if
         a search_key and search_value are provided
@@ -1090,7 +1074,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         victim_info_query = """SELECT v.id, v.active, v.username, v.firstname,
         v.lastname, v.phone, v.email, v.sms_email, v.app_role, v.throttle,
         IFNULL(TIMESTAMPDIFF(SECOND, NOW(), throttle_until), 0) AS throttle_time_remaining,
@@ -1132,8 +1116,7 @@ class OnCalendarDB(object):
         return victims
 
 
-    @classmethod
-    def add_victim(cls, victim_data):
+    def add_victim(self, victim_data):
         """
         Insert a new victim record in the OnCalendar database.
 
@@ -1149,7 +1132,7 @@ class OnCalendarDB(object):
 
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         add_victim_query = "INSERT INTO victims (active, username, firstname, lastname, phone, email, sms_email, app_role) \
         VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}')".format(
             victim_data['active'],
@@ -1168,10 +1151,10 @@ class OnCalendarDB(object):
             if rows:
                 raise OnCalendarDBError(ocapi_err.VICTIMEXISTS, 'User {0} already exists'.format(victim_data['username']))
             cursor.execute(add_victim_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
             cursor.execute("SELECT LAST_INSERT_ID()")
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to add user to database - {0}'.format(error.args[1]))
 
         new_victim_id_tuple = cursor.fetchone()
@@ -1184,18 +1167,17 @@ class OnCalendarDB(object):
                         new_victim_id
                     )
                 )
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to add user to groups - {0}'.format(error.args[1]))
 
-        new_victim = cls.get_victim_info('username', victim_data['username'])
+        new_victim = self.get_victim_info('username', victim_data['username'])
 
         return new_victim[new_victim_id]
 
 
-    @classmethod
-    def add_victim_to_group(cls, victim_id, group_id):
+    def add_victim_to_group(self, victim_id, group_id):
         """
         Adds an already existing victim to a group
 
@@ -1210,26 +1192,25 @@ class OnCalendarDB(object):
             (OnCalendarDBError): Passes the mysql error code and message.
         """
 
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         group_add_query = """REPLACE INTO groupmap (groupid, victimid, active)
         VALUES ({0}, {1}, 1""".format(group_id, victim_id)
         try:
             cursor.execute(group_add_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error as error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(
                 error.args[0],
                 "Failed to add user to groups - {0}".format(error.args[1])
             )
 
-        updated_victim = cls.git_victim_info('id', victim_id)
+        updated_victim = self.git_victim_info('id', victim_id)
 
         return updated_victim[victim_id]
 
 
-    @classmethod
-    def delete_victim(cls, victim_id=False):
+    def delete_victim(self, victim_id=False):
         """
         Delete a victim record from the OnCalendar database.
 
@@ -1242,14 +1223,14 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         if victim_id:
             try:
                 cursor.execute('DELETE FROM victims WHERE id={0}'.format(victim_id))
                 cursor.execute('DELETE FROM groupmap WHERE victimid={0}'.format(victim_id))
-                cls.oncalendar_db.commit()
+                self.oncalendar_db.commit()
             except mysql.Error, error:
-                cls.oncalendar_db.rollback()
+                self.oncalendar_db.rollback()
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
             cursor.execute('SELECT COUNT(*) FROM victims')
@@ -1258,8 +1239,8 @@ class OnCalendarDB(object):
         else:
             raise OnCalendarAPIError(ocapi_err.NOPARAM, 'No userid given for deletion')
 
-    @classmethod
-    def update_victim(cls, victim_data):
+
+    def update_victim(self, victim_data):
         """
         Update the information for a victim record in the OnCalendar database.
 
@@ -1272,7 +1253,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         update_victim_query = """UPDATE victims SET username='{0}',
         firstname='{1}', lastname='{2}', phone='{3}', active='{4}',
         sms_email='{5}', app_role='{6}', email='{7}'
@@ -1290,9 +1271,9 @@ class OnCalendarDB(object):
 
         try:
             cursor.execute(update_victim_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'User update failed - {0}'.format(error.args[1]))
 
         try:
@@ -1314,18 +1295,17 @@ class OnCalendarDB(object):
                         gid,
                         victim_data['id']
                     ))
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to update user groups - {0}'.format(error.args[1]))
 
-        updated_victim = cls.get_victim_info('username', victim_data['username'])
+        updated_victim = self.get_victim_info('username', victim_data['username'])
 
         return updated_victim
 
 
-    @classmethod
-    def set_victim_preference(cls, victimid, pref, value):
+    def set_victim_preference(self, victimid, pref, value):
         """
         Updates the preference fields in the user record
 
@@ -1337,7 +1317,7 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         update_pref_query = """UPDATE victims SET {0}={1} WHERE id='{2}'""".format(
             pref,
             value,
@@ -1350,8 +1330,7 @@ class OnCalendarDB(object):
             raise OnCalendarDBError(error.args[0], error.args[1])
 
 
-    @classmethod
-    def get_current_victims(cls, group=False):
+    def get_current_victims(self, group=False):
         """
         Queries the calendar for the current scheduled victims, optionally filtered by group name.
 
@@ -1364,7 +1343,7 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         get_victims_query = """SELECT name, id AS groupid, email AS group_email,
         victimid, shadowid, backupid
         FROM groups"""
@@ -1386,20 +1365,19 @@ class OnCalendarDB(object):
             current_victims[row['name']]['shadow'] = None
             current_victims[row['name']]['backup'] = None
             if row['victimid'] is not None:
-                victim_info = cls.get_victim_info('id', row['victimid'])
+                victim_info = self.get_victim_info('id', row['victimid'])
                 current_victims[row['name']]['oncall'] = victim_info[row['victimid']]
             if row['shadowid'] is not None:
-                shadow_info = cls.get_victim_info('id', row['shadowid'])
+                shadow_info = self.get_victim_info('id', row['shadowid'])
                 current_victims[row['name']]['shadow'] = shadow_info[row['shadowid']]
             if row['backupid'] is not None:
-                backup_info = cls.get_victim_info('id', row['backupid'])
+                backup_info = self.get_victim_info('id', row['backupid'])
                 current_victims[row['name']]['backup'] = backup_info[row['backupid']]
 
         return current_victims
 
 
-    @classmethod
-    def get_suggested_victims(cls, stub):
+    def get_suggested_victims(self, stub):
         """
         Queries the victims table for any usernames matching the stub.
 
@@ -1413,7 +1391,7 @@ class OnCalendarDB(object):
             OnCalendarDBError: Passes the mysql error code and message.
         """
 
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         victim_stub_query = """SELECT id, username, firstname, lastname,
         phone, email, sms_email FROM victims
         WHERE username like '{0}%'""".format(stub)
@@ -1443,8 +1421,7 @@ class OnCalendarDB(object):
         return suggested_victims
 
 
-    @classmethod
-    def check_schedule(cls):
+    def check_schedule(self):
         """
         Queries the calendar and checks against list of current victims,
         updates the list if necessary
@@ -1453,7 +1430,7 @@ class OnCalendarDB(object):
             (dict): Status of the check for each group, previous and new
                     victims if there was a change.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         current_victims_query = """SELECT name, id, victimid, shadowid, backupid
         FROM groups WHERE autorotate=1"""
         try:
@@ -1491,15 +1468,15 @@ class OnCalendarDB(object):
         FROM victims v1, victims v2
         WHERE v1.id='{0}' AND v2.id='{1}'"""
         rotate_query = "UPDATE groups SET {0}='{1}' WHERE id='{2}'"
-        phone_cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        rotate_cursor = cls.oncalendar_db.cursor()
+        phone_cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        rotate_cursor = self.oncalendar_db.cursor()
 
         for row in cursor.fetchall():
-            cls.logger.debug('db_interface: checking primary for {0}'.format(row['name']))
+            self.logger.debug('db_interface: checking primary for {0}'.format(row['name']))
             schedule_status[row['name']] = {}
             if row['victimid'] is not None:
                 if row['victimid'] != current_victims[row['name']]['victimid']:
-                    cls.logger.debug('db_interface: New primary found, updating')
+                    self.logger.debug('db_interface: New primary found, updating')
                     try:
                         if current_victims[row['name']]['victimid'] is None:
                             victim_phone_query = phone_query.format(row['victimid'])
@@ -1531,7 +1508,7 @@ class OnCalendarDB(object):
                             row['victimid'],
                             row['groupid']
                         )
-                        cls.logger.debug('Update query for {0}: {1}'.format(
+                        self.logger.debug('Update query for {0}: {1}'.format(
                             row['name'],
                             update_victim_query,
                         ))
@@ -1619,12 +1596,11 @@ class OnCalendarDB(object):
                 else:
                     schedule_status[row['name']]['backup'] = {'updated': False}
 
-        cls.oncalendar_db.commit()
+        self.oncalendar_db.commit()
         return schedule_status
 
 
-    @classmethod
-    def check_8hour_gaps(cls):
+    def check_8hour_gaps(self):
         """
         Checks the next 8 hours of all schedules and reports
         if there are gaps.
@@ -1647,7 +1623,7 @@ class OnCalendarDB(object):
         date_cross = True if end.day != start.day else False
         gap_check = {}
 
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
 
         if date_cross:
             today_query = """SELECT g.name, g.id as groupid, c.hour, c.min
@@ -1712,8 +1688,7 @@ class OnCalendarDB(object):
         return gap_check
 
 
-    @classmethod
-    def check_48hour_gaps(cls):
+    def check_48hour_gaps(self):
         """
         Checks the next 48 hours of all schedules and reports
         if there are gaps.
@@ -1736,7 +1711,7 @@ class OnCalendarDB(object):
 
         gap_check = {}
 
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
 
         day1_query = """SELECT g.name, g.id as groupid, c.hour, c.min
         FROM calendar c, groups g
@@ -1793,8 +1768,7 @@ class OnCalendarDB(object):
         return gap_check
 
 
-    @classmethod
-    def get_victim_message_count(cls, victim, throttle_time):
+    def get_victim_message_count(self, victim, throttle_time):
         """
         Retrieves the count of SMS messages sent to the user within the
         last <throttle_time> seconds.
@@ -1809,7 +1783,7 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         message_count_query = """SELECT COUNT(*) FROM sms_send
         WHERE victimid=(SELECT id FROM victims WHERE username='{0}')
         AND ts > DATE_SUB(NOW(), INTERVAL {1} SECOND)""".format(
@@ -1827,8 +1801,7 @@ class OnCalendarDB(object):
         return message_count
 
 
-    @classmethod
-    def set_throttle(cls, victim, throttle_time):
+    def set_throttle(self, victim, throttle_time):
         """
         Sets the "throttle until" timestamp for the user
 
@@ -1839,21 +1812,20 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         set_throttle_query = """UPDATE victims
         SET throttle_until=DATE_ADD(NOW(), INTERVAL {0} SECOND)
         WHERE username='{1}'""".format(throttle_time, victim)
 
         try:
             cursor.execute(set_throttle_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], error.args[1])
 
 
-    @classmethod
-    def add_sms_record(cls, groupid, victimid, alert_type, type, host, service, nagios_master):
+    def add_sms_record(self, groupid, victimid, alert_type, type, host, service, nagios_master):
         """
         Adds a record for a sent SMS message to the sms_send table.
 
@@ -1865,16 +1837,16 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         add_record_query = """INSERT INTO sms_send (groupid, victimid, alert_type, type, host, service, nagios_master)
         VALUES({0}, {1}, '{2}')""".format(groupid, victimid, alert_type, type, host, service, nagios_master)
 
         try:
             cursor.execute(add_record_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
             cursor.execute("SELECT LAST_INSERT_ID()")
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], error.args[1])
 
         sms_id = cursor.fetchone()
@@ -1882,8 +1854,7 @@ class OnCalendarDB(object):
         return sms_id
 
 
-    @classmethod
-    def get_sms_record(cls, userid, hash):
+    def get_sms_record(self, userid, hash):
         """
         Retrieves a record of a sent SMS alert
 
@@ -1897,7 +1868,7 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         get_record_query = """SELECT * FROM sms_send
         WHERE victimid='{0}' AND sms_hash='{1}'""".format(
             userid,
@@ -1913,8 +1884,7 @@ class OnCalendarDB(object):
         return row
 
 
-    @classmethod
-    def set_sms_hash(cls, id, hash):
+    def set_sms_hash(self, id, hash):
         """
         Adds the generated hash word to the sms_send record.
 
@@ -1925,19 +1895,18 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         set_hash_query = """UPDATE sms_send SET sms_hash='{0}' WHERE id='{1}'""".format(hash, id)
 
         try:
             cursor.execute(set_hash_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], error.args[1])
 
 
-    @classmethod
-    def set_sms_sid(cls, id, sid):
+    def set_sms_sid(self, id, sid):
         """
         Adds the Twilio SMS SID to the sms_send record.
 
@@ -1948,19 +1917,18 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         set_sid_query = """UPDATE sms_send SET twilio_sms_sid='{0}' WHERE id='{1}'""".format(sid, id)
 
         try:
             cursor.execute(set_sid_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error, error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], error.args[1])
 
 
-    @classmethod
-    def get_last_incoming_sms(cls):
+    def get_last_incoming_sms(self):
         """
         Queries for the Twilio SID of the last incoming SMS that was processed.
 
@@ -1970,7 +1938,7 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         get_last_sid_query = "SELECT twilio_sms_sid FROM sms_state WHERE name='last_incoming_sms'"
         sid = None
 
@@ -1985,8 +1953,7 @@ class OnCalendarDB(object):
         return sid
 
 
-    @classmethod
-    def update_last_incoming_sms(cls, sid):
+    def update_last_incoming_sms(self, sid):
         """
         Updates the record for the last processed incoming SMS
 
@@ -1996,12 +1963,12 @@ class OnCalendarDB(object):
         Raises:
             OnCalendarDBError: Passes the mysql error code and message.
         """
-        cursor = cls.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor()
         update_sid_query = "UPDATE sms_state SET twilio_sms_sid='{0}' WHERE name='last_incoming_sms'".format(sid)
 
         try:
             cursor.execute(update_sid_query)
-            cls.oncalendar_db.commit()
+            self.oncalendar_db.commit()
         except mysql.Error as error:
-            cls.oncalendar_db.rollback()
+            self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], error.args[1])

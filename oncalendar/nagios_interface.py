@@ -11,16 +11,13 @@ class OnCalendarNagiosError(Exception):
 class OnCalendarNagiosLivestatus(object):
 
     def __init__(self, config):
+        self.default_port = config['LIVESTATUS_PORT']
+        self.nagios_masters = config['NAGIOS_MASTERS']
+        self.testing = config['MONITOR_TEST_MODE']
+        self.logger = getLogger(__name__)
 
-        OnCalendarNagiosLivestatus.default_port = config['LIVESTATUS_PORT']
-        OnCalendarNagiosLivestatus.nagios_masters = config['NAGIOS_MASTERS']
-        OnCalendarNagiosLivestatus.testing = config['MONITOR_TEST_MODE']
-        OnCalendarNagiosLivestatus.logger = getLogger(__name__)
 
-
-    @classmethod
-    def query_livestatus(cls, nagios_master, port, query, wait=True):
-
+    def query_livestatus(self, nagios_master, port, query, wait=True):
         try:
             ls_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             ls_socket.connect((nagios_master, int(port)))
@@ -42,20 +39,17 @@ class OnCalendarNagiosLivestatus(object):
         return query_result
 
 
-    @classmethod
-    def nagios_command(cls, nagios_master, port, command):
-
+    def nagios_command(self, nagios_master, port, command):
         ts = dt.datetime.now()
 
         query = "COMMAND [{0}] {1}\n\n".format(ts.strftime('%s'), command)
-        if cls.testing:
-            cls.logger.debug("Nagios query: {0}".format(query))
+        if self.testing:
+            self.logger.debug("Nagios query: {0}".format(query))
         else:
-            cls.query_livestatus(nagios_master, port, query, False)
+            self.query_livestatus(nagios_master, port, query, False)
 
 
-    @classmethod
-    def calculate_downtime(cls):
+    def calculate_downtime(self):
         start = dt.datetime.today()
         tomorrow = start + dt.timedelta(days=1)
         stop = dt.datetime(
