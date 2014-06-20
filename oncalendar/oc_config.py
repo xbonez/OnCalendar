@@ -2,6 +2,8 @@ class config(object):
     basic = {
         'SECRET_KEY': '',
         'APP_BASE_DIR': '',
+        'CLUSTERED': False,
+        'CLUSTER_NAME': '',
         'JOB_MASTER': True,
         'EMAIL_DOMAIN': '',
         'CSRF_ENABLED': True

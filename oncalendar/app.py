@@ -6,6 +6,7 @@ import logging
 import MySQLdb as mysql
 import os
 import re
+import uwsgi
 
 from oncalendar import default_log_handler
 from oncalendar.api_exceptions import OnCalendarAPIError, OnCalendarAuthError, ocapi_err
@@ -16,36 +17,54 @@ from oncalendar.nagios_interface import OnCalendarNagiosLivestatus, OnCalendarNa
 from oncalendar.oc_config import config
 from oncalendar.sms_interface import OnCalendarSMS, OnCalendarSMSError
 
-ocapp = Flask(__name__)
-ocapp.config.update(config.basic)
-login_manager = flogin.LoginManager()
-login_manager.login_view = 'oc_login'
-login_manager.init_app(ocapp)
-
-if not ocapp.debug:
-    del ocapp.logger.handlers[:]
-    ocapp.logger.setLevel(getattr(logging, config.logging['LOG_LEVEL']))
-    ocapp.logger.addHandler(default_log_handler)
-
-ocapp.aps_logger = logging.getLogger('apscheduler')
-ocapp.aps_logger.setLevel(getattr(logging, config.logging['LOG_LEVEL']))
-ocapp.aps_logger.addHandler(default_log_handler)
 
 
-# Start the scheduler and set up logging for it
+# -----------------------
+# Scheduled job functions
+# -----------------------
+def start_scheduler(master_takeover=False):
+    """
+    Checks to make sure this instance is the job (and if necessary)
+    cluster master, adds the scheduled jobs and starts them.
+    """
 
-# These jobs run frequently and need to be watch in case they
-# hang up and start missing executions
-ocapp.job_misses = {
-    'check_current_victims': 0,
-    'get_incoming_sms': 0
-}
-ocapp.job_failures = {
-    'check_current_victims': 0,
-    'get_incoming_sms': 0,
-    'check_calendar_gaps_8hour': 0,
-    'check_calendar_gaps_48hour': 0
-}
+    ocapp.aps_logger.debug('Starting the job scheduler')
+    if config.basic['JOB_MASTER']:
+        ocapp.aps_logger.debug('I am the Job Master')
+        job_master = True
+
+        if config.basic['CLUSTERED']:
+            if not master_takeover and not uwsgi.i_am_the_lord(config.basic['CLUSTER_NAME']):
+                ocapp.aps_logger.debug('But I am not the Cluster Lord...')
+                job_master = False
+
+        if job_master:
+            # event 64 = EVENT_JOB_EXECUTED, 256 = EVENT_JOB_MISSED
+            ocapp.scheduler.add_listener(scheduled_job_listener, 64|256)
+
+            ocapp.scheduler.add_interval_job(check_current_victims, minutes=1, coalesce=True)
+            ocapp.scheduler.add_interval_job(check_calendar_gaps_8hour, hours=1)
+            ocapp.scheduler.add_cron_job(check_calendar_gaps_48hour, hour='9,12,15,18')
+            ocapp.scheduler.add_interval_job(get_incoming_sms, seconds=30, coalesce=True)
+
+            ocapp.scheduler.start()
+
+    return job_master
+
+
+def stop_scheduler():
+    """
+    Stops scheduler and removes all scheduled jobs in the event this instance
+    is no longer the job and/or cluster master
+    """
+
+    jobs = ocapp.scheduler.get_jobs()
+    for job in jobs:
+        ocapp.scheduler.unschedule_job(job)
+
+    ocapp.scheduler.shutdown()
+
+    return True
 
 
 def scheduled_job_listener(event):
@@ -74,53 +93,6 @@ def scheduled_job_listener(event):
                 ocapp.job_misses[jobname] = 0
 
 
-ocapp_scheduler = Scheduler()
-
-# event 64 = EVENT_JOB_EXECUTED, 256 = EVENT_JOB_MISSED
-ocapp_scheduler.add_listener(scheduled_job_listener, 64|256)
-
-# Only start the scheduler on the master server, to avoid conflicts
-if config.basic['JOB_MASTER']:
-    ocapp_scheduler.start()
-
-
-class OnCalendarFileWriteError(Exception):
-    """
-    Exception class for errors writing files from the app.
-    """
-    pass
-
-class OnCalendarFormParseError(Exception):
-    """
-    Exception class for errors parsing incoming form data.
-    """
-
-    pass
-
-
-class OnCalendarBadRequest(Exception):
-    """
-    Exception class for bad requests to the API.
-    """
-
-    def __init__(self, payload):
-        Exception.__init__(self)
-        self.status_code = 400
-        self.payload = payload
-
-
-class OnCalendarAppError(Exception):
-    """
-    Exception class for internal application errors
-    """
-
-    def __init__(self, payload):
-        Exception.__init__(self)
-        self.status_code = 500
-        self.payload = payload
-
-
-@ocapp_scheduler.interval_schedule(minutes=1, coalesce=True)
 def check_current_victims():
     """
     Scheduled job to check the current oncall/shadow/backup for each
@@ -193,7 +165,6 @@ def check_current_victims():
             ocsms.send_failsafe("OnCalendar scheduled rotation check failed: {0}".format(error.args[1]))
 
 
-@ocapp_scheduler.interval_schedule(hours=1)
 def check_calendar_gaps_8hour():
     """
     Checks the calendar for the next 8 hours and alerts
@@ -225,7 +196,6 @@ def check_calendar_gaps_8hour():
         ))
 
 
-@ocapp_scheduler.cron_schedule(hour='9,12,15,18')
 def check_calendar_gaps_48hour():
     """
     Checks the calendar for the next 48 hours and emails
@@ -258,7 +228,6 @@ def check_calendar_gaps_48hour():
         ))
 
 
-@ocapp_scheduler.interval_schedule(seconds=30, coalesce=True)
 def get_incoming_sms():
     """
     Pulls the recent incoming SMS messages from Twilio for response parsing
@@ -353,7 +322,79 @@ def get_incoming_sms():
                 ))
 
 
-@login_manager.user_loader
+ocapp = Flask(__name__)
+
+ocapp.config.update(config.basic)
+ocapp.login_manager = flogin.LoginManager()
+ocapp.login_manager.login_view = 'oc_login'
+ocapp.login_manager.init_app(ocapp)
+
+if not ocapp.debug:
+    del ocapp.logger.handlers[:]
+    ocapp.logger.setLevel(getattr(logging, config.logging['LOG_LEVEL']))
+    ocapp.logger.addHandler(default_log_handler)
+
+# Start the scheduler and set up logging for it
+
+ocapp.scheduler = Scheduler()
+
+ocapp.aps_logger = logging.getLogger('apscheduler')
+ocapp.aps_logger.setLevel(getattr(logging, config.logging['LOG_LEVEL']))
+ocapp.aps_logger.addHandler(default_log_handler)
+
+# These jobs run frequently and need to be watch in case they
+# hang up and start missing executions
+ocapp.job_misses = {
+    'check_current_victims': 0,
+    'get_incoming_sms': 0
+}
+ocapp.job_failures = {
+    'check_current_victims': 0,
+    'get_incoming_sms': 0,
+    'check_calendar_gaps_8hour': 0,
+    'check_calendar_gaps_48hour': 0
+}
+
+ocapp.scheduler_started = start_scheduler()
+
+
+class OnCalendarFileWriteError(Exception):
+    """
+    Exception class for errors writing files from the app.
+    """
+    pass
+
+class OnCalendarFormParseError(Exception):
+    """
+    Exception class for errors parsing incoming form data.
+    """
+
+    pass
+
+
+class OnCalendarBadRequest(Exception):
+    """
+    Exception class for bad requests to the API.
+    """
+
+    def __init__(self, payload):
+        Exception.__init__(self)
+        self.status_code = 400
+        self.payload = payload
+
+
+class OnCalendarAppError(Exception):
+    """
+    Exception class for internal application errors
+    """
+
+    def __init__(self, payload):
+        Exception.__init__(self)
+        self.status_code = 500
+        self.payload = payload
+
+
+@ocapp.login_manager.user_loader
 def load_user(id):
     return auth.User.get('id', id)
 
@@ -1515,6 +1556,77 @@ if __name__ == '__main__':
     ocapp.run()
 
 
+@ocapp.route('/api/scheduler/start')
+def api_start_scheduler():
+    """
+    API interface to start the scheduled jobs, primarily used for cluster
+    master change events.
+    """
+
+    master_takeover = False
+    cluster_key = request.args['key']
+    if 'master_takeover' in request.args:
+        master_takeover = request.args['master_takeover']
+    if cluster_key == config.basic['CLUSTER_NAME']:
+        if not ocapp.scheduler.running:
+            start_status = start_scheduler(master_takeover)
+            return json.dumps({'Scheduler_running': start_status})
+        else:
+            return json.dumps({'Scheduler_running': ocapp.scheduler.running})
+    else:
+        return json.dumps({'ERROR': 'Invalid Key'})
+
+
+@ocapp.route('/api/scheduler/stop')
+def api_stop_scheduler():
+    """
+    API interface to stop the scheduled jobs, primarily used for cluster
+    master change events.
+    """
+
+    cluster_key = request.args['key']
+    if cluster_key == config.basic['CLUSTER_NAME']:
+        stop_scheduler()
+        return json.dumps({'Scheduler_running': ocapp.scheduler.running})
+    else:
+        return json.dumps({'ERROR': 'Invalid Key'})
+
+
+@ocapp.route('/api/scheduler/status')
+def api_scheduler_status():
+    """
+    Returns the current status of the job scheduler, and all scheduled jobs.
+    """
+
+    status = {'Running': 'False'}
+    if ocapp.scheduler.running:
+        status['Running'] = 'True'
+        for idx, job in enumerate(ocapp.scheduler.get_jobs()):
+            job_index = "Job_{0}".format(idx)
+            status[job_index] = {
+                'Name': job.name,
+                'Next_fire_time': job.next_run_time.isoformat()
+            }
+            if job.name in ocapp.job_misses:
+                status[job_index]['misses'] = ocapp.job_misses[job.name]
+            if job.name in ocapp.job_failures:
+                status[job_index]['failures'] = ocapp.job_failures[job.name]
+
+    return json.dumps(status)
+
+
+@ocapp.route('/api/cluster/master')
+def api_cluster_master_status():
+    """
+    Returns the cluster master status of this instance
+    """
+
+    if uwsgi.i_am_the_lord(config.basic['CLUSTER_NAME']) == 1:
+        return json.dumps({'cluster_master': 'True'})
+    else:
+        return json.dumps({'cluster_master': 'False'})
+
+
 # Notification APIs
 #--------------------------------------
 @ocapp.route('/api/notification/sms/<victim_type>/<group>', methods=['POST'])
@@ -2319,4 +2431,3 @@ def valid_email_address(address):
         return False
 
     return True
-
