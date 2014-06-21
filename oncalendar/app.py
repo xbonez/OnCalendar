@@ -29,6 +29,7 @@ def start_scheduler(master_takeover=False):
     """
 
     ocapp.aps_logger.debug('Starting the job scheduler')
+    job_master = False
     if config.basic['JOB_MASTER']:
         ocapp.aps_logger.debug('I am the Job Master')
         job_master = True
