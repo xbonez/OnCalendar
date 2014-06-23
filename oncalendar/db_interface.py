@@ -1841,7 +1841,15 @@ class OnCalendarDB(object):
         """
         cursor = self.oncalendar_db.cursor()
         add_record_query = """INSERT INTO sms_send (groupid, victimid, alert_type, type, host, service, nagios_master)
-        VALUES({0}, {1}, '{2}')""".format(groupid, victimid, alert_type, type, host, service, nagios_master)
+        VALUES({0}, {1}, '{2}', '{3}', '{4}', '{5}', '{6}')""".format(
+            groupid,
+            victimid,
+            alert_type,
+            type,
+            host,
+            service,
+            nagios_master
+        )
 
         try:
             cursor.execute(add_record_query)

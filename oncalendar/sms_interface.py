@@ -75,7 +75,7 @@ class OnCalendarSMS(object):
             ))
         else:
             try:
-                ocdb = OnCalendarDB(dbconfig)
+                ocdb = OnCalendarDB(self.dbconfig)
                 sms_id = ocdb.add_sms_record(groupid, victimid, alert_type, type, host, service, nagios_master)[0]
                 sms_hash = self.wordlist[sms_id % len(self.wordlist)]
                 ocdb.set_sms_hash(sms_id, sms_hash)
