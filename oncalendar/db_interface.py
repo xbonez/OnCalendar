@@ -1667,7 +1667,7 @@ class OnCalendarDB(object):
 
         else:
             gap_query = """SELECT g.name, g.id as groupid, c.hour, c.min
-            FROM calendar c, group g
+            FROM calendar c, groups g
             WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
             AND month='{1}' AND day='{2}') AND hour>='{3}' AND hour<'{4}'
             AND c.groupid=g.id AND c.victimid IS NULL""".format(

@@ -408,7 +408,9 @@ def before_request():
 @ocapp.after_request
 def after_request(response):
     if (config.basic['API_ACCESS_DOMAIN']):
-        response.headers.add('Access-Control-Allow-Origin', 'config.basic["API_ACCESS_DOMAIN"]')
+        response.headers.add('Access-Control-Allow-Origin', config.basic["API_ACCESS_DOMAIN"])
+
+    return response
 
 
 @ocapp.errorhandler(OnCalendarBadRequest)
