@@ -405,6 +405,12 @@ def before_request():
     g.user = flogin.current_user
 
 
+@ocapp.after_request
+def after_request(response):
+    if (config.basic['API_ACCESS_DOMAIN']):
+        response.headers.add('Access-Control-Allow-Origin', 'config.basic["API_ACCESS_DOMAIN"]')
+
+
 @ocapp.errorhandler(OnCalendarBadRequest)
 def handle_bad_request(error):
     """

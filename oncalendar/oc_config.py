@@ -6,7 +6,8 @@ class config(object):
         'CLUSTER_NAME': '',
         'JOB_MASTER': True,
         'EMAIL_DOMAIN': '',
-        'CSRF_ENABLED': True
+        'CSRF_ENABLED': True,
+        'API_ACCESS_DOMAIN': False
     }
     database = {
         'DBUSER': 'oncalendar',
