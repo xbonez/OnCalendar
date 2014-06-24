@@ -1320,6 +1320,37 @@ var oncalendar = {
 
         return cal.group_info_object.promise();
     },
+    get_last_group_edit: function(groupid) {
+        var cal = this;
+        var edit_query_url = window.location.origin + '/api/edits/' + groupid + '/last';
+        cal.get_last_edit_object = new $.Deferred();
+        cal.get_last_edit_request = $.ajax({
+            url: edit_query_url,
+            type: 'GET',
+            dataType: 'json'
+        });
+        var chain = cal.get_last_edit_request.then(function(data) {
+            if (Object.keys(data).length == 0) {
+                data = {
+                    ts: false,
+                    updater: '',
+                    note: "No schedule edits found"
+                };
+            }
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                cal.get_last_edit_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = $.parseJSON(data.responseText);
+                cal.get_last_edit_object.reject(error);
+            });
+
+        return cal.get_last_edit_object.promise();
+    },
     get_victims: function() {
         var cal = this;
         var victims_query_url = window.location.origin + '/api/victims/';

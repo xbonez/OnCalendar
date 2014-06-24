@@ -51,25 +51,31 @@ $('button#edit-month-cancel-button').click(function() {
 });
 
 $('button#edit-month-save-button').click(function() {
-    var month_data = {};
-    month_data.filter_group = oncalendar.filter_group;
-    month_data.days = {};
-    $.each($('td'), function(index, element) {
-        var day_id = $(element).attr('id');
-        month_data.days[day_id] = {};
-        month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').val();
-        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
-            month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').val();
-        }
-        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
-            month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').val();
-        }
-    });
+    var reason_for_edit = $('textarea#edit-month-note').val();
+    if (reason_for_edit.length < 3) {
+        $('textarea#edit-month-note').addClass('missing-input').focus();
+    } else {
+	    var month_data = {};
+	    month_data.filter_group = oncalendar.filter_group;
+        month_data.note = reason_for_edit;
+	    month_data.days = {};
+	    $.each($('td'), function(index, element) {
+	        var day_id = $(element).attr('id');
+	        month_data.days[day_id] = {};
+	        month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').val();
+	        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
+	            month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').val();
+	        }
+	        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
+	            month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').val();
+	        }
+	    });
 
-    $.when(oncalendar.update_month(month_data)).then(function(data) {
-        alert('Update complete');
-        window.location.href='/calendar/' + oncalendar.current_year + '/' + oncalendar.real_month;
-    });
+	    $.when(oncalendar.update_month(month_data)).then(function(data) {
+	        alert('Update complete');
+	        window.location.href='/calendar/' + oncalendar.current_year + '/' + oncalendar.real_month;
+	    });
+    }
 });
 
 {% endblock %}

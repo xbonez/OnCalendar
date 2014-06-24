@@ -77,11 +77,13 @@ input[type="color"],
     box-shadow: none;
 }
 
-input.missing-input {
+input.missing-input,
+textarea.missing-input {
     border-color: red;
 }
 
-input.missing-input:focus {
+input.missing-input:focus,
+textarea.missing-input {
     outline-color: red;
 }
 
@@ -453,6 +455,22 @@ div#edit-month-actions {
     margin: 10px 0 10px 30px;
 }
 
+div#edit-weekly-note-box {
+    margin: 10px 0 0 37px;
+    textarea#edit-weekly-note {
+        width: 400px;
+        height: 50px;
+    }
+}
+
+div#edit-month-note-box {
+    margin: 10px 0 0 37px;
+    textarea#edit-month-note {
+        width: 400px;
+        height: 50px;
+    }
+}
+
 div#group-info-box {
     background-color: $dialog_bg;
     margin-top: 5px;
@@ -466,6 +484,9 @@ div#group-info-box {
     button.page-primary-button,
     button.panic-page-button {
         font-size: 0.75em;
+    }
+    th#group-edit-log-head {
+        height: 25px;
     }
 }
 
@@ -511,7 +532,7 @@ div#edit-day-popup {
         margin: 0 0 15px;
     }
     div#edit-day-form {
-        max-height: 550px;
+        max-height: 500px;
         overflow: auto;
         border-top: 1px solid $calendar_day_bg;
         border-bottom: 1px solid $calendar_day_bg;
@@ -523,6 +544,13 @@ div#edit-day-popup {
         }
         td {
             padding: 0;
+        }
+    }
+    div#edit-day-note-box {
+        textarea#edit-day-note {
+            width: 95%;
+            height: 50px;
+            margin-top: 10px;
         }
     }
 }

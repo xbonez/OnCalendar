@@ -54,7 +54,7 @@ for (i = 0; i <= 23; i++) {
             '<ul id="slot-' + i + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
 }
 
-$(document).ready(function() {
+  $(document).ready(function() {
 {% if month is defined and year is defined %}
     var incoming_month = {{ month }};
     var incoming_year = {{ year }};
@@ -132,6 +132,7 @@ var edit_calday = function(target_group, calday, cal_date) {
             close: function() {
                 $('ul.slot-menu').empty();
                 $('#edit-day-group').empty();
+                $('textarea#edit-day-note').attr('value', '');
                 $('tr.shadow-row').addClass('hide');
                 $('button.edit-day-oncall-button').text('').removeAttr('data-target', '');
                 $('button.edit-day-shadow-button').text('').removeAttr('data-target', '');
@@ -193,6 +194,21 @@ var populate_group_info = function(target_group) {
         }
     });
     $('td#group-members').text(oncalendar.oncall_groups[target_group].active_victims.join(', '));
+
+	$('td#group-edit-log').empty();
+    if (current_user.app_role === 2 || $.inArray(target_group, current_user.groups) != -1) {
+        $('th#group-edit-log-head').removeClass('hide');
+        $.when(oncalendar.get_last_group_edit(oncalendar.oncall_groups[target_group].id)).then(function(data) {
+            if (data.ts) {
+                var log_string = data.ts + ' - ' + data.updater + ' - ' + data.note;
+            } else {
+                var log_string = data.note;
+            }
+            $('td#group-edit-log').text(log_string);
+        });
+    } else {
+        $('th#group-edit-log-head').addClass('hide');
+    }
     if (typeof sessionStorage[target_group] === "undefined") {
         sessionStorage[target_group] = 'on';
     }
@@ -749,88 +765,94 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 }).on('click', 'button#edit-day-cancel-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#edit-day-save-button', function() {
-    var update_day_data = {
-        calday: $(this).attr('data-calday'),
-        cal_date: $(this).attr('data-date'),
-        group: $(this).attr('data-group'),
-        slots: {}
-    };
+	var reason_for_edit = $('textarea#edit-day-note').val();
+	if (reason_for_edit.length < 3) {
+		$('textarea#edit-day-note').addClass('missing-input').focus();
+	} else {
+	    var update_day_data = {
+	        calday: $(this).attr('data-calday'),
+	        cal_date: $(this).attr('data-date'),
+	        group: $(this).attr('data-group'),
+			note: reason_for_edit,
+	        slots: {}
+	    };
 
-    $.each($('button.edit-day-oncall-button'), function() {
-        if (typeof $(this).attr('data-target') !== "undefined") {
-            update_day_data.slots[$(this).attr('data-slot')] = {
-                oncall: $(this).attr('data-target')
-            }
-        }
-    });
-    $.each($('button.edit-day-shadow-button'), function() {
-        if (typeof $(this).attr('data-target') !== "undefined") {
-            if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
-                update_day_data.slots[$(this).attr('data-slot')].shadow = $(this).attr('data-target');
-            } else {
-                update_day_data.slots[$(this).attr('data-slot')] = {
-                    shadow: $(this).attr('data-target')
-                }
-            }
-        }
-    });
+	    $.each($('button.edit-day-oncall-button'), function() {
+	        if (typeof $(this).attr('data-target') !== "undefined") {
+	            update_day_data.slots[$(this).attr('data-slot')] = {
+	                oncall: $(this).attr('data-target')
+	            }
+	        }
+	    });
+	    $.each($('button.edit-day-shadow-button'), function() {
+	        if (typeof $(this).attr('data-target') !== "undefined") {
+	            if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
+	                update_day_data.slots[$(this).attr('data-slot')].shadow = $(this).attr('data-target');
+	            } else {
+	                update_day_data.slots[$(this).attr('data-slot')] = {
+	                    shadow: $(this).attr('data-target')
+	                }
+	            }
+	        }
+	    });
 
-    $.when(oncalendar.update_day(update_day_data)).then(
-        function(data) {
-            var slots = data;
-            var date_bits = update_day_data.cal_date.split('-');
-            var date_object = new Date(date_bits[0], date_bits[1], date_bits[2]).addMonths(-1);
-            var current_victim = {};
-            var p_group_class = {};
-            $.each(oncalendar.oncall_groups, function(group, data) {
-                if (typeof sessionStorage[group] === "undefined") {
-                    sessionStorage[group] = 'on';
-                }
-                if (sessionStorage[group] === "off") {
-                    p_group_class[group] = "victim-group info-tooltip hide";
-                } else {
-                    p_group_class[group] = "victim-group info-tooltip";
-                }
-            });
+	    $.when(oncalendar.update_day(update_day_data)).then(
+	        function(data) {
+	            var slots = data;
+	            var date_bits = update_day_data.cal_date.split('-');
+	            var date_object = new Date(date_bits[0], date_bits[1], date_bits[2]).addMonths(-1);
+	            var current_victim = {};
+	            var p_group_class = {};
+	            $.each(oncalendar.oncall_groups, function(group, data) {
+	                if (typeof sessionStorage[group] === "undefined") {
+	                    sessionStorage[group] = 'on';
+	                }
+	                if (sessionStorage[group] === "off") {
+	                    p_group_class[group] = "victim-group info-tooltip hide";
+	                } else {
+	                    p_group_class[group] = "victim-group info-tooltip";
+	                }
+	            });
 
-            $.each(slots, function(slot, slot_data) {
-                oncalendar.victims[update_day_data.calday].slots[slot][update_day_data.group] = slot_data;
-            });
-            $('td#' + update_day_data.cal_date).children('div.calendar-day-victims').empty();
-            $.each(Object.keys(oncalendar.victims[update_day_data.calday].slots).sort(), function(i, slot) {
-                slot_groups = oncalendar.victims[update_day_data.calday].slots[slot];
-                $.each(slot_groups, function(group, victims) {
-                    if (typeof current_victim[group] === "undefined") {
-                        current_victim[group] = {
-                            oncall: null,
-                            shadow: null
-                        }
-                    }
-                    if ((date_object.getDay() === oncalendar.oncall_groups[group].turnover_day && slot === oncalendar.oncall_groups[group].turnover_string) || slot === "00-00") {
-                        if (victims.oncall !== current_victim[group].oncall) {
-                            current_victim[group].oncall = victims.oncall;
-                            current_victim[group].oncall_name = victims.oncall_name;
-                        }
-                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-                            .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
-                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-                                current_victim[group].oncall + '</p>');
-                    } else if (victims.oncall !== current_victim[group].oncall) {
-                        current_victim[group].oncall = victims.oncall;
-                        current_victim[group].oncall_name = victims.oncall_name;
-                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-                            .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
-                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
-                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-                                current_victim[group].oncall + '</p>');
-                    }
-                });
-            });
-            $('p.victim-group.info-tooltip').tooltip({placement: 'top', delay: {show: 500, hide: 100}});
-            $.magnificPopup.close();
-        }
-    );
+	            $.each(slots, function(slot, slot_data) {
+	                oncalendar.victims[update_day_data.calday].slots[slot][update_day_data.group] = slot_data;
+	            });
+	            $('td#' + update_day_data.cal_date).children('div.calendar-day-victims').empty();
+	            $.each(Object.keys(oncalendar.victims[update_day_data.calday].slots).sort(), function(i, slot) {
+	                slot_groups = oncalendar.victims[update_day_data.calday].slots[slot];
+	                $.each(slot_groups, function(group, victims) {
+	                    if (typeof current_victim[group] === "undefined") {
+	                        current_victim[group] = {
+	                            oncall: null,
+	                            shadow: null
+	                        }
+	                    }
+	                    if ((date_object.getDay() === oncalendar.oncall_groups[group].turnover_day && slot === oncalendar.oncall_groups[group].turnover_string) || slot === "00-00") {
+	                        if (victims.oncall !== current_victim[group].oncall) {
+	                            current_victim[group].oncall = victims.oncall;
+	                            current_victim[group].oncall_name = victims.oncall_name;
+	                        }
+	                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+	                            .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+	                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
+	                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+	                                current_victim[group].oncall + '</p>');
+	                    } else if (victims.oncall !== current_victim[group].oncall) {
+	                        current_victim[group].oncall = victims.oncall;
+	                        current_victim[group].oncall_name = victims.oncall_name;
+	                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+	                            .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
+	                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
+	                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+	                                current_victim[group].oncall + '</p>');
+	                    }
+	                });
+	            });
+	            $('p.victim-group.info-tooltip').tooltip({placement: 'top', delay: {show: 500, hide: 100}});
+	            $.magnificPopup.close();
+	        }
+	    );
+	}
 
 });
 

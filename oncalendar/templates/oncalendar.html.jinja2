@@ -64,6 +64,12 @@
               <tr>
                 <td id="group-members" colspan=7></td>
               </tr>
+              <tr>
+                <th id="group-edit-log-head" colspan="7">Last Schedule Edit</th>
+              </tr>
+              <tr>
+                <td id="group-edit-log" colspan="7"></td>
+              </tr>
             </tbody>
           </table>
           <div id="group-info-box-buttons">
@@ -251,6 +257,9 @@
       <h3>Edit Day <span id="edit-day-group"></span></h3>
       <div id="edit-day-form">
         <table id="edit-day-slots-table" class="admin-table"></table>
+      </div>
+      <div id="edit-day-note-box">
+        <textarea id="edit-day-note" name="edit-day-note" maxlength="1024" placeholder="Reason for or description of change"></textarea>
       </div>
       <div id="edit-day-action-buttons">
         <table style="width: 100%;">

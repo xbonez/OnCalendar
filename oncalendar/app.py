@@ -712,10 +712,11 @@ def api_calendar_update_month():
     else:
         update_group = month_data['filter_group']
         days = month_data['days']
+        reason = month_data['note']
 
     try:
         ocdb = OnCalendarDB(config.database)
-        response = ocdb.update_calendar_month(update_group, days)
+        response = ocdb.update_calendar_month(g.user.id, reason, update_group, days)
     except OnCalendarDBError, error:
         ocapp.logger.error("Could not update month - {0}: {1}".format(
             error.args[0],
@@ -828,7 +829,7 @@ def api_calendar_update_day():
 
     try:
         ocdb = OnCalendarDB(config.database)
-        response = ocdb.update_calendar_day(update_day_data)
+        response = ocdb.update_calendar_day(g.user.id, update_day_data)
     except OnCalendarDBError, error:
         ocapp.logger.error("Could not update calendar day - {0}: {1}".format(
             error.args[0],
@@ -839,6 +840,58 @@ def api_calendar_update_day():
         )
 
     return json.dumps(response)
+
+
+@ocapp.route('/api/edits')
+@ocapp.route('/api/edits/<group>')
+def api_get_edit_history(group=None):
+    """
+    API interface to get the edit log for a group (if user is a member), or
+    for all groups (if user is an app admin)
+
+    Args:
+        group (str): The id of the group to view
+
+    Returns:
+        (str): The dict of all edits rendered as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+    try:
+        ocdb = OnCalendarDB(config.database)
+        edit_history = ocdb.get_edit_history(group)
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
+
+    return json.dumps(edit_history)
+
+
+@ocapp.route('/api/edits/<group>/last')
+def api_get_last_edit(group):
+    """
+    API interface to get the last entry in the edit log for a group.
+
+    Args:
+        group (str): The id of the group
+
+    Returns:
+        (str): The last edit log entry as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+    try:
+        ocdb = OnCalendarDB(config.database)
+        last_edit = ocdb.get_last_edit(group)
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
+
+    return json.dumps(last_edit)
 
 
 @ocapp.route('/api/groups/')

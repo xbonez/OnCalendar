@@ -248,6 +248,78 @@ class OnCalendarDB(object):
         return {'init_status': 'OK', 'db_init_ts': db_init_ts}
 
 
+    def update_edits(self, updater, update_group, update_note):
+        cursor = self.oncalendar_db.cursor()
+        update_edits_query = """INSERT INTO edits SET ts=CURRENT_TIMESTAMP(),
+            updaterid='{0}', updated_group=(SELECT id FROM groups WHERE name='{1}'),
+            update_note='{2}'""".format(
+            updater,
+            update_group,
+            update_note,
+            )
+
+        try:
+            cursor.execute(update_edits_query)
+            self.oncalendar_db.commit()
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+
+    def get_edit_history(self, groupid):
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        if groupid:
+            history_query = """SELECT e.ts, v.username, g.name, e.update_note
+            FROM edits e, victims v, groups g
+            WHERE updated_group={0} AND v.id=e.updaterid AND g.id=e.updated_group
+            ORDER BY ts""".format(groupid)
+        else:
+            history_query = """SELECT e.ts, v.username, g.name, e.update_note
+            FROM edits e, victims v, groups g
+            WHERE v.id=e.updaterid AND g.id=e.updated_group ORDER BY ts"""
+        try:
+            cursor.execute(history_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        edit_history = []
+        for row in cursor.fetchall():
+            timestamp = row['ts'].ctime()
+            edit_history.append({
+                'ts': timestamp,
+                'updater': row['username'],
+                'group': row['name'],
+                'note': row['update_note']
+            })
+
+        return edit_history
+
+
+    def get_last_edit(self, groupid):
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        last_edit_query = """SELECT e.ts, v.username, g.name, e.update_note
+        FROM edits e, victims v, groups g
+        WHERE ts=(SELECT MAX(ts) FROM edits WHERE updated_group={0})
+        AND v.id=e.updaterid AND g.id=e.updated_group""".format(groupid)
+
+        try:
+            cursor.execute(last_edit_query)
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        row = cursor.fetchone()
+        if row is not None:
+            last_edit = {
+                'ts': row['ts'].ctime(),
+                'updater': row['username'],
+                'group': row['name'],
+                'note': row['update_note']
+            }
+        else:
+            last_edit = {}
+
+        return last_edit
+
+
     def get_caldays_end(self):
         """
         Get the last configured day in the caldays table.
@@ -539,7 +611,7 @@ class OnCalendarDB(object):
         return cal_month
 
 
-    def update_calendar_month(self, group_name=False, update_day_data=False):
+    def update_calendar_month(self, updater, reason, group_name=False, update_day_data=False):
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         group_info = self.get_group_info(False, group_name)
         day_slots = [[group_info[group_name]['turnover_hour'], group_info[group_name]['turnover_min']]]
@@ -713,12 +785,18 @@ class OnCalendarDB(object):
                 except mysql.Error, error:
                     raise OnCalendarDBError(error.args[0], error.args[1])
 
+        try:
+            self.update_edits(updater, group_name, reason)
+        except OnCalendarDBError as error:
+            self.oncalendar_db.rollback()
+            raise OnCalendarDBError(error)
+
         self.oncalendar_db.commit()
 
         return "Success"
 
 
-    def update_calendar_day(self, update_day_data):
+    def update_calendar_day(self, updater, update_day_data):
         """
         Update specific oncall/shadow slots for a given day
 
@@ -735,6 +813,11 @@ class OnCalendarDB(object):
         update_group = update_day_data['group']
         update_calday = update_day_data['calday']
         update_slots = update_day_data['slots']
+
+        try:
+            self.update_edits(updater, update_group, update_day_data['note'])
+        except OnCalendarDBError as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
 
         for slot in update_slots:
             slot_bits = slot.split('-')
