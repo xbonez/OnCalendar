@@ -1096,25 +1096,21 @@ class OnCalendarDB(object):
             OnCalendarDBError: Passes the MySQL error code and message.
         """
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        for victim in group_victim_changes['victims']:
-            if victim['remove']:
-                try:
-                    cursor.execute("DELETE FROM groupmap where groupid={0} AND victimid={1}".format(
-                        group_victim_changes['groupid'],
-                        victim['victimid']
-                    ))
-                except mysql.Error, error:
-                    raise OnCalendarDBError(error.args[0], error.args[1])
-            else:
-                print "adding victim id {0} to group {1}".format(victim['victimid'], group_victim_changes['groupid'])
-                try:
-                    cursor.execute("REPLACE INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, {2})".format(
-                        group_victim_changes['groupid'],
-                        victim['victimid'],
-                        victim['active'],
-                    ))
-                except mysql.Error, error:
-                    raise OnCalendarDBError(error.args[0], error.args[1])
+        try:
+            cursor.execute('DELETE FROM groupmap WHERE groupid={0}'.format(group_victim_changes['groupid']))
+            victim_list = []
+            for victim in group_victim_changes['victims']:
+                victim_list.append('({0},{1},{2})'.format(
+                    group_victim_changes['groupid'],
+                    victim['victimid'],
+                    victim['active']
+                ))
+
+            victim_values = ','.join(victim_list)
+            cursor.execute('INSERT INTO groupmap VALUES {0}'.format(victim_values))
+        except mysql.Error, error:
+            self.oncalendar_db.rollback()
+            raise OnCalendarDBError(error.args[0], error.args[1])
 
         self.oncalendar_db.commit()
 
