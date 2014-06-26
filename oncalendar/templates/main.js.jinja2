@@ -482,6 +482,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 $('input#oncall-page-originator').removeAttr('value');
                 $('input#oncall-page-group').removeAttr('value');
                 $('span#page-primary-groupname').empty();
+                $('textarea#page-primary-body').prop('value', '');
             }
         }
     });
@@ -510,6 +511,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 $('input#panic-page-originator').removeAttr('value');
                 $('input#panic-page-group').removeAttr('value');
                 $('span#panic-page-groupname').empty();
+                $('textarea#panic-page-body').prop('value', '');
             }
         }
     });
