@@ -407,8 +407,9 @@ def before_request():
 
 @ocapp.after_request
 def after_request(response):
-    if (config.basic['API_ACCESS_DOMAIN']):
-        response.headers.add('Access-Control-Allow-Origin', config.basic["API_ACCESS_DOMAIN"])
+    if 'Origin' in request.headers:
+        if config.basic['API_ACCESS_DOMAINS'] and request.headers['Origin'] in config.basic['API_ACCESS_DOMAINS']:
+            response.headers.add('Access-Control-Allow-Origin', request.headers['Origin'])
 
     return response
 
