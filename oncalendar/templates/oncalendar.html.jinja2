@@ -253,7 +253,7 @@
           </table>
         </div>
     </div>
-    <div id="edit-day-popup" class="popup mfp-hide">
+    <div id="edit-day-popup" class="popup mfp-hide send_sms_popup">
       <h3>Edit Day <span id="edit-day-group"></span></h3>
       <div id="edit-day-form">
         <table id="edit-day-slots-table" class="admin-table"></table>
@@ -271,24 +271,24 @@
         </table>
       </div>
     </div>
-    <div id="send-oncall-page-popup" class="popup mfp-hide">
-      <h3>Page Primary Oncall For <span class="page-primary-groupname"></span></h3>
+    <div id="send-oncall-page-popup" class="popup mfp-hide send-sms-popup">
+      <h3>Page Primary Oncall For <span id="page-primary-groupname"></span></h3>
       <div id="page-primary-form">
         <input type="hidden" id="oncall-page-originator" name="oncall-page-originator" value="">
         <input type="hidden" id="oncall-page-group" name="oncall-page-group" value="">
-        <textarea id="page-primary-body" name="page-primary-body" value=""></textarea>
+        <textarea id="page-primary-body" class="sms-text-entry" name="page-primary-body" value=""></textarea>
       </div>
       <div id="send-oncall-page-action-buttons">
         <span id="cancel-oncall-page"><button id="cancel-oncall-page-button">Cancel</button></span>
         <span><button id="send-oncall-page-button">Send</button></span>
       </div>
     </div>
-    <div id="send-panic-page-popup" class="popup mfp-hide">
-      <h3>Send Panic Page to <span class="panic-page-groupname"></span></h3>
+    <div id="send-panic-page-popup" class="popup mfp-hide send-sms-popup">
+      <h3>Send Panic Page to <span id="panic-page-groupname"></span></h3>
       <div id="panic-page-form">
         <input type="hidden" id="panic-page-originator" name="panic-page-originator" value="">
         <input type="hidden" id="panic-page-group" name="panic-page-group" value="">
-        <textarea id="panic-page-body" name="panic-page-body" value=""></textarea>
+        <textarea id="panic-page-body" class="sms-text-entry" name="panic-page-body" value=""></textarea>
       </div>
       <div id="send-panic-page-action-buttons">
         <span id="cancel-panic-page"><button id="cancel-panic-page-button">Cancel</button></span>

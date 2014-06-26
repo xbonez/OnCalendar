@@ -462,6 +462,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
 	target_group = $(this).attr('data-target');
     $('input#oncall-page-originator').attr('value', current_user.username);
     $('input#oncall-page-group').attr('value', target_group);
+    $('span#page-primary-groupname').text(target_group);
 
     $.magnificPopup.open({
         items: {
@@ -472,9 +473,15 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
         removalDelay: 300,
         mainClass: 'popup-animate',
         callbacks: {
+            open: function() {
+                setTimeout(function() {
+                    $('textarea#page-primary-body').focus();
+                }, 100);
+            },
             close: function() {
                 $('input#oncall-page-originator').removeAttr('value');
                 $('input#oncall-page-group').removeAttr('value');
+                $('span#page-primary-groupname').empty();
             }
         }
     });
@@ -483,6 +490,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
     target_group = $(this).attr('data-target');
     $('input#panic-page-originator').attr('value', current_user.username);
     $('input#panic-page-group').attr('value', target_group);
+    $('span#panic-page-groupname').text(target_group);
 
     $.magnificPopup.open({
         items: {
@@ -493,15 +501,21 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
         removalDelay: 300,
         mainClass: 'popup-animate',
         callbacks: {
+            open: function() {
+                setTimeout(function() {
+                    $('textarea#panic-page-body').focus();
+                }, 100);
+            },
             close: function() {
                 $('input#panic-page-originator').removeAttr('value');
                 $('input#panic-page-group').removeAttr('value');
+                $('span#panic-page-groupname').empty();
             }
         }
     });
 });
 
-$('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page', function() {
+$('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#send-oncall-page-button', function() {
 	var group = $('input#oncall-page-group').val();

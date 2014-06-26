@@ -1329,20 +1329,26 @@ div#edit-day-popup div#edit-day-note-box textarea#edit-day-note {
   margin-top: 10px;
 }
 
-/* line 558, ../scss/oncalendar.scss */
+/* line 559, ../scss/oncalendar.scss */
+div.send-sms-popup textarea.sms-text-entry {
+  width: 400px;
+  height: 50px;
+}
+
+/* line 565, ../scss/oncalendar.scss */
 .autocomplete-selected {
   background-color: rgba(40, 70, 97, 0.75);
   color: whitesmoke;
 }
 
-/* line 563, ../scss/oncalendar.scss */
+/* line 570, ../scss/oncalendar.scss */
 .autocomplete-suggestion {
   overflow: hidden;
   margin-bottom: 1px;
   padding-left: 8px;
 }
 
-/* line 569, ../scss/oncalendar.scss */
+/* line 576, ../scss/oncalendar.scss */
 .autocomplete-suggestion:hover {
   cursor: pointer;
   background-color: rgba(40, 70, 97, 0.75);
