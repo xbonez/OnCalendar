@@ -11,16 +11,13 @@
     <div id="login-box">
       <form id="oncalendar-login-form" method="post" action="/login{{ login_next }}">
         {{ form.hidden_tag() }}
-        {% for error in form.errors.username %}
-          <div id="login-error" class="error-flash">Error: {{ error }}</div>
-        {% endfor %}
+        {% if auth_error_message %}
+          <div id="login-error" class="error-flash">Error: {{ auth_error_message }}</div>
+        {% endif %}
         <div id="oncalendar-username" class="login-label">
           <div class="login-label-text">Username:</div>
           {{ form.username }}
         </div>
-        {% for error in form.errors.password %}
-          <div id="password-error" class="error-flash">Error: {{ error }}</div>
-        {% endfor %}
         <div id="oncalendar-password" class="login-label">
           <div class="login-label-text">Password:</div>
           {{ form.password }}

@@ -1,4 +1,5 @@
 import ldap
+from logging import getLogger
 from oncalendar.db_interface import OnCalendarDB, OnCalendarDBError
 from oncalendar.oc_config import config
 from oncalendar.api_exceptions import OnCalendarAuthError
@@ -11,6 +12,10 @@ class User(object):
     lastname = ''
     app_role = ''
     groups = []
+
+
+    def __init__(self):
+        self.logger = getLogger(__name__)
 
 
     @classmethod
@@ -70,20 +75,32 @@ class User(object):
 
 
 class ldap_auth(object):
-    @classmethod
-    def authenticate_user(cls, username=None, password=None):
+
+    def __init__(self):
+        self.logger = getLogger(__name__)
+
+
+    def authenticate_user(self, username=None, password=None):
         user = User.get('username', username)
         if user is not None:
             try:
                 ocldap = ldap.initialize(config.ldap_auth['LDAP_URL'])
                 ocldap.bind_s(config.ldap_auth['LDAP_BINDDN'], config.ldap_auth['LDAP_BINDPW'])
                 user_info = ocldap.search_s(config.ldap_auth['LDAP_BASEDN'], ldap.SCOPE_SUBTREE, 'uid={0}'.format(username))
-                user_dn =  user_info[0][0]
-                ocldap.bind_s(user_dn, password)
-                ocldap.unbind_s()
-                return user
             except ldap.LDAPError, error:
-                ocldap.unbind_s
+                ocldap.unbind_s()
                 raise OnCalendarAuthError(error[0])
+
+            if len(user_info) != 0:
+                user_dn =  user_info[0][0]
+                try:
+                    ocldap.bind_s(user_dn, password)
+                    ocldap.unbind_s()
+                    return user
+                except ldap.LDAPError, error:
+                    ocldap.unbind_s()
+                    raise OnCalendarAuthError(error[0])
+            else:
+                raise OnCalendarAuthError({'desc': 'Invalid login'})
         else:
-            raise OnCalendarAuthError('Invalid login')
+            raise OnCalendarAuthError({'desc': 'Invalid login'})

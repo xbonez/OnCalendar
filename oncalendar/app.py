@@ -1,5 +1,5 @@
 from apscheduler.scheduler import Scheduler
-from flask import Flask, render_template, url_for, request, flash, redirect, g
+from flask import Flask, render_template, url_for, request, flash, redirect, g, session
 import flask.ext.login as flogin
 import json
 import logging
@@ -432,6 +432,16 @@ def handle_app_error(error):
     return json.dumps(error.payload), error.status_code
 
 
+@ocapp.errorhandler(OnCalendarAuthError)
+def handle_auth_error(error):
+    """
+    Handler for authentication errors, redirects to login screen
+    """
+
+    session['auth_error'] = error[0]
+    return redirect(url_for('oc_login'))
+
+
 @ocapp.route('/')
 def root():
     """
@@ -490,12 +500,14 @@ def oc_login():
     form = forms.LoginForm()
     if form.validate_on_submit():
         try:
-            user = auth.ldap_auth.authenticate_user(form.username.data, form.password.data)
+            ldap = auth.ldap_auth()
+            user = ldap.authenticate_user(form.username.data, form.password.data)
             flogin.login_user(user)
             return redirect(request.args.get('next') or url_for('root'))
         except OnCalendarAuthError, error:
             raise OnCalendarAuthError(error[0]['desc'])
 
+    auth_error_message = session.pop('auth_error', None)
     js = render_template('main_login.js.jinja2')
     login_next = ''
     if 'next' in request.args:
@@ -505,6 +517,7 @@ def oc_login():
                            jquery_url=url_for('static', filename='js/jquery.js'),
                            main_js=js,
                            form=form,
+                           auth_error_message=auth_error_message,
                            login_next=login_next)
 
 
