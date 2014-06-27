@@ -254,6 +254,54 @@ div.login-label-text {
     margin-right: 5px;
 }
 
+div#working {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    background-color: $page_dim;
+    -webkit-transition: opacity 0.25s linear;
+    -moz-transition: opacity 0.25s linear;
+    -ms-transition: opacity 0.25s linear;
+    -o-transition: opacity 0.25s linear;
+    transition: opacity 0.25s linear;
+    span#status-message {
+        display: block;
+        position: relative;
+        width: 100%;
+        top: 40%;
+        text-align: center;
+        h1 {
+            color: $font_color_reverse;
+        }
+    }
+}
+
+div#popup-working {
+    width: 94%;
+    position: absolute;
+    top: 40%;
+    left: 3%;
+    background-color: $page_dim;
+    -webkit-transition: opacity 0.25s linear;
+    -moz-transition: opacity 0.25s linear;
+    -ms-transition: opacity 0.25s linear;
+    -o-transition: opacity 0.25s linear;
+    transition: opacity 0.25s linear;
+    @include border-radius;
+    span#status-message {
+        display: block;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        margin: 10px 0;
+        h3 {
+            color: $font_color_reverse;
+            margin: 0;
+        }
+    }
+}
+
 div#login-label input {
     position: relative;
     width: 45%;

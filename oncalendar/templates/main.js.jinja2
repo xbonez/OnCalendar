@@ -785,6 +785,7 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 	if (reason_for_edit.length < 3) {
 		$('textarea#edit-day-note').addClass('missing-input').focus();
 	} else {
+        $('div#edit-day-popup').append('<div id="popup-working"><span id="status-message"><h3>Working...</h3></span></div>');
 	    var update_day_data = {
 	        calday: $(this).attr('data-calday'),
 	        cal_date: $(this).attr('data-date'),
@@ -814,6 +815,7 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 
 	    $.when(oncalendar.update_day(update_day_data)).then(
 	        function(data) {
+		        $('div#popup-working').children('span').children('h3').text('Update Complete');
 	            var slots = data;
 	            var date_bits = update_day_data.cal_date.split('-');
 	            var date_object = new Date(date_bits[0], date_bits[1], date_bits[2]).addMonths(-1);
@@ -865,7 +867,12 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 	                });
 	            });
 	            $('p.victim-group.info-tooltip').tooltip({placement: 'top', delay: {show: 500, hide: 100}});
-	            $.magnificPopup.close();
+	            setTimeout(function() {
+		            $.magnificPopup.close();
+                }, 500);
+				setTimeout(function() {
+					$('div#popup-working').remove();
+				}, 1000);
 	        }
 	    );
 	}
