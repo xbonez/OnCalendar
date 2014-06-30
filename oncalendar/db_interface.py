@@ -204,13 +204,25 @@ class OnCalendarDB(object):
                 "updated_group int(11) DEFAULT NULL",
                 "update_note VARCHAR(1024) DEFAULT NULL"
             ],
-            'send_sms': [
+            'sms_send': [
                 "id int(11) unsigned NOT NULL AUTO_INCREMENT",
                 "ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP",
                 "groupid int(11) DEFAULT NULL",
                 "victimid int(11) DEFAULT NULL",
                 "type varchar(32) DEFAULT NULL",
+                "host varchar(255) DEFAULT NULL",
+                "service varchar(255) DEFAUL NULL",
                 "sms_hash varchar(32) DEFAULT NULL",
+                "twilio_sms_id varchar(64) DEFAULT NULL",
+                "nagios_master varchar(255) DEFAULT NULL",
+                "message text",
+                "PRIMARY KEY (id)"
+            ],
+            'sms_state': [
+                "id int(11) unsigned NOT NULL AUTO_INCREMENT",
+                "name varchar(32) DEFAULT NULL",
+                "twilio_sms_id varchar(64) DEFAULT NULL",
+                "ts timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP",
                 "PRIMARY KEY (id)"
             ]
         }
