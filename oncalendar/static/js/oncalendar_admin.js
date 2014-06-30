@@ -484,11 +484,7 @@ var oncalendar_admin = {
                 '<input type="hidden" id="add-group-backup" name="add-group-backup" value="0"></td>' +
                 '<td><button id="add-group-failsafe-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="add-group-failsafe" data-checked="no"></button>' +
                 '<input type="hidden" id="add-group-failsafe" name="add-group-failsafe" value="0"></td>' +
-                '<td><input type="text" id="add-group-alias" name="add-group-alias" value=""></td>' +
-                '<td><input type="text" id="add-group-backup-alias" name="add-group-backup-alias" value=""></td>' +
-                '<td><input type="text" id="add-group-failsafe-alias" name="add-group-failsafe-alias" value=""></td>' +
-                '<td><input type="text" id="add-group-email" name="add-group-email" value=""></td>' +
-                '<td><input type="text" id="add-group-auth-group" name="add-group-auth-group" value=""></td>'
+                '<td><input type="text" id="add-group-email" name="add-group-email" value=""></td>'
             );
             $('tr#add-group').after('<tr id="add-group-buttons">' +
                 '<td colspan="3"></td>' +
@@ -542,7 +538,7 @@ var oncalendar_admin = {
                             if (data.turnover_min < 10) {
                                 data.turnover_min = '0' + data.turnover_min;
                             }
-                            var turnover_time = [data.turnover_hour, data.turnover_min].join(':')
+                            var turnover_time = [data.turnover_hour, data.turnover_min].join(':');
                             $('tr#add-group-buttons').remove();
                             $('tr#add-group').empty()
                                 .append('<td><button id="group-checkbox-' + data.id + '" class="oc-checkbox elegant_icons icon_box-empty" data-target="group-select-' + data.id + '" data-checked="no"></button>' +
@@ -557,11 +553,7 @@ var oncalendar_admin = {
                                     '<td class="group-shadow">' + basic_boolean[data.shadow] + '</td>' +
                                     '<td class="group-backup">' + basic_boolean[data.backup] + '</td>' +
                                     '<td class="group-failsafe">' + basic_boolean[data.failsafe] + '</td>' +
-                                    '<td class="group-alias">' + data.alias + '</td>' +
-                                    '<td class="group-backup-alias">' + data.backup_alias + '</td>' +
-                                    '<td class="group-failsafe-alias">' + data.failsafe_alias + '</td>' +
-                                    '<td class="group-email">' + data.email + '</td>' +
-                                    '<td class="group-auth-group">' + data.auth_group + '</td>'
+                                    '<td class="group-email">' + data.email + '</td>'
                                 ).attr('id', 'group' + data.id);
                             oca.no_groups = false;
                         },
