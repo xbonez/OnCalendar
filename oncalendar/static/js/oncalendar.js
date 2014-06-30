@@ -377,7 +377,7 @@ var oncalendar = {
                 day_cell = document.createDocumentFragment();
                 day_cell.appendChild(document.createElement('td'));
                 day_cell.firstChild.setAttribute('id', current_date_string);
-                day_cell.firstChild.setAttribute('class', 'calendar-day');
+                day_cell.firstChild.setAttribute('class', 'calendar-day post-day');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.firstChild.setAttribute('class', 'calendar-daystring');
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
