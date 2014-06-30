@@ -1906,7 +1906,7 @@ class OnCalendarDB(object):
             raise OnCalendarDBError(error.args[0], error.args[1])
 
 
-    def add_sms_record(self, groupid, victimid, alert_type, type, host, service, nagios_master):
+    def add_sms_record(self, groupid, victimid, alert_type, type, host, service, nagios_master, message):
         """
         Adds a record for a sent SMS message to the sms_send table.
 
@@ -1919,15 +1919,16 @@ class OnCalendarDB(object):
             OnCalendarDBError: Passes the mysql error code and message.
         """
         cursor = self.oncalendar_db.cursor()
-        add_record_query = """INSERT INTO sms_send (groupid, victimid, alert_type, type, host, service, nagios_master)
-        VALUES({0}, {1}, '{2}', '{3}', '{4}', '{5}', '{6}')""".format(
+        add_record_query = """INSERT INTO sms_send (groupid, victimid, alert_type, type, host, service, nagios_master, message)
+        VALUES({0}, {1}, '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')""".format(
             groupid,
             victimid,
             alert_type,
             type,
             host,
             service,
-            nagios_master
+            nagios_master,
+            message
         )
 
         try:
