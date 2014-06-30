@@ -438,7 +438,7 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group] + ' info-tooltip');
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                    day_cell.firstChile.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
                                 }
