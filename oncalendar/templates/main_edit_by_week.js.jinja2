@@ -55,6 +55,7 @@ $('button#edit-month-save-button').click(function() {
     if (reason_for_edit.length < 3) {
         $('textarea#edit-weekly-note').addClass('missing-input').focus();
     } else {
+        $(window).scrollTop(0);
         $('body').append('<div id="working"><span id="status-message"><h1>Working...</h1></span></div>');
 	    var month_data = {};
 	    month_data.filter_group = oncalendar.filter_group;
