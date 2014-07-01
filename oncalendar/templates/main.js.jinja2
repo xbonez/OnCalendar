@@ -36,7 +36,7 @@ for (i = 0; i <= 23; i++) {
         i = '0' + i;
     }
     $('table#edit-day-slots-table')
-        .append('<tr id="slot-' + i + '-00-oncall"><td>' + i + ':00</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
+        .append('<tr id="slot-' + i + '-00-oncall" class="oncall-row"><td>' + i + ':00</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-00-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-00">--</button></span>' +
             '<ul id="slot-' + i + '-00-victim-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
@@ -44,7 +44,11 @@ for (i = 0; i <= 23; i++) {
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-00-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-00">--</button></span>' +
             '<ul id="slot-' + i + '-00-shadow-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
-        .append('<tr id="slot-' + i + '-30-oncall"><td>' + i + ':30</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
+        .append('<tr id="slot' + i + '-00-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
+			'<span data-toggle="dropdown">' +
+            '<button id="slot-' + i + '-00-backup-button" class="edit-day-backup-button" data-slot="' + i + '-00">--</button></span>' +
+			'<ul id="slot-' + i + '-00-backup-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
+        .append('<tr id="slot-' + i + '-30-oncall" class="oncall-row"><td>' + i + ':30</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-30-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-30">--</button></span>' +
             '<ul id="slot-' + i + '-30-victim-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
@@ -52,6 +56,10 @@ for (i = 0; i <= 23; i++) {
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-30-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-30">--</button></span>' +
             '<ul id="slot-' + i + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
+		.append('<tr id="slot' + i + '-30-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
+            '<span data-toggle="dropdown">' +
+            '<button id="slot-' + i + '-30-backup-button" class="edit-day-backup-button" data-slot="' + i + '-30">--</button></span>' +
+            '<ul id="slot-' + i + '-30-backup-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
 }
 
   $(document).ready(function() {
@@ -98,6 +106,9 @@ var edit_calday = function(target_group, calday, cal_date) {
     if (oncalendar.oncall_groups[target_group].shadow == 1) {
         $('tr.shadow-row').removeClass('hide');
     }
+    if (oncalendar.oncall_groups[target_group].backup == 1) {
+        $('tr.backup-row').removeClass('hide');
+    }
 
     $('button#edit-day-save-button').attr('data-calday', calday).attr('data-group', target_group).attr('data-date', cal_date);
     $('ul.slot-menu').append('<li><span class="slot-item" data-target="--">--</span></li>')
@@ -112,12 +123,20 @@ var edit_calday = function(target_group, calday, cal_date) {
                 typeof oncalendar.victims[calday].slots[slot][target_group] !== "undefined" &&
                     oncalendar.victims[calday].slots[slot][target_group].oncall !== null ?
                     oncalendar.victims[calday].slots[slot][target_group].oncall : '--'
-        );
+        )
+        .append('<span class="elegant_icons arrow_carrot-down">');
         $('button#slot-' + slot + '-shadow-button').text(
                 typeof oncalendar.victims[calday].slots[slot][target_group] !== "undefined" &&
                     oncalendar.victims[calday].slots[slot][target_group].shadow !== null ?
                     oncalendar.victims[calday].slots[slot][target_group].shadow : '--'
-        );
+        )
+        .append('<span class="elegant_icons arrow_carrot-down">');
+        $('button#slot-' + slot + '-backup-button').text(
+                typeof oncalendar.victims[calday].slots[slot][target_group] !== "undefined" &&
+                    oncalendar.victims[calday].slots[slot][target_group].backup !== null ?
+                    oncalendar.victims[calday].slots[slot][target_group].backup : '--'
+        )
+        .append('<span class="elegant_icons arrow_carrot-down">');
     });
 
     $.magnificPopup.open({
@@ -134,6 +153,7 @@ var edit_calday = function(target_group, calday, cal_date) {
                 $('#edit-day-group').empty();
                 $('textarea#edit-day-note').attr('value', '');
                 $('tr.shadow-row').addClass('hide');
+				$('tr.backup-row').addClass('hide');
                 $('button.edit-day-oncall-button').text('').removeAttr('data-target', '');
                 $('button.edit-day-shadow-button').text('').removeAttr('data-target', '');
                 $('button#edit-day-save-button').removeAttr('data-calday', '').removeAttr('data-group', '');
@@ -812,6 +832,17 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 	            }
 	        }
 	    });
+		$.each($('button.edit-day-backup-button'), function() {
+			if (typeof $(this).attr('data-target') !== "undefined") {
+				if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
+					update_day_data.slots[$(this).attr('data-slot')].backup = $(this).attr('data-target');
+				} else {
+					update_day_data.slots[$(this).attr('data-slot')] = {
+						backup: $(this).attr('data-target')
+					}
+				}
+			}
+		});
 
 	    $.when(oncalendar.update_day(update_day_data)).then(
 	        function(data) {
@@ -842,7 +873,8 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 	                    if (typeof current_victim[group] === "undefined") {
 	                        current_victim[group] = {
 	                            oncall: null,
-	                            shadow: null
+	                            shadow: null,
+								backup: null
 	                        }
 	                    }
 	                    if ((date_object.getDay() === oncalendar.oncall_groups[group].turnover_day && slot === oncalendar.oncall_groups[group].turnover_string) || slot === "00-00") {
@@ -855,14 +887,56 @@ $('div#edit-day-popup').on('click', 'span.slot-item', function() {
 	                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
 	                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
 	                                current_victim[group].oncall + '</p>');
-	                    } else if (victims.oncall !== current_victim[group].oncall) {
-	                        current_victim[group].oncall = victims.oncall;
-	                        current_victim[group].oncall_name = victims.oncall_name;
-	                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-	                            .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
+							if (victims.shadow != null) {
+								if (victims.shadow !== current_victim[group].shadow) {
+									current_victim[group].shadow = victims.shadow;
+									current_victim[group].shadow_name = victims.shadow_name;
+								}
+								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+									' - ' + current_victim[group].shadow_name + '" style="color: ' +
+									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+									current_victim[group].shadow + ' (S)</p>');
+							}
+							if (victims.backup != null) {
+								if (victims.backup !== current_victim[group].backup) {
+									current_victim[group].backup = victims.backup;
+									current_victim[group].backup_name = victims.backup_name;
+								}
+								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+									' - ' + current_victim[group].backup_name + '" style="color: ' +
+									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+									current_victim[group].backup + ' (B)</p>');
+							}
+	                    } else {
+							if (victims.oncall !== current_victim[group].oncall) {
+		                        current_victim[group].oncall = victims.oncall;
+		                        current_victim[group].oncall_name = victims.oncall_name;
+		                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+		                            .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
 	                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
 	                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
 	                                current_victim[group].oncall + '</p>');
+							}
+							if (victims.shadow !== current_victim[group].shadow) {
+								current_victim[group].shadow = victims.shadow;
+								current_victim[group].shadow_name = victims.shadow_name;
+								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+									' - ' + current_victim[group].shadow_name + '" style="color: ' +
+									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+									current_victim[group].shadow + ' (S)</p>');
+							}
+							if (victims.backup !== current_victim[group].backup) {
+								current_victim[group].backup = victims.backup;
+								current_victim[group].backup_name = victims.backup_name;
+								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+									' - ' + current_victim[group].backup_name + '" style="color: ' +
+									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+									current_victim[group].backup + ' (B)</p>');
+							}
 	                    }
 	                });
 	            });

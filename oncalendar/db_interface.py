@@ -887,10 +887,10 @@ class OnCalendarDB(object):
             }
 
             if row['shadow_first'] is not None and row['shadow_last'] is not None:
-                slots[slot] = ' '.join([row['shadow_first'], row['shadow_last']])
+                slots[slot]['shadow_name'] = ' '.join([row['shadow_first'], row['shadow_last']])
 
             if row['backup_first'] is not None and row['backup_last'] is not None:
-                slots[slot] = ' '.join([row['backup_first'], row['backup_last']])
+                slots[slot]['backup_name'] = ' '.join([row['backup_first'], row['backup_last']])
 
         return slots
 

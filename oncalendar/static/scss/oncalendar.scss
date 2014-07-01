@@ -587,11 +587,13 @@ div#edit-day-popup {
     }
     table#edit-day-slots-table {
         width: 100%;
-        tr.shadow-row {
-            border-bottom: 1px solid black;
-        }
         td {
             padding: 0;
+        }
+        tr.oncall-row:nth-child(odd),
+        tr.shadow-row:nth-child(even),
+        tr.backup-row:nth-child(odd) {
+            background-color: $calendar_day_bg;
         }
     }
     div#edit-day-note-box {
