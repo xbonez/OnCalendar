@@ -1171,7 +1171,7 @@ class OnCalendarDB(object):
         victim_info_query = """SELECT v.id, v.active, v.username, v.firstname,
         v.lastname, v.phone, v.email, v.sms_email, v.app_role, v.throttle,
         IFNULL(TIMESTAMPDIFF(SECOND, NOW(), throttle_until), 0) AS throttle_time_remaining,
-        v.truncate, m.groupid AS gid, g.name FROM victims v
+        v.truncate, m.groupid AS gid, m.active as gactive, g.name FROM victims v
         LEFT OUTER JOIN groupmap AS m ON v.id=m.victimid
         LEFT OUTER JOIN groups AS g ON g.id=m.groupid"""
         if search_key:
@@ -1188,7 +1188,7 @@ class OnCalendarDB(object):
         victims = {}
         for row in cursor.fetchall():
             if row['id']in victims:
-                victims[row['id']]['groups'].append(row['name'])
+                victims[row['id']]['groups'][row['name']] = row['gactive']
             else:
                 victims[row['id']] = {
                     'id': row['id'],
@@ -1203,7 +1203,7 @@ class OnCalendarDB(object):
                     'throttle': row['throttle'],
                     'throttle_time_remaining': row['throttle_time_remaining'],
                     'truncate': row['truncate'],
-                    'groups': [row['name']]
+                    'groups': {row['name']: row['gactive']}
                 }
 
         return victims

@@ -1,4 +1,32 @@
-var current_user = {{ user_json }};
+var current_user = {};
+
+{% if g.user.is_anonymous() %}
+current_user = {{ user_json }}
+{% else %}
+$.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
+    console.log(data);
+	current_user = data[{{ g.user.id }}];
+	$('input#edit-account-firstname').attr('value', current_user.firstname);
+	$('input#edit-account-lastname').attr('value', current_user.lastname);
+	$('input#edit-account-phone').attr('value', current_user.phone);
+	$('input#edit-account-email').attr('value', current_user.email);
+	$('input#edit-account-sms-email').attr('value', current_user.sms_email);
+	$('input#edit-account-throttle').attr('value', current_user.throttle);
+	if (current_user.truncate > 0) {
+		$('button#edit-account-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+		$('input#edit-account-truncate').attr('value', 'yes');
+	}
+	$.each(current_user.groups, function(group, active) {
+		$('table#account-info-table').children('tbody').append('<tr><td>' + group + '</td>' +
+			'<td><button id="edit-account-' + group + '-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="edit-account-' + group + '-active" data-group="' + group + '" data-checked="yes"></button>' +
+			'<input type="hidden" id="edit-account-' + group + '-active" name="edit-account-' + group + '-active" value="yes"></td><td colspan="5"></td></tr>');
+		if (active == 0) {
+			$('button#edit-account-' + group + '-active-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+			$('input#edit-account-' + group + '-active').attr('value', 'no');
+		}
+	});
+});
+{% endif %}
 
 // Set up group turnover info and color key
 oncalendar.group_color_map = {};
@@ -96,6 +124,18 @@ for (i = 0; i <= 23; i++) {
             $('input#add-victim-email').val(suggestion.data.email);
             $('input#add-victim-sms-email').val(suggestion.data.sms_email);
         }
+    });
+
+    $('div#user-menu').on('click', 'li#edit-account-menu-option', function() {
+        $.magnificPopup.open({
+            items: {
+                src: '#edit-account-info-popup',
+                type: 'inline'
+            },
+            preloader: false,
+            removalDelay: 300,
+            mainClass: 'popup-animate'
+        });
     });
 });
 
@@ -795,6 +835,19 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     );
 });
 
+$('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
+	console.log(this);
+    if ($(this).attr('data-checked') === "no") {
+        $(this).removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+        $('input#' + $(this).attr('data-target')).attr('value', 'yes');
+    } else {
+        $(this).removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+        $('input#' + $(this).attr('data-target')).attr('value', 'no');
+    }
+}).on('click', 'button#edit-account-cancel-button', function() {
+	$.magnificPopup.close();
+});
+
 $('div#edit-day-popup').on('click', 'span.slot-item', function() {
     var new_victim = $(this).attr('data-target');
     $(this).parents('ul').siblings('span').children('button').text(new_victim).attr('data-target', new_victim);
@@ -963,17 +1016,17 @@ $('table#calendar-table').on('mouseenter', 'td.calendar-day', function() {
             $.each(Object.keys(oncalendar.oncall_groups), function (i, group) {
                 $('ul#edit-day-group-options').append('<li><span class="edit-day-group-item" data-target="' + group + '">Edit day: ' + group + '</li>');
             });
-        } else if (current_user.groups.length > 1) {
+        } else if (Object.keys(current_user.groups).length > 1) {
             $(this).children('span.edit-day-menu').addClass('dropdown').removeClass('hide')
                 .append('<span data-toggle="dropdown">' +
                     '<button id="edit-day-menu-button"><span class="elegant_icons icon_pencil-edit"></span></button></span></span>')
                 .append('<ul id="edit-day-group-options" class="dropdown-menu" role="menu"></ul>');
-            $.each(current_user.groups, function (i, group) {
+            $.each(current_user.groups, function (group, active) {
                 $('ul#edit-day-group-options').append('<li><span class="edit-day-group-item" data-target="' + group + '">Edit day: ' + group + '</li>');
             });
-        } else if (current_user.groups.length != 0) {
-            $(this).children('span.edit-day-menu').addClass('dropdown').removeClass('hide')
-                .append('<button id="edit-day-button" data-target="' + current_user.groups[0] + '">' +
+        } else if (Object.keys(current_user.groups).length == 1) {
+            $(this).children('span.edit-day-menu').removeClass('hide')
+                .append('<button id="edit-day-button" data-target="' + Object.keys(current_user.groups)[0] + '">' +
                     '<span class="elegant_icons icon_pencil-edit"></span></button></span>');
         }
     }

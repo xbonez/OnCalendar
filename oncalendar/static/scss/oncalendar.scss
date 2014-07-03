@@ -373,17 +373,15 @@ tr#add-victim-buttons, tr#edit-victim-buttons {
 
 .admin-table {
     border-collapse: collapse;
-}
-
-.admin-table th {
-    text-align: left;
-}
-
-.admin-table th, .admin-table td {
-    border: 0;
-    padding: 8px;
-    font-size: 0.8em;
-    white-space: nowrap;
+    th {
+        text-align: left;
+    }
+    th, td {
+        border: 0;
+        padding: 8px;
+        font-size: 0.8em;
+        white-space: nowrap;
+    }
 }
 
 .admin-panel-actions {
@@ -395,6 +393,12 @@ tr#add-victim-buttons, tr#edit-victim-buttons {
     margin: 5px 10px 0 10px;
     cursor: pointer;
     color: $font_color_menu_reverse;
+    li {
+        color: $font_color;
+        span {
+            font-size: 0.8em;
+        }
+    }
 }
 
 .admin-user-menu:hover, .user-menu:hover {
@@ -561,6 +565,18 @@ div#edit-group-victims-popup {
             div#victim-username-textbox {
                 position: relative;
             }
+        }
+    }
+}
+
+div#edit-account-info-popup {
+    table {
+        @extend .admin-table;
+        th {
+            padding: 8px 8px 0 8px;
+        }
+        td {
+            padding: 0 8px;
         }
     }
 }

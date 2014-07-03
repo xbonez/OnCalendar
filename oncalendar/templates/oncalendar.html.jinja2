@@ -14,6 +14,7 @@
   </head>
 
   <body>
+
     <div id="page-head" class="page-title">
       <div id="title"><h2>Box On-Call Calendar</h2></div>
       <div id="user-menu" class="user-menu dropdown">
@@ -24,6 +25,7 @@
           <li><a href="/login"><span id="user-login">Login</span></a></li>
           {% else %}
           <li><a href="/logout"><span id="user-logout">Logout</span></a></li>
+          <li id="edit-account-menu-option"><span>Edit My Info</span></li>
           {% endif %}
           {% if g.user.app_role == 2 %}
           <li><a href="/admin"><span id="oncalendar-admin">OnCalendar Admin</span></a></li>
@@ -31,6 +33,7 @@
         </ul>
       </div>
     </div>
+
     <div id="calendar-container" class="outer-container">
       <div id="group-legend" class="inline"></div>
       <div id="group-info-box" class="hide">
@@ -104,6 +107,7 @@
         </div>
       </div>
     </div>
+
     <div id="edit-group-popup" class="oncalendar-edit-popup popup mfp-hide">
       <h3>Editing Group <span id="edit-group-info-title-name"></span></h3>
       <div id="edit-group-info-form">
@@ -218,41 +222,79 @@
         <button id="edit-group-save-button" class="button">Save</button>
       </div>
     </div>
+
     <div id="edit-group-victims-popup" class="popup mfp-hide">
-        <h3>Edit <span id="edit-group-victims-title-name"></span> Group Members</h3>
-        <div id="group-victims-list-form">
-          <table id="group-victims-list-table" class="admin-table">
-            <tr>
-              <th>Remove</th>
-              <th>Active</th>
-              <th>Username</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>SMS Email</th>
-              <th></th>
-            </tr>
-            <tr>
-              <td></td>
-              <td></td>
-              <td>
-                <div id="victim-username-textbox">
-                  <input type="hidden" id="victim-id" name="victim-id" value="0">
-                  <input type="text" id="add-victim-username" class="autocomplete" name="add-victim-username" value="" size="20">
-                </div>
-              </td>
-              <td><input type="text" id="add-victim-firstname" name="add-victim-firstname" value="" size="20"></td>
-              <td><input type="text" id="add-victim-lastname" name="add-victim-lastname" value="" size="20"></td>
-              <td><input type="text" id="add-victim-phone" name="add-victim-phone" value="" size="20"></td>
-              <td><input type="text" id="add-victim-email" name="add-victim-email" value="" size="20"></td>
-              <td><input type="text" id="add-victim-sms-email" name="add-victim-sms-email" value="" size="20"></td>
-              <td><button id="add-new-victim-save-button" class="button" title="Add user to group">Add</button></td>
-              <td colspan="5"></td>
-            </tr>
-          </table>
-        </div>
+	  <h3>Edit <span id="edit-group-victims-title-name"></span> Group Members</h3>
+	  <div id="group-victims-list-form">
+		<table id="group-victims-list-table" class="admin-table">
+		  <tr>
+		    <th>Remove</th>
+		    <th>Active</th>
+		    <th>Username</th>
+		    <th>First Name</th>
+		    <th>Last Name</th>
+		    <th>Phone</th>
+		    <th>Email</th>
+		    <th>SMS Email</th>
+		    <th></th>
+		  </tr>
+		  <tr>
+		    <td></td>
+		    <td></td>
+		    <td>
+		      <div id="victim-username-textbox">
+		        <input type="hidden" id="victim-id" name="victim-id" value="0">
+		        <input type="text" id="add-victim-username" class="autocomplete" name="add-victim-username" value="" size="20">
+		      </div>
+		    </td>
+		    <td><input type="text" id="add-victim-firstname" name="add-victim-firstname" value="" size="20"></td>
+		    <td><input type="text" id="add-victim-lastname" name="add-victim-lastname" value="" size="20"></td>
+		    <td><input type="text" id="add-victim-phone" name="add-victim-phone" value="" size="20"></td>
+		    <td><input type="text" id="add-victim-email" name="add-victim-email" value="" size="20"></td>
+		    <td><input type="text" id="add-victim-sms-email" name="add-victim-sms-email" value="" size="20"></td>
+		    <td><button id="add-new-victim-save-button" class="button" title="Add user to group">Add</button></td>
+		    <td colspan="5"></td>
+		  </tr>
+		</table>
+	  </div>
     </div>
+
+    <div id="edit-account-info-popup" class="popup mfp-hide">
+      <h3>Account Info</h3>
+      <div id="edit-account-info-form">
+        <table id="account-info-table" class="admin-table">
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>SMS Email</th>
+            <th>Throttle Level</th>
+            <th>Truncate SMS</th>
+          </tr>
+          <tr>
+            <td><input type="text" id="edit-account-firstname" name="edit-account-firstname" value="" size="20"></td>
+            <td><input type="text" id="edit-account-lastname" name="edit-account-lastname" value="" size="20"></td>
+            <td><input type="text" id="edit-account-phone" name="edit-account-phone" value="" size="20"></td>
+            <td><input type="text" id="edit-account-email" name="edit-account-email" value="" size="20"></td>
+            <td><input type="text" id="edit-account-sms-email" name="edit-account-sms-email" value="" size="30"></td>
+            <td><input type="text" id="edit-account-throttle" name="edit-account-throttle" value="" size="2"></td>
+            <td>
+              <button id="edit-account-truncate-checkbox" class="edit-account-truncate oc-checkbox elegant_icons icon_box-empty" data-target="edit-account-truncate" data-checked="no"></button>
+              <input type="hidden" id="edit-account-truncate" name="edit-account-truncate" value="no">
+            </td>
+          </tr>
+          <tr>
+            <th>Group</th>
+            <th>Active</th>
+            <th colspan="5"></th>
+          </tr>
+        </table>
+        <button id="edit-account-cancel-button" class="button">Cancel</button>
+        <button id="edit-account-save-button" class="button">Save</button>
+      </div>
+    </div>
+
     <div id="edit-day-popup" class="popup mfp-hide send_sms_popup">
       <h3>Edit Day <span id="edit-day-group"></span></h3>
       <div id="edit-day-form">
@@ -271,6 +313,7 @@
         </table>
       </div>
     </div>
+
     <div id="send-oncall-page-popup" class="popup mfp-hide send-sms-popup">
       <h3>Page Primary Oncall For <span id="page-primary-groupname"></span></h3>
       <div id="page-primary-form">
@@ -283,6 +326,7 @@
         <span><button id="send-oncall-page-button">Send</button></span>
       </div>
     </div>
+
     <div id="send-panic-page-popup" class="popup mfp-hide send-sms-popup">
       <h3>Send Panic Page to <span id="panic-page-groupname"></span></h3>
       <div id="panic-page-form">
@@ -295,6 +339,7 @@
         <span id="send-panic-page"><button id="send-panic-page-button">Send Panic Page</button></span>
       </div>
     </div>
+
     <script type="text/javascript">
       {{ main_js|safe }}
     </script>

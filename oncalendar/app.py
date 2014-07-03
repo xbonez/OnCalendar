@@ -456,13 +456,15 @@ def root():
         user = {
             'username': g.user.username,
             'groups': g.user.groups,
-            'app_role': g.user.app_role
+            'app_role': g.user.app_role,
+            'id': g.user.id
         }
     else:
         user = {
             'username': 'anonymous',
             'groups': [],
-            'app_role': 0
+            'app_role': 0,
+            'id': 0
         }
     user_json = json.dumps(user)
     js = render_template('main.js.jinja2',
@@ -582,15 +584,18 @@ def oc_calendar(year=None, month=None):
         user = {
             'username': g.user.username,
             'groups': g.user.groups,
-            'app_role': g.user.app_role
+            'app_role': g.user.app_role,
+            'id': g.user.id
         }
     else:
         user = {
             'username': 'anonymous',
             'groups': [],
-            'app_role': 0
+            'app_role': 0,
+            'id': 0
         }
-    user_json = json.dumps(user)
+    # user_json = json.dumps(user)
+    user_json = json.dumps(g.user)
     js = render_template('main.js.jinja2',
                          year=year,
                          month=int(month) - 1,
@@ -1705,6 +1710,30 @@ def api_cluster_master_status():
 
 # Notification APIs
 #--------------------------------------
+@ocapp.route('/api/notification/sms' ,methods=['GET'])
+@ocapp.route('/api/notification/sms/<period>', methods=['GET'])
+def api_sms_history(period=None):
+    """
+    API interface to retrieve the sent SMS notifications for
+    now - the specified period.
+
+    Args:
+        period (str): The period to query
+
+    Returns:
+        (str): Dict of the SMS notifications as JSON
+    """
+
+    if period is not None:
+        period = period.replace(' ', '')
+        match_string = re.search('(\d+)([dhms])', period)
+        match_time = re.search('^(\d+)$', period)
+        if match_string is not None:
+            (period_time, period_unit) = match_string.groups()
+        elif match_time is not None:
+            period_time = match_time.groups(0)[0]
+
+
 @ocapp.route('/api/notification/sms/<victim_type>/<group>', methods=['POST'])
 def api_send_sms(victim_type, group):
     """
