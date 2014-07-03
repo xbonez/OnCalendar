@@ -781,12 +781,12 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
         } else {
 	        $.when(oncalendar.add_victim_to_group(victim_data)).then(function(data) {
 	            var id = data.id;
-	            $('input#add-victim-username').val('');
-	            $('input#add-victim-firstname').val('');
-	            $('input#add-victim-lastname').val('');
-	            $('input#add-victim-phone').val('');
-	            $('input#add-victim-email').val('');
-	            $('input#add-victim-sms-email').val('');
+	            $('input#add-victim-username').attr('value', '');
+	            $('input#add-victim-firstname').attr('value', '');
+	            $('input#add-victim-lastname').attr('value', '');
+	            $('input#add-victim-phone').attr('value', '');
+	            $('input#add-victim-email').attr('value', '');
+	            $('input#add-victim-sms-email').attr('value', '');
 	            $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
 	                .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
 	            var victim_row = $('tr#victim' + id);
@@ -846,7 +846,48 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
     }
 }).on('click', 'button#edit-account-cancel-button', function() {
 	$.magnificPopup.close();
+}).on('click', 'button#edit-account-save-button', function() {
+	var account_text_fields = [
+		'firstname',
+		'lastname',
+		'phone'
+	];
+	var missing_input = 0;
+	$.each(account_text_fields, function(i, field) {
+		if ($('input#edit-account-' + field).val().length == 0) {
+			$('input#edit-account-' + field).addClass('missing-input');
+			missing_input++;
+		}
+	});
+	victim_phone = $('input#edit-account-phone').val().replace(/\D/g,'');
+    var country_code = victim_phone.substring(0,1);
+    if (country_code !== "1") {
+        victim_phone = "1" + victim_phone
+    }
+    if (victim_phone.length !== 11) {
+        $('input#add-victim-phone').val(victim_data.phone).addClass('missing-input').focus();
+		missing_input++;
+	}
+
+	var throttle_value = $('input#edit-account-throttle').val().replace(/\D/g,'');
+	if (throttle_value.length == 0 || throttle_value < {{ throttle_min }}) {
+		throttle_value = {{ throttle_min }};
+		$('input#edit-account-throttle').val({{ throttle_min }});
+	}
+
+	if (missing_input == 0) {
+		victim_data = {
+			firstname: $('input#edit-account-firstname').val(),
+			lastname: $('input#edit-account-lastname').val(),
+			phone: $('input#edit-account-phone').val(),
+			sms_email: $('input#edit-account-sms-email').val(),
+			throttle: throttle_value,
+			truncate: $('input#edit-account-truncate').val() === "yes" ? 1 : 0
+		}
+		console.log(victim_data);
+	}
 });
+
 
 $('div#edit-day-popup').on('click', 'span.slot-item', function() {
     var new_victim = $(this).attr('data-target');

@@ -1,5 +1,5 @@
 from apscheduler.scheduler import Scheduler
-from flask import Flask, render_template, url_for, request, flash, redirect, g, session
+from flask import Flask, render_template, url_for, request, flash, redirect, g, session, jsonify
 import flask.ext.login as flogin
 import json
 import logging
@@ -451,15 +451,8 @@ def root():
         (string): Rendered template of the main page HTML and Javascript.
     """
 
-    is_anonymous = g.user.is_anonymous()
-    if not is_anonymous:
-        user = {
-            'username': g.user.username,
-            'groups': g.user.groups,
-            'app_role': g.user.app_role,
-            'id': g.user.id
-        }
-    else:
+    user = {}
+    if g.user.is_anonymous():
         user = {
             'username': 'anonymous',
             'groups': [],
@@ -468,10 +461,10 @@ def root():
         }
     user_json = json.dumps(user)
     js = render_template('main.js.jinja2',
+                         throttle_min=config.sms['SMS_THROTTLE_MIN'],
                          user_json=user_json)
 
     return render_template('oncalendar.html.jinja2',
-                           anonymous=is_anonymous,
                            email_gateway=config.sms['EMAIL_GATEWAY'],
                            main_js=js,
                            stylesheet_url=url_for('static', filename='css/oncalendar.css'),
@@ -579,30 +572,23 @@ def oc_calendar(year=None, month=None):
         (string): Rendered template of the main page HTML and Javascript.
     """
 
-    is_anonymous = g.user.is_anonymous()
-    if not is_anonymous:
-        user = {
-            'username': g.user.username,
-            'groups': g.user.groups,
-            'app_role': g.user.app_role,
-            'id': g.user.id
-        }
-    else:
+    user = {}
+    if g.user.is_anonymous():
         user = {
             'username': 'anonymous',
             'groups': [],
             'app_role': 0,
             'id': 0
         }
-    # user_json = json.dumps(user)
-    user_json = json.dumps(g.user)
+
+    user_json = json.dumps(user)
     js = render_template('main.js.jinja2',
                          year=year,
                          month=int(month) - 1,
+                         throttle_min=config.sms['SMS_THROTTLE_MIN'],
                          user_json=user_json)
 
     return render_template('oncalendar.html.jinja2',
-                           anonymous=is_anonymous,
                            main_js=js,
                            stylesheet_url=url_for('static', filename='css/oncalendar.css'),
                            jquery_url=url_for('static', filename='js/jquery.js'),
@@ -718,7 +704,7 @@ def api_get_calendar(year=None, month=None, group=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(victims)
+    return jsonify(victims)
 
 
 @ocapp.route('/api/calendar/month', methods=['POST'])
@@ -745,7 +731,7 @@ def api_calendar_update_month():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(response)
+    return jsonify(response)
 
 
 @ocapp.route('/api/calendar/boundaries')
@@ -778,7 +764,8 @@ def api_get_cal_boundaries():
     start_year, start_month, start_day = start_tuple[0:3]
     end_tuple = cal_end.timetuple()
     end_year, end_month, end_day = end_tuple[0:3]
-    return json.dumps({'start': [start_year, start_month, start_day],
+
+    return jsonify({'start': [start_year, start_month, start_day],
                        'end': [end_year, end_month, end_day]})
 
 
@@ -807,7 +794,8 @@ def api_get_cal_end():
 
     end_tuple = cal_end.timetuple()
     year, month, day = end_tuple[0:3]
-    return json.dumps([year, month, day])
+
+    return jsonify([year, month, day])
 
 
 @ocapp.route('/api/calendar/calendar_start')
@@ -835,7 +823,8 @@ def api_get_cal_start():
 
     start_tuple = cal_start.timetuple()
     year, month, day = start_tuple[0:3]
-    return json.dumps([year, month, day])
+
+    return jsonify([year, month, day])
 
 
 @ocapp.route('/api/calendar/update/day', methods=['POST'])
@@ -858,7 +847,7 @@ def api_calendar_update_day():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(response)
+    return jsonify(response)
 
 
 @ocapp.route('/api/edits')
@@ -885,7 +874,7 @@ def api_get_edit_history(group=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(edit_history)
+    return jsonify(edit_history)
 
 
 @ocapp.route('/api/edits/<group>/last')
@@ -910,7 +899,7 @@ def api_get_last_edit(group):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(last_edit)
+    return jsonify(last_edit)
 
 
 @ocapp.route('/api/groups/')
@@ -933,7 +922,7 @@ def api_get_all_groups_info():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(groups)
+    return jsonify(groups)
 
 
 @ocapp.route('/api/group/by_name/<group>/')
@@ -959,7 +948,7 @@ def api_get_group_info_by_name(group=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(group_info)
+    return jsonify(group_info)
 
 
 @ocapp.route('/api/group/by_id/<gid>/')
@@ -985,7 +974,7 @@ def api_get_group_info_by_id(gid=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(group_info)
+    return jsonify(group_info)
 
 
 @ocapp.route('/api/group/victims/<group>')
@@ -1011,7 +1000,7 @@ def api_get_group_victims(group=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(group_victims)
+    return jsonify(group_victims)
 
 
 
@@ -1035,7 +1024,7 @@ def api_get_all_victims_info():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(victims)
+    return jsonify(victims)
 
 
 @ocapp.route('/api/victims/current', methods=(['GET']))
@@ -1058,7 +1047,7 @@ def api_get_current_victims(group=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(victims)
+    return jsonify(victims)
 
 
 @ocapp.route('/api/victims/suggest')
@@ -1080,10 +1069,10 @@ def api_suggest_victims():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(suggested_victims)
+    return jsonify(suggested_victims)
 
 
-@ocapp.route('/api/victim/<key>/<id>/')
+@ocapp.route('/api/victim/<key>/<id>/', methods=['GET'])
 def api_get_victim_info(key=None, id=None):
     """
     API interface to get information on a specified victim.
@@ -1109,7 +1098,52 @@ def api_get_victim_info(key=None, id=None):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(victim_info)
+    return jsonify(victim_info)
+
+
+@ocapp.route('/api/victim/<id>', methods=['POST'])
+def api_update_victim_info(id=None):
+    """
+    API interface for the edit account function, saves the updated info
+
+    Args:
+        id (str): The user id to update
+
+    Returns:
+        (str): The dict of the updated user info as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+
+    if id is None:
+        raise OnCalendarBadRequest(
+            payload = {
+                'request_status': 'ERROR',
+                'request_error': 'No user id given.'
+            }
+        )
+
+    if not request.json:
+        raise OnCalendarBadRequest(
+            payload = {
+                'request_status': 'ERROR',
+                'request_error': 'No updated user data found.'
+            }
+        )
+    else:
+        victim_data = request.json
+        victim_data['id'] = id
+
+    try:
+        ocdb = OnCalendarDB(config.database)
+        updated_victim_data = ocdb.update_victim(victim_data)
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = [error.args[0], error.args[1]]
+        )
+
+    return jsonify(updated_victim_data)
 
 
 #######################################
@@ -1130,7 +1164,7 @@ def api_get_config():
     config_vars = [attr for attr in dir(config()) if not attr.startswith('__')]
     oc_config = {}
     for cv in config_vars:
-        oc_config[cv] = getattr(config, cv);
+        oc_config[cv] = getattr(config, cv)
     return json.dumps(oc_config)
 
 
