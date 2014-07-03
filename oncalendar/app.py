@@ -2217,10 +2217,14 @@ def parse_host_form(form_data):
         'duration': form_data['duration'],
         'notification_number': form_data['notification_number'],
         'event_time': form_data['event_time'],
-        'info': form_data['info'],
-        'comments': form_data['comments'],
-        'nagios_master': form_data['nagios_master']
+        'info': form_data['info']
     }
+
+    if ('comments' in form_data):
+        notification_data['comments'] = form_data['comments']
+
+    if ('nagios_master' in form_data):
+        notification_data['nagios_master'] = form_data['nagios_master']
 
     return notification_data
 
@@ -2230,7 +2234,7 @@ def parse_service_form(form_data):
     required_fields = [
         'notification_type',
         'service_status',
-        'service',
+        'service_description',
         'hostname',
         'host_address',
         'duration',
@@ -2253,11 +2257,17 @@ def parse_service_form(form_data):
         'duration': form_data['duration'],
         'notification_number': form_data['notification_number'],
         'event_time': form_data['event_time'],
-        'info': form_data['info'],
-        'notes_url': form_data['notes_url'],
-        'comments': form_data['comments'],
-        'nagios_master': form_data['nagios_master']
+        'info': form_data['info']
     }
+
+    if ('notes_url' in form_data):
+        notification_data['notes_url'] = form_data['notes_url']
+
+    if ('comments' in form_data):
+        notification_data['comments'] = form_data['comments']
+
+    if ('nagios_master' in form_data):
+        notification_data['nagios_master'] = form_data['nagios_master']
 
     return notification_data
 
