@@ -1872,7 +1872,7 @@ def api_send_sms(victim_type, group):
                             else:
                                 panic_status['sms_errors'] += 1
                 else:
-                    panic_status['throttle'] += 1
+                    panic_status['throttled'] += 1
 
         sms_status = "Panic page results: {0} users - {1} SMS messages successful, {2} users throttled, {2} SMS failures".format(
             len(victim_ids),
