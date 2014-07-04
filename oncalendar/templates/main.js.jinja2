@@ -19,7 +19,7 @@ $.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
 	$.each(current_user.groups, function(group, active) {
 		$('table#account-info-table').children('tbody').append('<tr><td>' + group + '</td>' +
 			'<td><button id="edit-account-' + group + '-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="edit-account-' + group + '-active" data-group="' + group + '" data-checked="yes"></button>' +
-			'<input type="hidden" id="edit-account-' + group + '-active" name="edit-account-' + group + '-active" value="yes"></td><td colspan="5"></td></tr>');
+			'<input type="hidden" id="edit-account-' + group + '-active" name="edit-account-' + group + '-active" class="group-active-input" data-group="' + group + '" value="yes"></td><td colspan="5"></td></tr>');
 		if (active == 0) {
 			$('button#edit-account-' + group + '-active-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
 			$('input#edit-account-' + group + '-active').attr('value', 'no');
@@ -339,7 +339,7 @@ $('#group-legend').on('click', 'div.expander', function() {
 });
 
 
-$('#group-info-box').on('click', 'div.alert-box', function() {
+$('body').on('click', 'div.alert-box', function() {
     var alert_box = $(this);
     alert_box.addClass('transparent');
     setTimeout(function() {
@@ -865,7 +865,7 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
         victim_phone = "1" + victim_phone
     }
     if (victim_phone.length !== 11) {
-        $('input#add-victim-phone').val(victim_data.phone).addClass('missing-input').focus();
+        $('input#add-victim-phone').val(victim_phone).addClass('missing-input').focus();
 		missing_input++;
 	}
 
@@ -876,15 +876,40 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 	}
 
 	if (missing_input == 0) {
-		victim_data = {
+		var victim_data = {
+			username: current_user.username,
 			firstname: $('input#edit-account-firstname').val(),
 			lastname: $('input#edit-account-lastname').val(),
 			phone: $('input#edit-account-phone').val(),
 			sms_email: $('input#edit-account-sms-email').val(),
 			throttle: throttle_value,
-			truncate: $('input#edit-account-truncate').val() === "yes" ? 1 : 0
+			truncate: $('input#edit-account-truncate').val() === "yes" ? '1' : '0',
+			groups: {}
 		}
-		console.log(victim_data);
+		$.each($('input.group-active-input'), function() {
+			var victim_group = $(this).attr('data-group');
+			victim_data.groups[victim_group] = $(this).val() === "yes" ? '1' : '0';
+		});
+
+		$.when(oncalendar.update_victim_info(current_user.id, victim_data)).then(
+			// done: update current_user and the victim record on oncalendar.oncall_groups
+			function(data) {
+				current_user = data[current_user.id];
+				var current_user_groups = data[current_user.id].groups;
+				delete(data[current_user.id].groups);
+				console.log('user groups: ' + JSON.stringify(current_user_groups));
+				$.each(current_user_groups, function(group, status) {
+					oncalendar.oncall_groups[group].victims[current_user.id] = data[current_user.id];
+					oncalendar.oncall_groups[group].victims[current_user.id].group_active = status;
+				});
+			},
+			// fail: show error message
+			function(status) {
+				$('div#page-head').append('<div class="alert-box">' + status + '</div>');
+			}
+		);
+		$.magnificPopup.close();
+
 	}
 });
 

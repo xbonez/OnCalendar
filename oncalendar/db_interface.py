@@ -1350,9 +1350,12 @@ class OnCalendarDB(object):
         victim_groups = victim_data.pop('groups')
         victim_id = victim_data.pop('id')
         update_items = []
+        self.logger.debug(victim_data)
+
         for key in victim_data:
             update_items.append(key + "='" + victim_data[key] + "'")
 
+        self.logger.debug(update_items)
         cursor = self.oncalendar_db.cursor()
         update_victim_query = "UPDATE victims SET {0} WHERE id={1}""".format(
             ','.join(update_items),
@@ -1368,11 +1371,11 @@ class OnCalendarDB(object):
 
         try:
             for group in victim_groups:
-                cursor.execute("UPDATE groupmap SET active={0} WHERE victimid={1} AND groupid=(SELECT id FROM groups WHERE name='{2}'").format(
+                cursor.execute("UPDATE groupmap SET active={0} WHERE victimid={1} AND groupid=(SELECT id FROM groups WHERE name='{2}')".format(
                     victim_groups[group],
                     victim_id,
                     group
-                )
+                ))
             self.oncalendar_db.commit()
         except mysql.Error, error:
             self.oncalendar_db.rollback()

@@ -1402,6 +1402,32 @@ var oncalendar = {
 
         return cal.get_victim_info_object.promise();
     },
+    update_victim_info: function(victim_id, victim_data) {
+        var update_victim_url = window.location.origin + '/api/victim/' + victim_id;
+        var update_victim_info_object = new $.Deferred();
+        var update_victim_info_request = $.ajax({
+            url: update_victim_url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(victim_data),
+            dataType: 'json'
+        }),
+        chain = update_victim_info_request.then(function(data) {
+            return(data);
+        });
+
+        chain
+            .done(function(data) {
+                update_victim_info_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseText;
+                update_victim_info_object.reject(error);
+            });
+
+        return update_victim_info_object.promise();
+
+    },
     update_victim_status: function(victims_data) {
         update_victim_status_url = window.location.origin + '/api/admin/group/victims';
         var update_victim_status_object = new $.Deferred();
