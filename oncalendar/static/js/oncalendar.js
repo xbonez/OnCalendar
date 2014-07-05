@@ -1454,7 +1454,7 @@ var oncalendar = {
         return update_victim_status_object.promise();
 
     },
-    add_victim_to_group: function(victim_data) {
+    add_new_victim: function(victim_data) {
         var add_victim_object = new $.Deferred();
         var add_victim_url = window.location.origin + '/api/admin/victim/add';
         var add_victim_request = $.ajax({

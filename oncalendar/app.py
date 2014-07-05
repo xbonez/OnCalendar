@@ -1426,7 +1426,6 @@ def api_add_victim():
     for key in form_keys:
         if key == "groups[]":
             for gid in request.form.getlist('groups[]'):
-                print gid
                 victim_data['groups'].append(gid)
         else:
             victim_data[key] = request.form[key]
@@ -1434,12 +1433,14 @@ def api_add_victim():
     try:
         ocdb = OnCalendarDB(config.database)
         new_victim = ocdb.add_victim(victim_data)
+    except OnCalendarAPIError as error:
+        return jsonify({'api_error': error.args[0], 'error_message': error.args[1]})
     except OnCalendarDBError, error:
         raise OnCalendarAppError(
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(new_victim)
+    return jsonify(new_victim)
 
 
 @ocapp.route('/api/admin/victim/delete/<victim_id>')

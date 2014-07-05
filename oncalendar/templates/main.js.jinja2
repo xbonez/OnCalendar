@@ -791,30 +791,34 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
                 );
 			});
         } else {
-	        $.when(oncalendar.add_victim_to_group(victim_data)).then(function(data) {
-	            var id = data.id;
-	            $('input#add-victim-username').attr('value', '');
-	            $('input#add-victim-firstname').attr('value', '');
-	            $('input#add-victim-lastname').attr('value', '');
-	            $('input#add-victim-phone').attr('value', '');
-	            $('input#add-victim-email').attr('value', '');
-	            $('input#add-victim-sms-email').attr('value', '');
-	            $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
-	                .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
-	            var victim_row = $('tr#victim' + id);
-	            victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
-	                'data-target="victim' + id + '-active"></button>' +
-	                '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
-	                '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
-	                ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
-	                '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
-	            victim_row.append('<td>' + data.username + '</td>' +
-	                    '<td>' + data.firstname + '</td>' +
-	                    '<td>' + data.lastname + '</td>' +
-	                    '<td>' + data.phone + '</td>' +
-	                    '<td>' + data.email + '</td>' +
-	                    '<td>' + data.sms_email + '</td><td></td>'
-	            );
+	        $.when(oncalendar.add_new_victim(victim_data)).then(function(data) {
+				if (typeof data.api_error !== "undefined") {
+					$('#edit-group-victims-popup').append('<div class="alert-box">User name/data conflict, please try again</div>');
+				} else {
+		            var id = data.id;
+		            $('input#add-victim-username').val('');
+		            $('input#add-victim-firstname').val('');
+		            $('input#add-victim-lastname').val('');
+		            $('input#add-victim-phone').val('');
+		            $('input#add-victim-email').val('');
+		            $('input#add-victim-sms-email').val('');
+		            $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
+		                .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
+		            var victim_row = $('tr#victim' + id);
+		            victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
+		                'data-target="victim' + id + '-active"></button>' +
+		                '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
+		                '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
+		                ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
+		                '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
+		            victim_row.append('<td>' + data.username + '</td>' +
+		                    '<td>' + data.firstname + '</td>' +
+		                    '<td>' + data.lastname + '</td>' +
+		                    '<td>' + data.phone + '</td>' +
+		                    '<td>' + data.email + '</td>' +
+		                    '<td>' + data.sms_email + '</td><td></td>'
+		            );
+				}
 	        });
 		}
     }
@@ -825,12 +829,13 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     victim_changes.groupid = $('input#target-groupid').val();
     $.each($('tr.victim-row'), function() {
         var victim_id = $(this).attr('data-victim-id');
-        var victim = {
-            victimid: victim_id,
-            remove: $('input#target-victim' + victim_id).val() === "yes" ? 1 : 0,
-            active: $('input#victim' + victim_id + '-active').val() === "yes" ? 1 : 0
-        };
-        victim_changes.victims.push(victim);
+		if ($('input#target-victim' + victim_id).val() === "no") {
+	        var victim = {
+	            victimid: victim_id,
+	            active: $('input#victim' + victim_id + '-active').val() === "yes" ? 1 : 0
+	        };
+	        victim_changes.victims.push(victim);
+		}
     });
 
     $.when(oncalendar.update_victim_status(victim_changes)).then(

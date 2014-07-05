@@ -1,9 +1,9 @@
 class OnCalendarAPIError(Exception):
-	pass
+    pass
 
 
 class OnCalendarAuthError(Exception):
-	pass
+    pass
 
 
 class ocapi_err(object):

@@ -1242,20 +1242,20 @@ class OnCalendarDB(object):
             cursor.execute('SELECT id FROM victims WHERE username=\'{0}\''.format(victim_data['username']))
             rows = cursor.fetchall()
             if rows:
-                raise OnCalendarDBError(ocapi_err.VICTIMEXISTS, 'User {0} already exists'.format(victim_data['username']))
+                raise OnCalendarAPIError(ocapi_err.VICTIMEXISTS, 'User {0} already exists'.format(victim_data['username']))
             cursor.execute(add_victim_query)
             self.oncalendar_db.commit()
             cursor.execute("SELECT LAST_INSERT_ID()")
+            new_victim_id_tuple = cursor.fetchone()
+            new_victim_id = new_victim_id_tuple[0]
         except mysql.Error, error:
             self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to add user to database - {0}'.format(error.args[1]))
 
-        new_victim_id_tuple = cursor.fetchone()
-        new_victim_id = new_victim_id_tuple[0]
 
         try:
             for group in victim_data['groups']:
-                cursor.execute('REPLACE INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, 1)'.format(
+                cursor.execute('INSERT INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, 1)'.format(
                         group,
                         new_victim_id
                     )
@@ -1289,6 +1289,10 @@ class OnCalendarDB(object):
         group_add_query = """REPLACE INTO groupmap (groupid, victimid, active)
         VALUES ({0}, {1}, 1""".format(group_id, victim_id)
         try:
+            cursor.execute("SELECT * FROM groupmap WHERE groupid='{0}' AND victimid='{1}'".format(group_id, victim_id))
+            rows = cursor.fetchall()
+            if rows:
+                raise OnCalendarAPIError(ocapi_err.GROUPEXISTS, 'User is already a member of this group')
             cursor.execute(group_add_query)
             self.oncalendar_db.commit()
         except mysql.Error as error:
@@ -1298,7 +1302,7 @@ class OnCalendarDB(object):
                 "Failed to add user to groups - {0}".format(error.args[1])
             )
 
-        updated_victim = self.git_victim_info('id', victim_id)
+        updated_victim = self.get_victim_info('id', victim_id)
 
         return updated_victim[victim_id]
 
