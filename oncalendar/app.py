@@ -420,7 +420,7 @@ def handle_bad_request(error):
     Handler for BadRequest errors, HTTP code 400.
     """
 
-    return json.dumps(error.payload), error.status_code
+    return jsonify(error.payload), error.status_code
 
 
 @ocapp.errorhandler(OnCalendarAppError)
@@ -429,7 +429,7 @@ def handle_app_error(error):
     Handler for application errors, HTTP code 500
     """
 
-    return json.dumps(error.payload), error.status_code
+    return jsonify(error.payload), error.status_code
 
 
 @ocapp.errorhandler(OnCalendarAuthError)
@@ -1165,7 +1165,7 @@ def api_get_config():
     oc_config = {}
     for cv in config_vars:
         oc_config[cv] = getattr(config, cv)
-    return json.dumps(oc_config)
+    return jsonify(oc_config)
 
 
 @ocapp.route('/api/admin/config', methods=['POST'])
@@ -1225,7 +1225,7 @@ def api_update_config():
             payload = [API_NOCONFIG, error_string]
         )
 
-    return json.dumps(current_config)
+    return jsonify(current_config)
 
 
 # Group APIs
@@ -1278,7 +1278,7 @@ def api_add_group():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(new_group)
+    return jsonify(new_group)
 
 
 @ocapp.route('/api/admin/group/delete/<group_id>')
@@ -1304,7 +1304,7 @@ def api_delete_group(group_id):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps({'group_count': group_count})
+    return jsonify({'group_count': group_count})
 
 
 @ocapp.route('/api/admin/group/update', methods=['POST'])
@@ -1358,7 +1358,7 @@ def api_update_group():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(group_info)
+    return jsonify(group_info)
 
 
 @ocapp.route('/api/admin/group/victims', methods=['POST'])
@@ -1387,7 +1387,7 @@ def api_group_victims():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(group_victims)
+    return jsonify(group_victims)
 
 
 # Victim APIs
@@ -1466,7 +1466,7 @@ def api_delete_victim(victim_id):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps({'victim_count': victim_count})
+    return jsonify({'victim_count': victim_count})
 
 
 @ocapp.route('/api/admin/victim/update', methods=['POST'])
@@ -1516,7 +1516,7 @@ def api_update_victim():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(victim_info)
+    return jsonify(victim_info)
 
 
 # Calendar APIs
@@ -1556,7 +1556,7 @@ def db_extend(days):
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps([year, month, day])
+    return jsonify([year, month, day])
 
 
 # Database APIs
@@ -1582,7 +1582,7 @@ def api_db_verify():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(init_status)
+    return jsonify(init_status)
 
 
 @ocapp.route('/api/admin/db/create_db', methods=['POST'])
@@ -1613,7 +1613,7 @@ def api_create_db():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(['OK'])
+    return jsonify(['OK'])
 
 
 @ocapp.route('/api/admin/db/init_db')
@@ -1638,7 +1638,7 @@ def api_db_init():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(init_status)
+    return jsonify(init_status)
 
 
 @ocapp.route('/api/admin/db/init_db/force')
@@ -1665,11 +1665,7 @@ def api_db_init_force():
             payload = [error.args[0], error.args[1]]
         )
 
-    return json.dumps(init_status)
-
-
-if __name__ == '__main__':
-    ocapp.run()
+    return jsonify(init_status)
 
 
 @ocapp.route('/api/scheduler/start')
@@ -1686,11 +1682,11 @@ def api_start_scheduler():
     if cluster_key == config.basic['CLUSTER_NAME']:
         if not ocapp.scheduler.running:
             start_status = start_scheduler(master_takeover)
-            return json.dumps({'Scheduler_running': start_status})
+            return jsonify({'Scheduler_running': start_status})
         else:
-            return json.dumps({'Scheduler_running': ocapp.scheduler.running})
+            return jsonify({'Scheduler_running': ocapp.scheduler.running})
     else:
-        return json.dumps({'ERROR': 'Invalid Key'})
+        return jsonify({'ERROR': 'Invalid Key'})
 
 
 @ocapp.route('/api/scheduler/stop')
@@ -1703,9 +1699,9 @@ def api_stop_scheduler():
     cluster_key = request.args['key']
     if cluster_key == config.basic['CLUSTER_NAME']:
         stop_scheduler()
-        return json.dumps({'Scheduler_running': ocapp.scheduler.running})
+        return jsonify({'Scheduler_running': ocapp.scheduler.running})
     else:
-        return json.dumps({'ERROR': 'Invalid Key'})
+        return jsonify({'ERROR': 'Invalid Key'})
 
 
 @ocapp.route('/api/scheduler/status')
@@ -1728,7 +1724,7 @@ def api_scheduler_status():
             if job.name in ocapp.job_failures:
                 status[job_index]['failures'] = ocapp.job_failures[job.name]
 
-    return json.dumps(status)
+    return jsonify(status)
 
 
 @ocapp.route('/api/cluster/master')
@@ -1738,9 +1734,9 @@ def api_cluster_master_status():
     """
 
     if uwsgi.i_am_the_lord(config.basic['CLUSTER_NAME']) == 1:
-        return json.dumps({'cluster_master': 'True'})
+        return jsonify({'cluster_master': 'True'})
     else:
-        return json.dumps({'cluster_master': 'False'})
+        return jsonify({'cluster_master': 'False'})
 
 
 # Notification APIs
@@ -2082,7 +2078,7 @@ def api_send_sms(victim_type, group):
                     notification_data['nagios_master']
                 )
 
-    return json.dumps({'sms_status': sms_status})
+    return jsonify({'sms_status': sms_status})
 
 
 @ocapp.route('/api/notification/email/<victim_type>/<group>', methods=['POST'])
@@ -2250,7 +2246,7 @@ def api_send_email(victim_type, group):
             payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
         )
 
-    return json.dumps({'email_status': 'Notification email sent to {0}'.format(target['email'])})
+    return jsonify({'email_status': 'Notification email sent to {0}'.format(target['email'])})
 
 
 def parse_host_form(form_data):
