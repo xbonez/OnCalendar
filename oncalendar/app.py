@@ -1,4 +1,5 @@
 from apscheduler.scheduler import Scheduler
+import datetime as dt
 from flask import Flask, render_template, url_for, request, flash, redirect, g, session, jsonify
 import flask.ext.login as flogin
 import json
@@ -445,7 +446,18 @@ def handle_auth_error(error):
 @ocapp.route('/')
 def root():
     """
-    The main page of the app.
+    The main page of the app, redirects to the calendar for the current month.
+
+    """
+
+    current_day = dt.date.today()
+    return redirect(url_for('root') + 'calendar/' + str(current_day.year) + '/' + str(current_day.month))
+
+
+@ocapp.route('/calendar/<year>/<month>')
+def oc_calendar(year=None, month=None):
+    """
+    Access main page of the app with a specific calendar month.
 
     Returns:
         (string): Rendered template of the main page HTML and Javascript.
@@ -459,13 +471,15 @@ def root():
             'app_role': 0,
             'id': 0
         }
+
     user_json = json.dumps(user)
     js = render_template('main.js.jinja2',
+                         year=year,
+                         month=int(month) - 1,
                          throttle_min=config.sms['SMS_THROTTLE_MIN'],
                          user_json=user_json)
 
     return render_template('oncalendar.html.jinja2',
-                           email_gateway=config.sms['EMAIL_GATEWAY'],
                            main_js=js,
                            stylesheet_url=url_for('static', filename='css/oncalendar.css'),
                            jquery_url=url_for('static', filename='js/jquery.js'),
@@ -561,43 +575,6 @@ def oc_admin():
     else:
         ocapp.logger.error("User {0} not authorized for /admin access".format(g.user.username))
         return redirect(url_for('root'))
-
-
-@ocapp.route('/calendar/<year>/<month>')
-def oc_calendar(year=None, month=None):
-    """
-    Access main page of the app with a specific calendar month.
-
-    Returns:
-        (string): Rendered template of the main page HTML and Javascript.
-    """
-
-    user = {}
-    if g.user.is_anonymous():
-        user = {
-            'username': 'anonymous',
-            'groups': [],
-            'app_role': 0,
-            'id': 0
-        }
-
-    user_json = json.dumps(user)
-    js = render_template('main.js.jinja2',
-                         year=year,
-                         month=int(month) - 1,
-                         throttle_min=config.sms['SMS_THROTTLE_MIN'],
-                         user_json=user_json)
-
-    return render_template('oncalendar.html.jinja2',
-                           main_js=js,
-                           stylesheet_url=url_for('static', filename='css/oncalendar.css'),
-                           jquery_url=url_for('static', filename='js/jquery.js'),
-                           datejs_url=url_for('static', filename='js/date.js'),
-                           ocjs_url=url_for('static', filename='js/oncalendar.js'),
-                           colorwheel_url=url_for('static', filename='js/color_wheel.js'),
-                           magnific_url=url_for('static', filename='js/magnific-popup.js'),
-                           bootstrapjs_url=url_for('static', filename='js/bootstrap.js'),
-                           jq_autocomplete_url=url_for('static', filename='js/jquery.autocomplete.js'))
 
 
 @ocapp.route('/edit/month/<group>/<year>/<month>')
