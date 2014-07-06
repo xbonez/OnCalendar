@@ -72,7 +72,7 @@ for (i = 0; i <= 23; i++) {
             '<ul id="slot-' + i + '-30-backup-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
 }
 
-  $(document).ready(function() {
+$(document).ready(function() {
     // Autocomplete suggestions for adding victims to a group
     $('input#add-victim-username').autocomplete({
         minChars: 2,
@@ -139,12 +139,14 @@ document.addEventListener('group_info_loaded', function() {
 	$.when(oncalendar.build_calendar(incoming_year, incoming_month)).then(
 		function() {
 			oncalendar.display_calendar();
+            $('div#working').remove();
 		}
 	);
 {% else %}
 	$.when(oncalendar.build_calendar()).then(
 		function() {
 			oncalendar.display_calendar();
+            $('div#working').remove();
 		}
 	);
 {% endif %}
@@ -1094,23 +1096,23 @@ $('table#calendar-table').on('mouseenter', 'td.calendar-day', function() {
         if (current_user.app_role === 2) {
             $(this).children('span.edit-day-menu').addClass('dropdown').removeClass('hide')
                 .append('<span data-toggle="dropdown">' +
-                    '<button id="edit-day-menu-button"><span class="elegant_icons icon_pencil-edit"></span></button></span></span>')
+                    '<button id="edit-day-menu-button"><span class="elegant_icons icon_pencil-edit"></span></button></span>')
                 .append('<ul id="edit-day-group-options" class="dropdown-menu" role="menu"></ul>');
             $.each(Object.keys(oncalendar.oncall_groups), function (i, group) {
-                $('ul#edit-day-group-options').append('<li><span class="edit-day-group-item" data-target="' + group + '">Edit day: ' + group + '</li>');
+                $('ul#edit-day-group-options').append('<li><span class="edit-day-group-item" data-target="' + group + '">Edit day: ' + group + '</span></li>');
             });
         } else if (Object.keys(current_user.groups).length > 1) {
             $(this).children('span.edit-day-menu').addClass('dropdown').removeClass('hide')
                 .append('<span data-toggle="dropdown">' +
-                    '<button id="edit-day-menu-button"><span class="elegant_icons icon_pencil-edit"></span></button></span></span>')
+                    '<button id="edit-day-menu-button"><span class="elegant_icons icon_pencil-edit"></span></button></span>')
                 .append('<ul id="edit-day-group-options" class="dropdown-menu" role="menu"></ul>');
             $.each(current_user.groups, function (group, active) {
-                $('ul#edit-day-group-options').append('<li><span class="edit-day-group-item" data-target="' + group + '">Edit day: ' + group + '</li>');
+                $('ul#edit-day-group-options').append('<li><span class="edit-day-group-item" data-target="' + group + '">Edit day: ' + group + '</span></li>');
             });
         } else if (Object.keys(current_user.groups).length == 1) {
             $(this).children('span.edit-day-menu').removeClass('hide')
                 .append('<button id="edit-day-button" data-target="' + Object.keys(current_user.groups)[0] + '">' +
-                    '<span class="elegant_icons icon_pencil-edit"></span></button></span>');
+                    '<span class="elegant_icons icon_pencil-edit"></span></button>');
         }
     }
 }).on('mouseleave', 'td.calendar-day', function() {

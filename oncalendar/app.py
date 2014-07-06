@@ -473,7 +473,7 @@ def oc_calendar(year=None, month=None):
         }
 
     user_json = json.dumps(user)
-    js = render_template('main.js.jinja2',
+    js = render_template('main.js',
                          year=year,
                          month=int(month) - 1,
                          throttle_min=config.sms['SMS_THROTTLE_MIN'],
