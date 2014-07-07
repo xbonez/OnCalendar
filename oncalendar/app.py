@@ -1262,7 +1262,7 @@ def api_delete_group(group_id):
         group_count = ocdb.delete_group(group_id)
     except OnCalendarDBError, error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {'error_code': error.args[0], 'error_message': error.args[1]}
         )
 
     return jsonify({'group_count': group_count})
@@ -1282,34 +1282,12 @@ def api_update_group():
                   as JSON with an HTTP return code of 500.
     """
 
-    if not request.form:
+    if not request.json:
         raise OnCalendarAppError(
             payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    group_data = {
-        'id': '',
-        'name': '',
-        'active': '',
-        'autorotate': '',
-        'turnover_day': '',
-        'turnover_hour': '',
-        'turnover_min': '',
-        'shadow': '',
-        'backup': '',
-        'failsafe': '',
-        'alias': '',
-        'backup_alias': '',
-        'failsafe_alias': '',
-        'email': '',
-        'auth_group': ''
-    }
-    for key in form_keys:
-        group_data[key] = request.form[key]
-
-    print group_data
+        group_data = request.json
 
     try:
         ocdb = OnCalendarDB(config.database)

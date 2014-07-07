@@ -1488,7 +1488,8 @@ var oncalendar = {
         var update_group_request = $.ajax({
                 url: update_group_url,
                 type: 'POST',
-                data: group_data,
+                contentType: 'application/json',
+                data: JSON.stringify(group_data),
                 dataType: 'json'
             }),
             chain = update_group_request.then(function(data) {
@@ -1530,6 +1531,29 @@ var oncalendar = {
             });
 
         return add_group_object.promise();
+    },
+    delete_group: function(group_id) {
+        var delete_group_url = window.location.origin + '/api/admin/group/delete/' + group_id;
+        var delete_group_object = new $.Deferred();
+        var delete_group_request = $.ajax({
+            url: delete_group_url,
+            type: 'GET',
+            dataType: 'json'
+        }),
+        chain = delete_group_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                delete_group_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseJSON.error_message;
+                delete_group_object.reject(error);
+            });
+
+        return delete_group_object.promise();
     },
     update_month: function(month_data) {
         var update_month_object = new $.Deferred();

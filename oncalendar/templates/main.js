@@ -14,12 +14,7 @@ $.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
 // Set up group turnover info and color key
 oncalendar.group_color_map = {};
 $.when(oncalendar.get_group_info()).then(function(data) {
-    oncalendar.oncall_groups = {};
-	$.each(data, function(group, group_info) {
-		if (group_info.active == 1 && group_info.autorotate == 1) {
-			oncalendar.oncall_groups[group] = group_info;
-		}
-	});
+    oncalendar.oncall_groups = data;
 	if (typeof oncalendar.oncall_groups === "undefined") {
 		alert('no group info found, please try again');
 	}
@@ -128,9 +123,11 @@ document.addEventListener('user_info_loaded', function() {
 
 document.addEventListener('group_info_loaded', function() {
 	$.each(Object.keys(oncalendar.oncall_groups).sort(), function (i, name) {
-		$('div#group-legend').append('<div class="expander"><span class="expander-arrow elegant_icons arrow_carrot-right" ' +
-			'data-state="closed"  data-group="' + name + '" data-groupid="' + oncalendar.oncall_groups[name].id + '"></span>' +
-			'<span class="group-legend-entry" style="color: '+ oncalendar.group_color_map[name] + ';">' + name + '</span></div>');
+        if (oncalendar.oncall_groups[name].active ==1 && oncalendar.oncall_groups[name].autorotate == 1) {
+            $('div#group-legend').append('<div class="expander"><span class="expander-arrow elegant_icons arrow_carrot-right" ' +
+                'data-state="closed"  data-group="' + name + '" data-groupid="' + oncalendar.oncall_groups[name].id + '"></span>' +
+                '<span class="group-legend-entry" style="color: ' + oncalendar.group_color_map[name] + ';">' + name + '</span></div>');
+        }
     });
 {% if month is defined and year is defined %}
 	var incoming_month = {{ month }};

@@ -1056,28 +1056,20 @@ class OnCalendarDB(object):
         Raises:
             (OnCalendarDBError): Passes the mysql error code and message.
         """
+        group_id = group_data['id']
+        update_items = []
+
+        for key in group_data:
+            update_items.append(key + "='" + group_data[key] + "'")
+
         cursor = self.oncalendar_db.cursor()
-        update_query = "UPDATE groups SET name='{0}',active='{1}',autorotate='{2}',turnover_day='{3}',\
-                       turnover_hour='{4}',turnover_min='{5}',shadow='{6}',backup='{7}',failsafe='{8}',\
-                       alias='{9}',backup_alias='{10}',failsafe_alias='{11}',email='{12}' \
-                       WHERE id='{13}'".format(
-            group_data['name'],
-            group_data['active'],
-            group_data['autorotate'],
-            group_data['turnover_day'],
-            group_data['turnover_hour'],
-            group_data['turnover_min'],
-            group_data['shadow'],
-            group_data['backup'],
-            group_data['failsafe'],
-            group_data['alias'],
-            group_data['backup_alias'],
-            group_data['failsafe_alias'],
-            group_data['email'],
-            group_data['id']
+        update_group_query = "UPDATE groups SET {0} WHERE id={1}".format(
+            ','.join(update_items),
+            group_id
         )
+
         try:
-            cursor.execute(update_query)
+            cursor.execute(update_group_query)
             self.oncalendar_db.commit()
             cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
             cursor.execute('SELECT * FROM groups WHERE id=\'{0}\''.format(group_data['id']))
