@@ -6,7 +6,6 @@ var oc_group_event = new Event ('group_info_loaded');
 current_user = {{ user_json }}
 {% else %}
 $.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
-    console.log(data);
 	current_user = data[{{ g.user.id }}];
     document.dispatchEvent(oc_user_event);
 });

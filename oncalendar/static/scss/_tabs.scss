@@ -57,4 +57,10 @@ div.tab-panel-data {
 
 div.tab-panel-buttons {
     font-size: 0.8em;
+    display: inline-block;
+    margin-right: 20px;
+}
+
+div.dataTables_filter {
+    display: inline-block;
 }

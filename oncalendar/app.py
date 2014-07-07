@@ -561,8 +561,9 @@ def oc_admin():
             'app_role': g.user.app_role
         }
         user_json = json.dumps(user)
-        js = render_template('main_admin.js.jinja2',
-                             user_json=user_json)
+        js = render_template('main_admin.js',
+                             user_json=user_json,
+                             email_gateway_config='true' if config.sms['EMAIL_GATEWAY'] else 'false')
         return render_template('oncalendar_admin.html.jinja2',
                                main_js=js,
                                stylesheet_url=url_for('static', filename='css/oncalendar.css'),
@@ -570,7 +571,9 @@ def oc_admin():
                                datejs_url=url_for('static', filename='js/date.js'),
                                ocjs_url=url_for('static', filename='js/oncalendar.js'),
                                ocadminjs_url=url_for('static', filename='js/oncalendar_admin.js'),
+                               colorwheel_url=url_for('static', filename='js/color_wheel.js'),
                                magnific_url=url_for('static', filename='js/magnific-popup.js'),
+                               datatables_url=url_for('static', filename='js/jquery.dataTables.min.js'),
                                bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
     else:
         ocapp.logger.error("User {0} not authorized for /admin access".format(g.user.username))
@@ -1221,38 +1224,19 @@ def api_add_group():
                   as JSON with an HTTP return code of 500.
     """
 
-    group_data = {
-        'name': '',
-        'active': '',
-        'autorotate': '',
-        'turnover_day': '',
-        'turnover_hour': '',
-        'turnover_min': '',
-        'shadow': '',
-        'backup': '',
-        'failsafe': '',
-        'alias': '',
-        'backup_alias': '',
-        'failsafe_alias': '',
-        'email': '',
-        'auth_group': ''
-    }
-    if not request.form:
-        raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+    if not request.json:
+        raise OnCalendarBadRequest(
+            payload=[ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    for key in form_keys:
-        group_data[key] = request.form[key]
+        group_data = request.json
 
     try:
         ocdb = OnCalendarDB(config.database)
         new_group = ocdb.add_group(group_data)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {'error_code': error.args[0], 'error_message': error.args[1]}
         )
 
     return jsonify(new_group)
@@ -1351,7 +1335,7 @@ def api_group_victims():
 
     if not request.json:
         raise OnCalendarAppError(
-            payload = [ocapi_error.NOPOSTDATA, 'No data received']
+            payload = [ocapi_err.NOPOSTDATA, 'No data received']
         )
     else:
         group_victims_data = request.json

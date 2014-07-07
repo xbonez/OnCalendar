@@ -1506,6 +1506,31 @@ var oncalendar = {
 
         return update_group_object.promise();
     },
+    add_new_group: function(group_data) {
+        var add_group_url = window.location.origin + '/api/admin/group/add';
+        var add_group_object = new $.Deferred();
+        var add_group_request = $.ajax({
+            url: add_group_url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(group_data),
+            dataType: 'json'
+        }),
+        chain = add_group_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                add_group_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseJSON.error_message;
+                add_group_object.reject(error);
+            });
+
+        return add_group_object.promise();
+    },
     update_month: function(month_data) {
         var update_month_object = new $.Deferred();
         var update_month_url = window.location.origin + '/api/calendar/month';

@@ -8,8 +8,10 @@
     <script src="{{ datejs_url }}"></script>
     <script src="{{ bootstrapjs_url }}"></script>
     <script src="{{ magnific_url }}"></script>
+    <script src="{{ datatables_url }}"></script>
     <script src="{{ ocjs_url }}"></script>
     <script src="{{ ocadminjs_url }}"></script>
+	<script src="{{ colorwheel_url }}"></script>
   </head>
 
   <body>
@@ -44,10 +46,6 @@
             <div id="config-panel-data" class="tab-panel-data"></div>
           </div>
           <div id="groups-panel" class="tab-panel">
-            <div id="groups-panel-buttons" class="tab-panel-buttons">
-              <button id="groups-add" class="elegant_icons icon_plus_alt2"></button>
-              <button id="groups-delete" class="elegant_icons icon_minus_alt2"></button>
-            </div>
             <div id="groups-panel-data" class="tab-panel-data"></div>
           </div>
           <div id="users-panel" class="tab-panel">
@@ -135,6 +133,120 @@
         <p>Initialize now?</p>
         <input type="hidden" id="init-db-force" name="init-db-force" value="no">
         <button id="init-db-button" onClick="oncalendar_admin.initialize_db()">Yes</button>
+      </div>
+    </div>
+    <div id="add-group-popup" class="popup mfp-hide">
+      <table id="add-group-table" class="admin-table">
+        <tr>
+          <th>Group Name</th>
+          <th>Active</th>
+          <th>Autorotate</th>
+          <th>Turnover Day</th>
+          <th>Turnover Time</th>
+          <th>Email</th>
+          <th>Shadow</th>
+          <th>Backup</th>
+          {% if email_gateway_config == 'true' %}
+          <th>Failsafe</th>
+          <th>Oncall Alias</th>
+          <th>Backup Alias</th>
+          <th>Failsafe Alias</th>
+          {% endif %}
+        </tr>
+        <tr>
+          <td><input type="text" id="new-group-name" name="new-group-name"></td>
+          <td>
+            <button id="new-group-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="new-group-active" data-checked="yes"></button>
+            <input type="hidden" id="new-group-active" name="new-group-active" value="1">
+          </td>
+          <td>
+            <button id="new-group-autorotate-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="new-group-autorotate" data-checked="yes"></button>
+            <input type="hidden" id="new-group-autorotate" name="new-group-autorotate" value="1">
+          </td>
+          <td>
+            <span id="new-group-turnover-day-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="new-group-turnover-day-label">Monday <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="new-group-turnover-day-options" class="dropdown-menu" role="menu">
+	            <li data-day="1"><span>Monday</span></li>
+	            <li data-day="2"><span>Tuesday</span></li>
+	            <li data-day="3"><span>Wednesday</span></li>
+	            <li data-day="4"><span>Thursday</span></li>
+	            <li data-day="5"><span>Friday</span></li>
+	            <li data-day="6"><span>Saturday</span></li>
+	            <li data-day="7"><span>Sunday</span></li>
+	          </ul>
+            </span>
+            <input type="hidden" id="new-group-turnover-day" name="new-group-turnover-day" value="1">
+          </td>
+          <td>
+            <span id="new-group-turnover-hour-menu" class="dropdown">
+              <span data-toggle="dropdown">
+	              <button id="new-group-turnover-hour-label">09 <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="new-group-turnover-hour-options" class="dropdown-menu" role="menu">
+	            <li data-hour="00"><span>00</span></li>
+	            <li data-hour="01"><span>01</span></li>
+	            <li data-hour="02"><span>02</span></li>
+	            <li data-hour="03"><span>03</span></li>
+	            <li data-hour="04"><span>04</span></li>
+	            <li data-hour="05"><span>05</span></li>
+	            <li data-hour="06"><span>06</span></li>
+	            <li data-hour="07"><span>07</span></li>
+	            <li data-hour="08"><span>08</span></li>
+	            <li data-hour="09"><span>09</span></li>
+	            <li data-hour="10"><span>10</span></li>
+	            <li data-hour="11"><span>11</span></li>
+	            <li data-hour="12"><span>12</span></li>
+	            <li data-hour="13"><span>13</span></li>
+	            <li data-hour="14"><span>14</span></li>
+	            <li data-hour="15"><span>15</span></li>
+	            <li data-hour="16"><span>16</span></li>
+	            <li data-hour="17"><span>17</span></li>
+	            <li data-hour="18"><span>18</span></li>
+	            <li data-hour="19"><span>19</span></li>
+	            <li data-hour="20"><span>20</span></li>
+	            <li data-hour="21"><span>21</span></li>
+	            <li data-hour="22"><span>22</span></li>
+	            <li data-hour="23"><span>23</span></li>
+	          </ul>
+            </span>
+            <input type="hidden" id="new-group-turnover-hour" name="new-group-turnover-hour" value="09">
+            :<span id="new-group-turnover-min-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="new-group-turnover-min-label">30 <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="new-group-turnover-min-options" class="dropdown-menu" role="menu">
+	            <li data-min="00"><span>00</span></li>
+	            <li data-min="30"><span>30</span></li>
+	          </ul>
+            </span>
+            <input type="hidden" id="new-group-turnover-min" name="new-group-turnover-min" value="30">
+          </td>
+          <td><input type="text" id="new-group-email" name="new-group-email"></td>
+          <td>
+            <button id="new-group-shadow-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="new-group-shadow" data-checked="no"></button>
+            <input type="hidden" id="new-group-shadow" name="new-group-shadow" value="0">
+          </td>
+          <td>
+            <button id="new-group-backup-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="new-group-backup" data-checked="no"></button>
+            <input type="hidden" id="new-group-backup" name="new-group-backup" value="0">
+          </td>
+          {% if email_gateway_config == 'true' %}
+          <td>
+            <button id="new-group-failsafe-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="new-group-failsafe" data-check="no"></button>
+            <input type="hidden" id="new-group-failsafe" name="new-group-failsafe" value="0">
+          </td>
+          <td><input type="text" id="new-group-alias" name="new-group-alias"></td>
+          <td><input type="text" id="new-group-backup-alias" name="new-group-backup-alias"></td>
+          <td><input id="new-group-failsafe-alias" name="new-group-failsafe-alias"></td>
+          {% endif %}
+        </tr>
+      </table>
+      <div id="new-group-action-buttons">
+        <button id="cancel-add-group-button">Cancel</button>
+        <button id="save-add-group-button">Save</button>
       </div>
     </div>
     <div id="delete-groups-confirm-popup" class="popup mfp-hide">

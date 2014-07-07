@@ -92,6 +92,12 @@ p {
     -webkit-margin-after: 0;
 }
 
+table.admin-table.dataTable {
+    th.sorting {
+        cursor: pointer;
+    }
+}
+
 /* Master classes */
 .font-reset {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -104,7 +110,7 @@ p {
     color: $font_color_reverse;
     cursor: pointer;
     padding: 5px 10px;
-    margin: 0 auto;
+    margin: 0 auto 5px auto;
     position: relative;
     top: 10px;
     width: 50%;

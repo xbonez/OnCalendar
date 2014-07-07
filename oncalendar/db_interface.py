@@ -989,24 +989,15 @@ class OnCalendarDB(object):
             (OnCalendarDBError): Passes the mysql error code and message.
         """
         cursor = self.oncalendar_db.cursor()
-        add_group_query = 'INSERT INTO groups (name, active, autorotate, turnover_day, turnover_hour, turnover_min, backup, shadow, failsafe, alias, backup_alias, failsafe_alias, email, auth_group) \
-            VALUES(\'{0}\',\'{1}\',\'{2}\',\'{3}\',\'{4}\',\'{5}\',\'{6}\',\'{7}\',\'{8}\',\'{9}\',\'{10}\',\'{11}\',\'{12}\',\'{13}\')'.format(
-                group_data['name'],
-                group_data['active'],
-                group_data['autorotate'],
-                group_data['turnover_day'],
-                group_data['turnover_hour'],
-                group_data['turnover_min'],
-                group_data['backup'],
-                group_data['shadow'],
-                group_data['failsafe'],
-                group_data['alias'],
-                group_data['backup_alias'],
-                group_data['failsafe_alias'],
-                group_data['email'],
-                group_data['auth_group']
+        group_keys = []
+        group_values = []
+        for key in group_data:
+            group_keys.append(key)
+            group_values.append(group_data[key])
 
-        )
+        keys_string = ','.join(group_keys)
+        values_string = "','".join(group_values)
+        add_group_query = "INSERT INTO groups ({0}) VALUES ('{1}')".format(keys_string, values_string)
 
         try:
             cursor.execute('SELECT id FROM groups WHERE name=\'{0}\''.format(group_data['name']))
