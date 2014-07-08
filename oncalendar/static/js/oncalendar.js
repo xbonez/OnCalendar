@@ -122,8 +122,6 @@ var oncalendar = {
                 victim_api_query.resolve(data);
             })
             .fail(function(data) {
-//                console.log(data);
-//                victim_api_query.reject(data);
                 cal.victims = data;
                 victim_api_query.resolve(data);
             })
@@ -424,7 +422,6 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
                                 }
                                 if (victims.backup != null) {
-                                    console.log('group ' + group + ' has a backup: ' + victims.backup);
                                     if (victims.backup !== current_victim[group].backup) {
                                         current_victim[group].backup = victims.backup;
                                         current_victim[group].backup_name = victims.backup_name;
@@ -1218,11 +1215,8 @@ var oncalendar = {
         var cal = this;
         $('table#calendar-table').addClass('hide');
         $('table#calendar-table tbody').empty();
-        console.log($('table#calendar-table'));
         $.when(cal.build_calendar(cal.next_month_year, cal.next_month)).then(
             function() {
-                console.log('calendar built, displaying');
-                console.log(cal.first_day);
                 oncalendar.display_calendar();
                 $('table#calendar-table').removeClass('hide');
             }

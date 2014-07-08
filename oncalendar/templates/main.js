@@ -756,9 +756,7 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 			victim_changes.victims = []
 			victim_changes.groupid = $('input#target-groupid').val();
 			victim_changes.victims.push({victimid: victim_data.victim_id, remove: 0, active: 1})
-			console.log(victim_changes)
 			$.when(oncalendar.update_victim_status(victim_changes)).then(function(data) {
-				console.log(data);
 				var id = victim_data.victim_id;
 				$('input#victim-id').removeProp('value').val('0');
 				$('input#add-victim-username').removeProp('value').val('');
@@ -847,7 +845,6 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 });
 
 $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
-	console.log(this);
     if ($(this).attr('data-checked') === "no") {
         $(this).removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#' + $(this).attr('data-target')).attr('value', 'yes');
@@ -908,7 +905,6 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 				current_user = data;
 				var current_user_groups = data.groups;
 				delete(data.groups);
-				console.log('user groups: ' + JSON.stringify(current_user_groups));
 				$.each(current_user_groups, function(group, status) {
 					oncalendar.oncall_groups[group].victims[current_user.id] = data;
 					oncalendar.oncall_groups[group].victims[current_user.id].group_active = status;

@@ -807,7 +807,6 @@ function verify_oncalendar() {
         fix_configuration();
     }
     var db_status = oncalendar_admin.confirm_db();
-    console.log(db_status);
     if (db_status !== 'ok') {
         if (db_status === 'noaccess') {
             fix_configuration();
