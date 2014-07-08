@@ -1,6 +1,7 @@
 var current_user = {};
 var oc_user_event = new Event('user_info_loaded');
 var oc_group_event = new Event ('group_info_loaded');
+var email_gateway_config = {{ email_gateway_config }};
 
 {% if g.user.is_anonymous() %}
 current_user = {{ user_json }}
@@ -640,15 +641,9 @@ $('.oncalendar-edit-popup').on('click', 'button.oc-checkbox', function() {
     if ($(this).attr('data-checked') === "no") {
         $(this).removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#' + $(this).attr('data-target')).attr('value', 1);
-        input_sibling = $(this).parents('td').siblings('td').children('input');
-        input_sibling.attr('readonly', false);
-        if (input_sibling.attr('placeholder') !== "Not Enabled") {
-            input_sibling.attr('value', input_sibling.attr('placeholder'));
-        }
     } else {
         $(this).removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
         $('input#' + $(this).attr('data-target')).attr('value', 0);
-        $(this).parents('td').siblings('td').children('input').attr('readonly', true).attr('value', '');
     }
 }).on('click', 'span.oc-radio', function() {
     if ($(this).attr('data-checked') === 'no') {
@@ -667,26 +662,27 @@ $('.oncalendar-edit-popup').on('click', 'button.oc-checkbox', function() {
 $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#edit-group-save-button', function() {
-    var group_data = {};
-	if (! valid_email($('input#edit-group-email').val())) {
+	if ($('input#edit-group-name').val().length == 0) {
+        $('input#edit-group-name').addClass('missing-input').focus();
+    } else if (! valid_email($('input#edit-group-email').val())) {
 		$('input#edit-group-email').addClass('missing-input');
 	} else {
-	    $.each($('table#edit-group-info-table').children('tbody').children('tr').children('td').has('input'), function(index, element) {
-	        if ($(element).attr('id') === "group-uneditable") {
-	            group_data.active = 1;
-	            group_data.name = $(element).children('input#edit-group-name').val();
-	            group_data.id = $(element).children('input#edit-group-id').val();
-	            group_data.auth_group = $(element).children('input#edit-group-auth-group').val();
-				group_data.autorotate = $(element).children('input#edit-group-autorotate').val();
-	        } else if ($(element).attr('id') === "turnover-time-cell") {
-                group_data.turnover_hour = $(element).children('input#edit-group-turnover-hour').val();
-                group_data.turnover_min = $(element).children('input#edit-group-turnover-min').val();
-                group_data.turnover_time = [group_data.turnover_hour, group_data.turnover_min].join(':');
-            } else {
-                var form_key = $(element).children('input').attr('id').replace('edit-group-', '').replace('-', '_');
-                group_data[form_key] = $(element).children('input').val();
-            }
-	    });
+        var group_data = {
+            id: $('input#edit-group-id').val(),
+            name: $('input#edit-group-name').val(),
+            email: $('input#edit-group-email').val(),
+            turnover_day: $('input#edit-group-turnover-day').val(),
+            turnover_hour: $('input#edit-group-turnover-hour').val(),
+            turnover_min: $('input#edit-group-turnover-min').val(),
+            shadow: $('input#edit-group-shadow').val(),
+            backup: $('input#edit-group-backup').val()
+        };
+        if (email_gateway_config) {
+            group_data.failsafe = $('input#edit-group-failsafe').val();
+            group_data.alias = $('input#edit-group-alias').val();
+            group_data.backup_alias = $('input#edit-group-backup-alias').val();
+            group_data.failsafe_alias = $('input#edit-group-failsafe-alias').val();
+        }
 	    $.when(oncalendar.update_group(group_data)).then(
 	        function(data) {
 	            if (data.turnover_hour < 10) {
@@ -900,7 +896,7 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 			throttle: throttle_value,
 			truncate: $('input#edit-account-truncate').val() === "yes" ? '1' : '0',
 			groups: {}
-		}
+		};
 		$.each($('input.group-active-input'), function() {
 			var victim_group = $(this).attr('data-group');
 			victim_data.groups[victim_group] = $(this).val() === "yes" ? '1' : '0';
@@ -909,12 +905,12 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 		$.when(oncalendar.update_victim_info(current_user.id, victim_data)).then(
 			// done: update current_user and the victim record on oncalendar.oncall_groups
 			function(data) {
-				current_user = data[current_user.id];
-				var current_user_groups = data[current_user.id].groups;
-				delete(data[current_user.id].groups);
+				current_user = data;
+				var current_user_groups = data.groups;
+				delete(data.groups);
 				console.log('user groups: ' + JSON.stringify(current_user_groups));
 				$.each(current_user_groups, function(group, status) {
-					oncalendar.oncall_groups[group].victims[current_user.id] = data[current_user.id];
+					oncalendar.oncall_groups[group].victims[current_user.id] = data;
 					oncalendar.oncall_groups[group].victims[current_user.id].group_active = status;
 				});
 			},

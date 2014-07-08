@@ -28,7 +28,7 @@
     <div id="admin-console" class="outer-container">
       <div id="console-box" class="inner-container">
         <ul id="admin-functions" class="tablist">
-          <li id="groups-tab" class="tab" data-target="groups-panel">
+          <li id="groups-tab" class="tab selected" data-target="groups-panel">
             Groups
           </li><li id="victims-tab" class="tab" data-target="users-panel">
             Users
@@ -38,16 +38,13 @@
             <div id="groups-panel-data" class="tab-panel-data"></div>
           </div>
           <div id="users-panel" class="tab-panel">
-            <div id="users-panel-buttons" class="tab-panel-buttons">
-              <button id="users-add" class="elegant_icons icon_plus_alt2"></button>
-              <button id="users-delete" class="elegant_icons icon_minus_alt2"></button>
-            </div>
             <div id="users-panel-data" class="tab-panel-data"></div>
           </div>
         </div>
       </div>
     </div>
     <div id="add-group-popup" class="popup mfp-hide">
+      <h3>Add Group</h3>
       <table id="add-group-table" class="admin-table">
         <tr>
           <th>Group Name</th>
@@ -162,6 +159,7 @@
       </div>
     </div>
     <div id="edit-group-popup" class="popup mfp-hide">
+      <h3></h3>
       <table id="edit-group-table" class="admin-table">
         <tr>
           <th>Group Name</th>
@@ -273,9 +271,113 @@
           {% endif %}
         </tr>
       </table>
-      <div id="edit-group-action-buttons">
+      <div id="add-edit-group-buttons">
         <button id="cancel-edit-group-button">Cancel</button>
         <button id="save-edit-group-button">Save</button>
+      </div>
+    </div>
+    <div id="add-user-popup" class="popup mfp-hide">
+      <h3>Add User</h3>
+      <table id="add-user-table" class="admin-table">
+        <tr>
+          <th>Username</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>SMS Email</th>
+          <th>Throttle Level</th>
+          <th>Truncate SMS</th>
+          <th>App Role</th>
+        </tr>
+        <tr>
+          <td><input type="text" id="add-user-username" name="add-user-username" size="20"></td>
+          <td><input type="text" id="add-user-firstname" name="add-user-firstname" size="20"></td>
+          <td><input type="text" id="add-user-lastname" name="add-user-lastname" size="20"></td>
+          <td><input type="text" id="add-user-phone" name="add-user-phone" size="20"></td>
+          <td><input type="text" id="add-user-email" name="add-user-email" size="20"></td>
+          <td><input type="text" id="add-user-sms-email" name="add-user-sms-email" size="30"></td>
+          <td><input type="text" id="add-user-throttle" name="add-user-throttle" size="2" value="6"></td>
+          <td>
+            <button id="add-user-truncate-checkbox" class="add-user-truncate oc-checkbox elegant_icons icon_box-empty" data-target="add-user-truncate" data-checked="no"></button>
+            <input type="hidden" id="add-user-truncate" name="add-user-truncate" value="0">
+          </td>
+          <td>
+              <span id="add-user-app-role-menu" class="dropdown">
+                <span data-toggle="dropdown">
+                  <button id="add-user-app-role-label">User <span class="elegant_icons arrow_carrot-down"></span></button>
+                </span>
+	            <ul id="add-user-app-role-options" class="dropdown-menu" role="menu">
+                <li data-role="0"><span>User</span></li>
+                <li data-role="1"><span>Group Admin</span></li>
+                <li data-role="2"><span>App Admin</span></li>
+              </ul>
+              </span>
+            <input type="hidden" id="add-user-app-role" name="add-user-app-role" value="0">
+          </td>
+        </tr>
+        <tr>
+          <th>Group</th>
+          <th>Active</th>
+          <th>Inactive</th>
+          <th colspan="4"></th>
+        </tr>
+      </table>
+      <div id="add-user-action-buttons">
+        <button id="cancel-add-user-button">Cancel</button>
+        <button id="save-add-user-button">Save</button>
+      </div>
+    </div>
+    <div id="edit-user-popup" class="popup mfp-hide">
+      <h3></h3>
+      <table id="edit-user-table" class="admin-table">
+        <tr>
+          <th>Username</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>SMS Email</th>
+          <th>Throttle Level</th>
+          <th>Truncate SMS</th>
+          <th>App Role</th>
+        </tr>
+        <tr>
+          <td><input type="hidden" id="edit-user-id" name="edit-user-id"><input type="text" id="edit-user-username" name="edit-user-username" size="20"></td>
+          <td><input type="text" id="edit-user-firstname" name="edit-user-firstname" size="20"></td>
+          <td><input type="text" id="edit-user-lastname" name="edit-user-lastname" size="20"></td>
+          <td><input type="text" id="edit-user-phone" name="edit-user-phone" size="20"></td>
+          <td><input type="text" id="edit-user-email" name="edit-user-email" size="20"></td>
+          <td><input type="text" id="edit-user-sms-email" name="edit-user-sms-email" size="30"></td>
+          <td><input type="text" id="edit-user-throttle" name="edit-user-throttle" size="2" value="6"></td>
+          <td>
+            <button id="edit-user-truncate-checkbox" class="edit-user-truncate oc-checkbox elegant_icons icon_box-empty" data-target="edit-user-truncate" data-checked="no"></button>
+            <input type="hidden" id="edit-user-truncate" name="edit-user-truncate" value="0">
+          </td>
+          <td>
+              <span id="edit-user-app-role-menu" class="dropdown">
+                <span data-toggle="dropdown">
+                  <button id="edit-user-app-role-label">User <span class="elegant_icons arrow_carrot-down"></span></button>
+                </span>
+	            <ul id="edit-user-app-role-options" class="dropdown-menu" role="menu">
+                <li data-role="0"><span>User</span></li>
+                <li data-role="1"><span>Group Admin</span></li>
+                <li data-role="2"><span>App Admin</span></li>
+              </ul>
+              </span>
+            <input type="hidden" id="edit-user-app-role" name="edit-user-app-role" value="0">
+          </td>
+        </tr>
+        <tr>
+          <th>Group</th>
+          <th>Active</th>
+          <th>Inactive</th>
+          <th colspan="4"></th>
+        </tr>
+      </table>
+      <div id="edit-user-action-buttons">
+        <button id="cancel-edit-user-button">Cancel</button>
+        <button id="save-edit-user-button">Save</button>
       </div>
     </div>
     <div id="delete-groups-confirm-popup" class="popup mfp-hide">

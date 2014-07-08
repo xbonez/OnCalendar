@@ -477,7 +477,8 @@ def oc_calendar(year=None, month=None):
                          year=year,
                          month=int(month) - 1,
                          throttle_min=config.sms['SMS_THROTTLE_MIN'],
-                         user_json=user_json)
+                         user_json=user_json,
+                         email_gateway_config='true' if config.sms['EMAIL_GATEWAY'] else 'false')
 
     return render_template('oncalendar.html.jinja2',
                            main_js=js,
@@ -1117,10 +1118,10 @@ def api_update_victim_info(id=None):
 
     try:
         ocdb = OnCalendarDB(config.database)
-        updated_victim_data = ocdb.update_victim(victim_data)
+        updated_victim_data = ocdb.update_victim(id, victim_data)
     except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {'error_code': error.args[0], 'error_message': error.args[1]}
         )
 
     return jsonify(updated_victim_data)
@@ -1345,29 +1346,12 @@ def api_add_victim():
                   as JSON with an HTTP return code of 500.
     """
 
-    victim_data = {
-        'username': '',
-        'firstname': '',
-        'lastname': '',
-        'phone': '',
-        'active': '',
-        'sms_email': '',
-        'app_role': '',
-        'groups': []
-    }
-    if not request.form:
+    if not request.json:
         raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+            payload = {'error_code': ocapi_err.NOPOSTDATA, 'error_message': 'No data received'}
         )
     else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    for key in form_keys:
-        if key == "groups[]":
-            for gid in request.form.getlist('groups[]'):
-                victim_data['groups'].append(gid)
-        else:
-            victim_data[key] = request.form[key]
+        victim_data = request.json
 
     try:
         ocdb = OnCalendarDB(config.database)
@@ -1376,7 +1360,7 @@ def api_add_victim():
         return jsonify({'api_error': error.args[0], 'error_message': error.args[1]})
     except OnCalendarDBError, error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {'error_code': error.args[0], 'error_message': error.args[1]}
         )
 
     return jsonify(new_victim)
@@ -1402,7 +1386,7 @@ def api_delete_victim(victim_id):
         victim_count = ocdb.delete_victim(victim_id)
     except (OnCalendarDBError, OnCalendarAPIError), error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {'error_code': error.args[0], 'error_message': error.args[1]}
         )
 
     return jsonify({'victim_count': victim_count})

@@ -2,7 +2,6 @@
 
 {% block page_script %}
 
-var email_gateway_config = {{ email_gateway_config }};
 var oc_victims_event = new Event('victims_loaded');
 var master_victims_list = {};
 
@@ -44,9 +43,84 @@ $(document).on('click', 'button.oc-checkbox', function() {
 }).on('click', 'div.info-box', function() {
     var info_box = $(this);
     info_box.addClass('transparent');
-    setTimeout(function() {
+    setTimeout(function () {
         info_box.remove();
     }, 250);
+}).on('click', 'button#users-delete', function() {
+    var users_to_delete = {};
+    $.each($('input[data-type="user-delete"]'), function () {
+        if ($(this).val() == 1) {
+            users_to_delete[$(this).attr('data-username')] = $(this).attr('data-id');
+        }
+    });
+    if (Object.keys(users_to_delete).length > 0) {
+        $('p#delete-victims-list').text(Object.keys(users_to_delete).join(', '));
+        $.magnificPopup.open({
+            items: {
+                src: '#delete-victims-confirm-popup',
+                type: 'inline',
+                users_to_delete: users_to_delete
+            },
+            preloader: false,
+            removalDelay: 300,
+            mainClass: 'popup-animate'
+        });
+    } else {
+        $('div#users-panel-data').prepend('<div class="alert-box">No users selected, nothing to delete</div>');
+    }
+}).on('click', 'button.edit-user', function() {
+    $.each(oncalendar.oncall_groups, function(group, group_data) {
+        $('table#edit-user-table').append('<tr class="edit-user-group-row">' +
+                '<td>' + group + '</td><td>' +
+                '<button id="edit-user-group-active-' + group + '-checkbox" class="edit-user-group-active oc-checkbox elegant_icons icon_box-empty" data-target="edit-user-group-active-' + group + '" data-group="' + group + '" data-checked="no"></button>' +
+                '<input type="hidden" id="edit-user-group-active-' + group + '" name="edit-user-group-active-' + group + '" class="edit-user-group-active" data-group="' + group + '" value="0"></td>' +
+                '<td><button id="edit-user-group-inactive-' + group + '-checkbox" class="edit-user-group-inactive oc-checkbox elegant_icons icon_box-empty" data-target="edit-user-group-inactive-' + group + '" data-group="' + group + '" data-checked="no"></button>' +
+                '<input type="hidden" id="edit-user-group-inactive-' + group + '" name="edit-user-group-inactive-' + group + '" class="edit-user-group-inactive" data-group="' + group + '" value="0"></td>'
+        );
+    });
+    var edit_user_id = $(this).attr('data-user');
+    var edit_user_info = master_victims_list[edit_user_id];
+    $('#edit-user-popup').children('h3').text('Edit User ' + edit_user_info.username);
+    $('input#edit-user-id').attr('value', edit_user_id);
+    $('input#edit-user-username').attr('value', edit_user_info.username);
+    $('input#edit-user-firstname').attr('value', edit_user_info.firstname);
+    $('input#edit-user-lastname').attr('value', edit_user_info.lastname);
+    $('input#edit-user-phone').attr('value', edit_user_info.phone);
+    $('input#edit-user-email').attr('value', edit_user_info.email);
+    $('input#edit-user-sms-email').attr('value', edit_user_info.sms_email);
+    $('input#edit-user-throttle').attr('value', edit_user_info.throttle);
+    if (edit_user_info.truncate == 1) {
+        $('button#edit-user-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+        $('input#edit-user-truncate').attr('value', 1);
+    } else {
+        $('button#edit-user-truncate-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+        $('input#edit-user-truncate').attr('value', 0);
+    }
+    $('button#edit-user-app-role-label').text(oc.roles[edit_user_info.app_role] + ' ').append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-user-app-role').attr('value', edit_user_info.app_role);
+    $.each(edit_user_info.groups, function(group, active) {
+        if (active == 1) {
+            $('button#edit-user-group-active-' + group + '-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+            $('input#edit-user-group-active-' + group).attr('value', 1);
+        } else {
+            $('button#edit-user-group-inactive-' + group + '-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+            $('input#edit-user-group-inactive-' + group).attr('value', 1);
+        }
+    });
+    $.magnificPopup.open({
+        items: {
+            src: '#edit-user-popup',
+            type: 'inline'
+        },
+        preloader: false,
+        removalDelay: 300,
+        mainClass: 'popup-animate',
+        callbacks: {
+            close: function() {
+                $('table#edit-user-table').children('tbody').children('tr.edit-user-group-row').remove();
+            }
+        }
+    });
 }).on('click', 'button#groups-delete', function() {
     var groups_to_delete = {};
     $.each($('input[data-type="group-delete"]'), function() {
@@ -72,6 +146,7 @@ $(document).on('click', 'button.oc-checkbox', function() {
 }).on('click', 'button.edit-group', function() {
     var edit_group = $(this).attr('data-group');
     var edit_group_info = oncalendar.oncall_groups[edit_group];
+    $('#edit-group-popup').children('h3').text('Edit Group ' + edit_group);
     $('input#edit-group-id').attr('value', edit_group_info.id);
     $('input#edit-group-name').attr('value', edit_group);
     if (edit_group_info.active == 1) {
@@ -132,6 +207,123 @@ $(document).on('click', 'button.oc-checkbox', function() {
     });
 });
 
+// Event listener to populate the users tab when all victim info is loaded.
+document.addEventListener('victims_loaded', function() {
+    var users_panel = $('#users-panel-data');
+    var users_table_data = [];
+    users_panel.append('<table id="users-table" class="admin-table">');
+    $.each(master_victims_list, function(id, victim_data) {
+        victim_groups = [];
+        $.each(victim_data.groups, function(group, active) {
+            victim_groups.push(group);
+        });
+        var delete_user_checkbox = '<button id="user-checkbox-' + id + '" ' +
+            'class="oc-checkbox elegant_icons icon_box-empty" ' +
+            'data-target="user-delete-' + id + '" ' +
+            'data-checked="no"></button>' +
+            '<input type="hidden" id="user-delete-' + id + '" ' +
+            'name="user-delete-' + id + '" ' +
+            'value="0" data-type="user-delete" ' +
+            'data-username="' + victim_data.username + '" ' +
+            'data-id="' + id + '">';
+        var edit_user_button = '<button id="edit-user-' + id + '" ' +
+            'class="elegant_icons icon_pencil-edit edit-user" data-user="' + id + '"></button>';
+        users_table_data.push([
+            delete_user_checkbox,
+            edit_user_button,
+            id,
+            victim_data.username,
+            victim_data.firstname,
+            victim_data.lastname,
+            victim_data.phone,
+            victim_data.email,
+            victim_data.sms_email,
+            victim_data.throttle,
+            oc.basic_boolean[victim_data.truncate],
+            oc.roles[victim_data.app_role],
+            victim_groups.join(', ')
+        ]);
+    });
+    users_table_head = [
+        {'sTitle': ''},
+        {'sTitle': ''},
+        {'sTitle': 'ID'},
+        {'sTitle': 'Username'},
+        {'sTitle': 'First Name'},
+        {'sTitle': 'Last Name'},
+        {'sTitle': 'Phone'},
+        {'sTitle': 'Email'},
+        {'sTitle': 'SMS Email'},
+        {'sTitle': 'Throttle Level'},
+        {'sTitle': 'Truncate'},
+        {'sTitle': 'App Role'},
+        {'sTitle': 'Groups'}
+    ];
+
+    $('table#users-table').dataTable({
+        'aaData': users_table_data,
+        'aoColumns': users_table_head,
+        'info': false,
+        'lengthChange': false,
+        'paging': false
+    });
+    // Add the add and delete users buttons to the table wrapper
+    $('div#users-table_wrapper').prepend('<div id="users-panel-buttons" class="tab-panel-buttons">' +
+        '<button id="user-add" class="elegant_icons icon_plus_alt2"></button>' +
+        '<button id="users-delete" class="elegant_icons icon_minus_alt2"></button>' +
+        '</div>');
+
+    // Remove the 'Search:' label from the search field and replace it
+    // with placeholder text.
+    $('div#users-table_filter').children('label').contents().filter(function() {
+        return (this.nodeType == 3);
+    }).remove();
+    $('div#users-table_filter').children('label').children('input').attr('placeholder', 'Filter');
+
+    users_panel.on('click', 'button#user-add', function() {
+        $.each(oncalendar.oncall_groups, function(group, group_data) {
+            $('table#add-user-table').append('<tr class="add-user-group-row">' +
+                '<td>' + group + '</td><td>' +
+                '<button id="add-user-group-active-' + group + '-checkbox" class="add-user-group-active oc-checkbox elegant_icons icon_box-empty" data-target="add-user-group-active-' + group + '" data-group="' + group + '" data-checked="no"></button>' +
+                '<input type="hidden" id="add-user-group-active-' + group + '" name="add-user-group-active-' + group + '" class="add-user-group-active" data-group="' + group + '" value="0"></td>' +
+                '<td><button id="add-user-group-inactive-' + group + '-checkbox" class="add-user-group-inactive oc-checkbox elegant_icons icon_box-empty" data-target="add-user-group-inactive-' + group + '" data-group="' + group + '" data-checked="no"></button>' +
+                '<input type="hidden" id="add-user-group-inactive-' + group + '" name="add-user-group-inactive-' + group + '" class="add-user-group-inactive" data-group="' + group + '" value="0"></td>'
+            );
+        });
+        $.magnificPopup.open({
+            items: {
+                src: '#add-user-popup',
+                type: 'inline'
+            },
+            preloader: false,
+            removalDelay: 300,
+            mainClass: 'popup-animate',
+            callbacks: {
+                close: function() {
+                    $('input#add-user-username').removeProp('value').val('');
+                    $('input#add-user-firstname').removeProp('value').val('');
+                    $('input#add-user-lastname').removeProp('value').val('');
+                    $('input#add-user-phone').removeProp('value').val('');
+                    $('input#add-user-email').removeProp('value').val('');
+                    $('input#add-user-sms-email').removeProp('value').val('');
+                    $('input#add-user-throttle').removeProp('value').val('');
+                    $('button#add-user-truncate-button').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+                    $('input#add-user-truncate').attr('value', '0');
+                    $('button#add-user-app-role-label').text('User ').append('<span class="elegant_icons arrow_carrot-down">');
+                    $('input#add-user-app-role').attr('value', '0');
+                    $('table#add-user-table').children('tbody').children('tr.add-user-group-row').remove();
+                }
+            }
+        });
+    });
+});
+
+// Handler for the app role dropdown menu
+$('ul#add-user-app-role-options').on('click', 'li', function() {
+    $('#add-user-app-role-label').text(oc.roles[$(this).attr('data-role')]).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#add-user-app-role').attr('value', $(this).attr('data-role'));
+});
+
 // Event listener to populate the groups tab once the group info is loaded.
 document.addEventListener('group_info_loaded', function() {
     var groups_panel = $('#groups-panel-data');
@@ -143,7 +335,7 @@ document.addEventListener('group_info_loaded', function() {
         var delete_group_checkbox = '<button id="group-checkbox-' + group_data.id + '" ' +
             'class="oc-checkbox elegant_icons icon_box-empty" ' +
             'data-target="group-delete-' + group_data.id + '" ' +
-            'data-checked="no">' +
+            'data-checked="no"></button>' +
             '<input type="hidden" id="group-delete-' + group_data.id + '" ' +
             'name="group-delete-' + group_data.id + '" ' +
             'value="0" data-type="group-delete" ' +
@@ -300,6 +492,184 @@ $('ul#new-group-turnover-min-options').on('click', 'li', function() {
 });
 
 // Handlers for the dialog box buttons.
+// Add user dialog
+$('#add-user-popup').on('click', 'button.add-user-group-active', function() {
+    if ($(this).attr('data-checked') === "no") {
+        var group_flip = $(this).attr('data-group');
+        $('button#add-user-group-inactive-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+        $('input#add-user-group-inactive-' + group_flip).val('0');
+    }
+}).on('click', 'button.add-user-group-inactive', function() {
+    if ($(this).attr('data-checked') === "no") {
+        var group_flip = $(this).attr('data-group');
+        $('button#add-user-group-active-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+        $('input#add-user-group-active-' + group_flip).val('0');
+    }
+}).on('click', 'button#cancel-add-user-button', function() {
+    $.magnificPopup.close();
+}).on('click', 'button#save-add-user-button', function() {
+    var victim_phone = $('input#add-user-phone').val().replace(/\D/g,'');
+    if (victim_phone.length == 10 ) {
+        victim_phone = "1" + victim_phone;
+    } else if (victim_phone.length == 11) {
+        var country_code = victim_phone.substring(0,1);
+        if (country_code !== "1") {
+            victim_phone = "1" + victim_phone.substring(1)
+        }
+    }
+    $('input#add-user-phone').val(victim_phone);
+    if ($('input#add-user-username').val().length == 0) {
+        $('input#add-user-username').addClass('missing-input').focus();
+    } else if ($('input#add-user-firstname').val().length == 0) {
+        $('input#add-user-firstname').addClass('missing-input').focus();
+    } else if ($('input#add-user-lastname').val().length == 0) {
+        $('input#add-user-lastname').addClass('missing-input').focus();
+    } else if (($('input#add-user-email').val().length == 0) || !(valid_email($('input#add-user-email').val()))) {
+        $('input#add-user-email').addClass('missing-input').focus();
+    } else if ($('input#add-user-throttle').val() < 6) {
+        $('input#add-user-throttle').addClass('missing-input').val('6').focus();
+    } else if (victim_phone.length !== 11) {
+        $('input#add-user-phone').addClass('missing-input').focus();
+    } else {
+        var new_user_data = {
+            username: $('input#add-user-username').val(),
+            firstname: $('input#add-user-firstname').val(),
+            lastname: $('input#add-user-lastname').val(),
+            phone: $('input#add-user-phone').val(),
+            email: $('input#add-user-email').val(),
+            sms_email: $('input#add-user-sms-email').val(),
+            throttle: $('input#add-user-throttle').val(),
+            truncate: $('input#add-user-truncate').val(),
+            app_role: $('input#add-user-app-role').val(),
+            groups: {}
+        };
+        $.each($('tr.add-user-group-row'), function() {
+            var group_active = $(this).children('td').children('input.add-user-group-active');
+            var group_inactive = $(this).children('td').children('input.add-user-group-inactive');
+            if ($(group_active).val() === "1") {
+                new_user_data.groups[$(group_active).attr('data-group')] = 1;
+            } else if ($(group_inactive).val() === "1") {
+                new_user_data.groups[$(group_inactive).attr('data-group')] = 0;
+            }
+        });
+
+        $.when(oncalendar.add_new_victim(new_user_data)).then(
+            function(data) {
+                new_victim_id = data.id;
+                master_victims_list[new_victim_id] = data;
+                $('table#users-table').DataTable().destroy({remove: true});
+                document.dispatchEvent(oc_victims_event);
+                $.magnificPopup.close();
+                $('div#users-panel-data').prepend('<div class="info-box">New user ' + data.username + ' added.');
+            },
+            function(data) {
+                $('div#add-user-popup').prepend('<div class="alert-box">Add user ' + new_user_data.username + ' failed: ' + data + '</div>');
+            }
+        )
+    }
+});
+// Delete user(s) confirmation dialog
+$('#delete-victims-confirm-popup').on('click', 'button#delete-victims-cancel-button', function() {
+    $.magnificPopup.close();
+    $('p#delete-victims-list').empty();
+}).on('click', 'button#delete-victims-confirm-button', function() {
+    $.each($.magnificPopup.instance.items[0].data.users_to_delete, function(username, id) {
+        $.when(oncalendar.delete_victim(id)).then(
+            function(data) {},
+            function(data) {
+                $('div#delete-victims-confirm-popup').prepend('<div class="alert-box">Could not remove user ' + username + ': ' + data + '</div>');
+            }
+        )
+    });
+    $.when(oncalendar.get_victims()).then(
+        function(data) {
+            master_victims_list = data;
+            $('table#users-table').DataTable().destroy({remove: true});
+            document.dispatchEvent(oc_victims_event);
+            $.magnificPopup.close();
+        },
+        function(data) {
+            $.magnificPopup.close();
+            $('div#users-panel-data').prepend('<div class="alert-box">Error loading updated user list: ' + data + '</div>');
+        }
+    )
+});
+// Edit user dialog.
+$('#edit-user-popup').on('click', 'button.edit-user-group-active', function() {
+    if ($(this).attr('data-checked') === "no") {
+        var group_flip = $(this).attr('data-group');
+        $('button#edit-user-group-inactive-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+        $('input#edit-user-group-inactive-' + group_flip).val('0');
+    }
+}).on('click', 'button.edit-user-group-inactive', function() {
+    if ($(this).attr('data-checked') === "no") {
+        var group_flip = $(this).attr('data-group');
+        $('button#edit-user-group-active-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+        $('input#edit-user-group-active-' + group_flip).val('0');
+    }
+}).on('click', 'button#cancel-edit-user-button', function() {
+    $.magnificPopup.close();
+}).on('click', 'button#save-edit-user-button', function() {
+    var victim_phone = $('input#edit-user-phone').val().replace(/\D/g,'');
+    if (victim_phone.length == 10) {
+        victim_phone = "1" + victim_phone;
+    } else if (victim_phone.length == 11) {
+        var country_code = victim_phone.substring(0,1);
+        if (country_code !== "1") {
+            victim_phone = "1" + victim_phone.substring(1);
+        }
+    }
+    $('input#edit-user-phone').val(victim_phone);
+    if ($('input#edit-user-username').val().length == 0) {
+        $('input#edit-user-username').addClass('missing-input').focus();
+    } else if ($('input#edit-user-firstname').val().length == 0) {
+        $('input#edit-user-lastname').addClass('missing-input').focus();
+    } else if ($('input#edit-user-lastname').val().length == 0) {
+        $('input#edit-user-lastname').addClass('missing-input').focus();
+    } else if (($('input#edit-user-email').val().length == 0) || !(valid_email($('input#edit-user-email').val()))) {
+        $('input#edit-user-email').addClass('missing-input').focus();
+    } else if ($('input#edit-user-throttle').val() < 6) {
+        $('input#edit-user-throttle').addClass('missing-input').val('6').focus();
+    } else if (victim_phone.length !== 11) {
+        $('input#edit-user-phone').addClass('missing-input').focus();
+    } else {
+        var edit_user_data = {
+            id: $('input#edit-user-id').val(),
+            username: $('input#edit-user-username').val(),
+            firstname: $('input#edit-user-firstname').val(),
+            lastname: $('input#edit-user-lastname').val(),
+            phone: $('input#edit-user-phone').val(),
+            email: $('input#edit-user-email').val(),
+            sms_email: $('input#edit-user-sms-email').val(),
+            throttle: $('input#edit-user-throttle').val(),
+            truncate: $('input#edit-user-truncate').val(),
+            app_role: $('input#edit-user-app-role').val(),
+            groups: {}
+        };
+        $.each($('tr.edit-user-group-row'), function() {
+            var group_active = $(this).children('td').children('input.edit-user-group-active');
+            var group_inactive = $(this).children('td').children('input.edit-user-group-inactive');
+            if ($(group_active).val() === "1") {
+                edit_user_data.groups[$(group_active).attr('data-group')] = 1;
+            } else if ($(group_inactive).val() === "1") {
+                edit_user_data.groups[$(group_inactive).attr('data-group')] = 0;
+            }
+        });
+
+        $.when(oncalendar.update_victim_info(edit_user_data.id, edit_user_data)).then(
+            function(data) {
+                master_victims_list[data.id] = data;
+                $('table#users-table').DataTable().destroy({remove: true});
+                document.dispatchEvent(oc_victims_event);
+                $.magnificPopup.close();
+                $('div#users-panel-data').prepend('<div class="info-box">User info for ' + data.username + ' successfully updated.</div>');
+            },
+            function(data) {
+                $('div#edit-user-popup').prepend('<div class="alert-box">Editing info for user ' + edit_user_data.username + ' failed: ' + data + '</div>');
+            }
+        )
+    }
+});
 // Add group dialog.
 $('#add-group-popup').on('click', 'button#cancel-add-group-button', function() {
     $.magnificPopup.close();
@@ -346,7 +716,7 @@ $('#add-group-popup').on('click', 'button#cancel-add-group-button', function() {
         )
     }
 });
-// Delete group(s) dialog
+// Delete group(s) confirmation dialog
 $('#delete-groups-confirm-popup').on('click', 'button#delete-groups-cancel-button', function() {
     $.magnificPopup.close();
     $('p#delete-groups-list').empty();
@@ -378,6 +748,8 @@ $('#edit-group-popup').on('click', 'button#cancel-edit-group-button', function()
 }).on('click', 'button#save-edit-group-button', function() {
     if ($('input#edit-group-name').val().length == 0) {
         $('input#edit-group-name').addClass('missing-input').focus();
+    } else if (!valid_email($('input#edit-group-email').val())) {
+        $('input#edit-group-email').addClass('missing-input').focus();
     } else {
         var edit_group_name = $('input#edit-group-name').val();
         var edit_group_data = {
@@ -414,11 +786,21 @@ $('#edit-group-popup').on('click', 'button#cancel-edit-group-button', function()
                 $('div#groups-panel-data').prepend('<div class="info-box">Group ' + data.name + ' update successful.</div>');
             },
             function(data) {
-                $('div#edit-group-popup').prepend('<div class="alert-box">Editing group ' + data.name + ' failed: ' + data + '</div>');
+                $('div#edit-group-popup').prepend('<div class="alert-box">Editing group ' + edit_group_name + ' failed: ' + data + '</div>');
             }
         )
     }
 });
+
+// Simple email address validator
+function valid_email(email_address) {
+    valid = email_address.match(/^[^\s]+@[^\s]+\.[^\s]{2,3}$/);
+    if (valid !== null) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 function verify_oncalendar() {
     if (!oncalendar_admin.confirm_config()) {

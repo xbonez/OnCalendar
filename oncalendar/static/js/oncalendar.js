@@ -27,7 +27,12 @@ var oc = {
         'Friday',
         'Saturday'
     ],
-    basic_boolean: ['No', 'Yes']
+    basic_boolean: ['No', 'Yes'],
+    roles: [
+        'User',
+        'Group Admin',
+        'App Admin'
+    ]
 };
 
 var oncalendar = {
@@ -1421,7 +1426,7 @@ var oncalendar = {
                 update_victim_info_object.resolve(data);
             })
             .fail(function(data) {
-                var error = data.responseText;
+                var error = data.responseText.error_message;
                 update_victim_info_object.reject(error);
             });
 
@@ -1439,7 +1444,7 @@ var oncalendar = {
                 dataTye: 'json'
             }),
             chain = update_victim_status_request.then(function(data) {
-                return $.parseJSON(data);
+                return (data);
             });
 
         chain
@@ -1447,7 +1452,7 @@ var oncalendar = {
                 update_victim_status_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 update_victim_status_object.reject(error);
             });
 
@@ -1455,12 +1460,13 @@ var oncalendar = {
 
     },
     add_new_victim: function(victim_data) {
-        var add_victim_object = new $.Deferred();
         var add_victim_url = window.location.origin + '/api/admin/victim/add';
+        var add_victim_object = new $.Deferred();
         var add_victim_request = $.ajax({
                 url: add_victim_url,
                 type: 'POST',
-                data: victim_data,
+                contentType: 'application/json',
+                data: JSON.stringify(victim_data),
                 dataType: 'json'
             }),
             chain = add_victim_request.then(function(data) {
@@ -1472,15 +1478,35 @@ var oncalendar = {
                 add_victim_object.resolve(data);
             })
             .fail(function(data) {
-                if (data.status === 404) {
-                    var error = [data.status, 'The requested URL was not found on the server'];
-                } else {
-                    var error = $.parseJSON(data.responseText);
-                }
+                var error = data.responseJSON.error_message;
+                add_victim_object.reject(error);
             });
 
         return add_victim_object.promise();
 
+    },
+    delete_victim: function(victim_id) {
+        var delete_victim_url = window.location.origin + '/api/admin/victim/delete/' + victim_id;
+        var delete_victim_object = new $.Deferred();
+        var delete_victim_request = $.ajax({
+            url: delete_victim_url,
+            type: 'GET',
+            dataType: 'json'
+        }),
+        chain = delete_victim_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                delete_victim_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseJSON.error_message;
+                delete_victim_object.reject(error);
+            });
+
+        return delete_victim_object.promise();
     },
     update_group: function(group_data) {
         var update_group_object = new $.Deferred();

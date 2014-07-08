@@ -1209,17 +1209,16 @@ class OnCalendarDB(object):
             (OnCalendarDBError): Passes the mysql error code and message.
         """
         cursor = self.oncalendar_db.cursor()
-        add_victim_query = "INSERT INTO victims (active, username, firstname, lastname, phone, email, sms_email, app_role) \
-        VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}')".format(
-            victim_data['active'],
-            victim_data['username'],
-            victim_data['firstname'],
-            victim_data['lastname'],
-            victim_data['phone'],
-            victim_data['email'],
-            victim_data['sms_email'],
-            victim_data['app_role']
-        )
+        victim_groups = victim_data.pop('groups')
+        victim_keys = []
+        victim_values = []
+        for key in victim_data:
+            victim_keys.append(key)
+            victim_values.append(victim_data[key])
+
+        keys_string = ','.join(victim_keys)
+        values_string = "','".join(victim_values)
+        add_victim_query = "INSERT INTO victims ({0}) VALUES ('{1}')".format(keys_string, values_string)
 
         try:
             cursor.execute('SELECT id FROM victims WHERE username=\'{0}\''.format(victim_data['username']))
@@ -1237,10 +1236,11 @@ class OnCalendarDB(object):
 
 
         try:
-            for group in victim_data['groups']:
-                cursor.execute('INSERT INTO groupmap (groupid, victimid, active) VALUES ({0}, {1}, 1)'.format(
+            for group in victim_groups:
+                cursor.execute("INSERT INTO groupmap (groupid, victimid, active) VALUES ((SELECT id FROM groups WHERE name='{0}'), {1}, {2})".format(
                         group,
-                        new_victim_id
+                        new_victim_id,
+                        victim_groups[group]
                     )
                 )
             self.oncalendar_db.commit()
@@ -1307,7 +1307,6 @@ class OnCalendarDB(object):
         if victim_id:
             try:
                 cursor.execute('DELETE FROM victims WHERE id={0}'.format(victim_id))
-                cursor.execute('DELETE FROM groupmap WHERE victimid={0}'.format(victim_id))
                 self.oncalendar_db.commit()
             except mysql.Error, error:
                 self.oncalendar_db.rollback()
@@ -1320,7 +1319,7 @@ class OnCalendarDB(object):
             raise OnCalendarAPIError(ocapi_err.NOPARAM, 'No userid given for deletion')
 
 
-    def update_victim(self, victim_data):
+    def update_victim(self, victim_id, victim_data):
         """
         Update the information for a victim record in the OnCalendar database.
 
@@ -1335,14 +1334,12 @@ class OnCalendarDB(object):
         """
 
         victim_groups = victim_data.pop('groups')
-        victim_id = victim_data.pop('id')
+        victim_data.pop('id')
         update_items = []
-        self.logger.debug(victim_data)
 
         for key in victim_data:
             update_items.append(key + "='" + victim_data[key] + "'")
 
-        self.logger.debug(update_items)
         cursor = self.oncalendar_db.cursor()
         update_victim_query = "UPDATE victims SET {0} WHERE id={1}""".format(
             ','.join(update_items),
@@ -1357,20 +1354,43 @@ class OnCalendarDB(object):
             raise OnCalendarDBError(error.args[0], 'User update failed - {0}'.format(error.args[1]))
 
         try:
+            current_groups = []
+            cursor.execute('SELECT g.name FROM groups g, groupmap m WHERE g.id=m.groupid AND m.victimid={0}'.format(victim_id))
+            for row in cursor.fetchall():
+                current_groups.append(row[0])
+
+
             for group in victim_groups:
-                cursor.execute("UPDATE groupmap SET active={0} WHERE victimid={1} AND groupid=(SELECT id FROM groups WHERE name='{2}')".format(
-                    victim_groups[group],
-                    victim_id,
-                    group
-                ))
+                if group in current_groups:
+                    cursor.execute("UPDATE groupmap SET active={0} WHERE victimid={1} AND groupid=(SELECT id FROM groups WHERE name='{2}')".format(
+                        victim_groups[group],
+                        victim_id,
+                        group
+                    ))
+                    current_groups.pop(current_groups.index(group))
+                else:
+                    cursor.execute("INSERT INTO groupmap (groupid, victimid, active) VALUES((SELECT id FROM groups WHERE name='{0}'), {1}, {2})".format(
+                        group,
+                        victim_id,
+                        victim_groups[group]
+                    ))
+
+            if (len(current_groups) > 0):
+                for group in current_groups:
+                    cursor.execute("DELETE FROM groupmap WHERE groupid=(SELECT id FROM groups WHERE name='{0}') AND victimid={1}".format(
+                        group,
+                        victim_id
+                    ))
+
             self.oncalendar_db.commit()
         except mysql.Error, error:
             self.oncalendar_db.rollback()
             raise OnCalendarDBError(error.args[0], 'Failed to update user groups - {0}'.format(error.args[1]))
 
         updated_victim = self.get_victim_info('username', victim_data['username'])
+        self.logger.debug(updated_victim[int(victim_id)])
 
-        return updated_victim
+        return updated_victim[int(victim_id)]
 
 
     def set_victim_preference(self, victimid, pref, value):
