@@ -750,7 +750,7 @@ def api_get_cal_boundaries():
                        'end': [end_year, end_month, end_day]})
 
 
-@ocapp.route('/api/calendar/calendar_end')
+@ocapp.route('/api/calendar/end')
 def api_get_cal_end():
     """
     API interface to get the last date in the caldays table.
@@ -776,10 +776,14 @@ def api_get_cal_end():
     end_tuple = cal_end.timetuple()
     year, month, day = end_tuple[0:3]
 
-    return jsonify([year, month, day])
+    return jsonify({
+        'year': year,
+        'month': month,
+        'day': day
+    })
 
 
-@ocapp.route('/api/calendar/calendar_start')
+@ocapp.route('/api/calendar/start')
 def api_get_cal_start():
     """
     API interface to get the first date in the caldays table.
@@ -805,7 +809,11 @@ def api_get_cal_start():
     start_tuple = cal_start.timetuple()
     year, month, day = start_tuple[0:3]
 
-    return jsonify([year, month, day])
+    return jsonify({
+        'year': year,
+        'month': month,
+        'day': day
+    })
 
 
 @ocapp.route('/api/calendar/update/day', methods=['POST'])
@@ -1479,7 +1487,11 @@ def db_extend(days):
             payload = [error.args[0], error.args[1]]
         )
 
-    return jsonify([year, month, day])
+    return jsonify({
+        'year': year,
+        'month': month,
+        'day': day
+    })
 
 
 # Database APIs
@@ -1536,7 +1548,7 @@ def api_create_db():
             payload = [error.args[0], error.args[1]]
         )
 
-    return jsonify(['OK'])
+    return jsonify({'status': 'OK'})
 
 
 @ocapp.route('/api/admin/db/init_db')
