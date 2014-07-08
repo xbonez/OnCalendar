@@ -23,6 +23,15 @@ $(document).ready(function() {
         $('div#' + $(this).attr('data-target')).addClass('active-panel');
     });
 
+    // Handler for user menu items
+    $('div#user-menu')
+        .on('click', 'li#user-logout', function() {
+            window.location.href = '/logout';
+        })
+        .on('click', 'li#calendar-link', function() {
+            window.location.href = '/';
+        });
+
 });
 
 // Handlers for the checkboxes, alerts and buttons

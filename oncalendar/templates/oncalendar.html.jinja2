@@ -20,14 +20,14 @@
         <span id="username" data-toggle="dropdown">{% if g.user.username is defined %} {{ g.user.username }} {% else %} anonymous {% endif %}</span>
         <span class="input-menu elegant_icons arrow_carrot-down" data-toggle="dropdown"> </span>
         <ul id="user-dropdown" class="dropdown-menu" role="menu">
-          {% if anonymous is sameas true %}
-          <li><a href="/login"><span id="user-login">Login</span></a></li>
+          {% if g.user.is_anonymous() %}
+          <li id="user-login"><span>Login</span></li>
           {% else %}
-          <li><a href="/logout"><span id="user-logout">Logout</span></a></li>
+          <li id="user-logout"><span>Logout</span></li>
           <li id="edit-account-menu-option"><span>Edit My Info</span></li>
           {% endif %}
           {% if g.user.app_role == 2 %}
-          <li><a href="/admin"><span id="oncalendar-admin">OnCalendar Admin</span></a></li>
+          <li id="oncalendar-admin"><span>OnCalendar Admin</span></li>
           {% endif %}
         </ul>
       </div>
@@ -131,13 +131,13 @@
                     <button id="edit-group-turnover-day-label"></button>
                 </span>
 	              <ul id="edit-group-turnover-day-options" class="dropdown-menu" role="menu">
-	                <li><span data-day="1">Monday</span></li>
-	                <li><span data-day="2">Tuesday</span></li>
-	                <li><span data-day="3">Wednesday</span></li>
-	                <li><span data-day="4">Thursday</span></li>
-	                <li><span data-day="5">Friday</span></li>
-	                <li><span data-day="6">Saturday</span></li>
-	                <li><span data-day="0">Sunday</span></li>
+	                <li data-day="1"><span>Monday</span></li>
+	                <li data-day="2"><span>Tuesday</span></li>
+	                <li data-day="3"><span>Wednesday</span></li>
+	                <li data-day="4"><span>Thursday</span></li>
+	                <li data-day="5"><span>Friday</span></li>
+	                <li data-day="6"><span>Saturday</span></li>
+	                <li data-day="0"><span>Sunday</span></li>
 	              </ul>
               </span>
               <input type="hidden" id="edit-group-turnover-day" name="edit-group-turnover-day" value="">
@@ -146,30 +146,30 @@
               <span id="edit-group-turnover-hour-menu" class="dropdown"><span data-toggle="dropdown">
                 <button id="edit-group-turnover-hour-label"></button></span>
                 <ul id="edit-group-turnover-hour-options" class="dropdown-menu" role="menu">
-	                <li><span data-hour="00">00</span></li>
-	                <li><span data-hour="01">01</span></li>
-	                <li><span data-hour="02">02</span></li>
-	                <li><span data-hour="03">03</span></li>
-	                <li><span data-hour="04">04</span></li>
-	                <li><span data-hour="05">05</span></li>
-	                <li><span data-hour="06">06</span></li>
-	                <li><span data-hour="07">07</span></li>
-	                <li><span data-hour="08">08</span></li>
-	                <li><span data-hour="09">09</span></li>
-	                <li><span data-hour="10">10</span></li>
-	                <li><span data-hour="11">11</span></li>
-	                <li><span data-hour="12">12</span></li>
-	                <li><span data-hour="13">13</span></li>
-	                <li><span data-hour="14">14</span></li>
-	                <li><span data-hour="15">15</span></li>
-	                <li><span data-hour="16">16</span></li>
-	                <li><span data-hour="17">17</span></li>
-	                <li><span data-hour="18">18</span></li>
-	                <li><span data-hour="19">19</span></li>
-	                <li><span data-hour="20">20</span></li>
-	                <li><span data-hour="21">21</span></li>
-	                <li><span data-hour="22">22</span></li>
-	                <li><span data-hour="23">23</span></li>
+	                <li data-hour="00"><span>00</span></li>
+	                <li data-hour="01"><span>01</span></li>
+	                <li data-hour="02"><span>02</span></li>
+	                <li data-hour="03"><span>03</span></li>
+	                <li data-hour="04"><span>04</span></li>
+	                <li data-hour="05"><span>05</span></li>
+	                <li data-hour="06"><span>06</span></li>
+	                <li data-hour="07"><span>07</span></li>
+	                <li data-hour="08"><span>08</span></li>
+	                <li data-hour="09"><span>09</span></li>
+	                <li data-hour="10"><span>10</span></li>
+	                <li data-hour="11"><span>11</span></li>
+	                <li data-hour="12"><span>12</span></li>
+	                <li data-hour="13"><span>13</span></li>
+	                <li data-hour="14"><span>14</span></li>
+	                <li data-hour="15"><span>15</span></li>
+	                <li data-hour="16"><span>16</span></li>
+	                <li data-hour="17"><span>17</span></li>
+	                <li data-hour="18"><span>18</span></li>
+	                <li data-hour="19"><span>19</span></li>
+	                <li data-hour="20"><span>20</span></li>
+	                <li data-hour="21"><span>21</span></li>
+	                <li data-hour="22"><span>22</span></li>
+	                <li data-hour="23"><span>23</span></li>
                 </ul>
               </span>
               <input type="hidden" id="edit-group-turnover-hour" name="edit-group-turnover-hour" value="09" size="2">
@@ -178,8 +178,8 @@
                     <button id="edit-group-turnover-min-label"></button>
                 </span>
                 <ul id="edit-group-turnover-min-options" class="dropdown-menu" role="menu">
-                  <li><span data-min="00">00</span></li>
-                  <li><span data-min="30">30</span></li>
+                  <li data-min="00"><span>00</span></li>
+                  <li data-min="30"><span>30</span></li>
                 </ul>
               </span>
               <input type="hidden" id="edit-group-turnover-min" name="edit-group-turnover-min" value="30" size="2">

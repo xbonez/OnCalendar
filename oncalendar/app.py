@@ -534,7 +534,7 @@ def oc_login():
             raise OnCalendarAuthError(error[0]['desc'])
 
     auth_error_message = session.pop('auth_error', None)
-    js = render_template('main_login.js.jinja2')
+    js = render_template('main_login.js')
     login_next = ''
     if 'next' in request.args:
         login_next = '?next={0}'.format(request.args.get('next'))
