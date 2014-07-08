@@ -1,5 +1,6 @@
 from apscheduler.scheduler import Scheduler
-from flask import Flask, render_template, url_for, request, flash, redirect, g, session
+import datetime as dt
+from flask import Flask, render_template, url_for, request, flash, redirect, g, session, jsonify
 import flask.ext.login as flogin
 import json
 import logging
@@ -26,6 +27,13 @@ def start_scheduler(master_takeover=False):
     """
     Checks to make sure this instance is the job (and if necessary)
     cluster master, adds the scheduled jobs and starts them.
+
+    Args:
+        master_takeover (Boolean): Whether this instance is taking
+        over for the cluster master
+
+    Returns:
+        (Boolean): True if this instance is the job master
     """
 
     ocapp.aps_logger.debug('Starting the job scheduler')
@@ -46,7 +54,8 @@ def start_scheduler(master_takeover=False):
             ocapp.scheduler.add_interval_job(check_current_victims, minutes=1, coalesce=True)
             ocapp.scheduler.add_interval_job(check_calendar_gaps_8hour, hours=1)
             ocapp.scheduler.add_cron_job(check_calendar_gaps_48hour, hour='9,12,15,18')
-            ocapp.scheduler.add_interval_job(get_incoming_sms, seconds=30, coalesce=True)
+            if not config.sms['TWILIO_USE_CALLBACK']:
+                ocapp.scheduler.add_interval_job(get_incoming_sms, seconds=30, coalesce=True)
 
             ocapp.scheduler.start()
 
@@ -323,22 +332,23 @@ def get_incoming_sms():
                 ))
 
 
+# Create the Flask application object
 ocapp = Flask(__name__)
-
 ocapp.config.update(config.basic)
+
+# Create the login manager object
 ocapp.login_manager = flogin.LoginManager()
 ocapp.login_manager.login_view = 'oc_login'
 ocapp.login_manager.init_app(ocapp)
 
+# Set up logging if this instance is not in debug mode
 if not ocapp.debug:
     del ocapp.logger.handlers[:]
     ocapp.logger.setLevel(getattr(logging, config.logging['LOG_LEVEL']))
     ocapp.logger.addHandler(default_log_handler)
 
 # Start the scheduler and set up logging for it
-
 ocapp.scheduler = Scheduler()
-
 ocapp.aps_logger = logging.getLogger('apscheduler')
 ocapp.aps_logger.setLevel(getattr(logging, config.logging['LOG_LEVEL']))
 ocapp.aps_logger.addHandler(default_log_handler)
@@ -407,6 +417,13 @@ def before_request():
 
 @ocapp.after_request
 def after_request(response):
+    """
+    Check for the Origin header and respond appropriately if the
+    API client is allowed access
+
+    Args:
+        (Flask response object)
+    """
     if 'Origin' in request.headers:
         if config.basic['API_ACCESS_DOMAINS'] and request.headers['Origin'] in config.basic['API_ACCESS_DOMAINS']:
             response.headers.add('Access-Control-Allow-Origin', request.headers['Origin'])
@@ -420,7 +437,7 @@ def handle_bad_request(error):
     Handler for BadRequest errors, HTTP code 400.
     """
 
-    return json.dumps(error.payload), error.status_code
+    return jsonify(error.payload), error.status_code
 
 
 @ocapp.errorhandler(OnCalendarAppError)
@@ -429,7 +446,7 @@ def handle_app_error(error):
     Handler for application errors, HTTP code 500
     """
 
-    return json.dumps(error.payload), error.status_code
+    return jsonify(error.payload), error.status_code
 
 
 @ocapp.errorhandler(OnCalendarAuthError)
@@ -445,32 +462,41 @@ def handle_auth_error(error):
 @ocapp.route('/')
 def root():
     """
-    The main page of the app.
+    The main page of the app, redirects to the calendar for the current month.
 
-    Returns:
-        (string): Rendered template of the main page HTML and Javascript.
     """
 
-    is_anonymous = g.user.is_anonymous()
-    if not is_anonymous:
-        user = {
-            'username': g.user.username,
-            'groups': g.user.groups,
-            'app_role': g.user.app_role
-        }
-    else:
+    current_day = dt.date.today()
+    return redirect(url_for('root') + 'calendar/' + str(current_day.year) + '/' + str(current_day.month))
+
+
+@ocapp.route('/calendar/<year>/<month>')
+def oc_calendar(year=None, month=None):
+    """
+    Access main page of the app with a specific calendar month.
+
+    Returns:
+        (str): Rendered template of the main page HTML and Javascript.
+    """
+
+    user = {}
+    if g.user.is_anonymous():
         user = {
             'username': 'anonymous',
             'groups': [],
-            'app_role': 0
+            'app_role': 0,
+            'id': 0
         }
+
     user_json = json.dumps(user)
-    js = render_template('main.js.jinja2',
-                         user_json=user_json)
+    js = render_template('main.js',
+                         year=year,
+                         month=int(month) - 1,
+                         throttle_min=config.sms['SMS_THROTTLE_MIN'],
+                         user_json=user_json,
+                         email_gateway_config='true' if config.sms['EMAIL_GATEWAY'] else 'false')
 
     return render_template('oncalendar.html.jinja2',
-                           anonymous=is_anonymous,
-                           email_gateway=config.sms['EMAIL_GATEWAY'],
                            main_js=js,
                            stylesheet_url=url_for('static', filename='css/oncalendar.css'),
                            jquery_url=url_for('static', filename='js/jquery.js'),
@@ -491,7 +517,7 @@ def oc_login():
         (redirect): URL for the main index page of the site if the
                     user is already authenticated.
 
-        (string): Rendered template of the login page if the user is
+        (str): Rendered template of the login page if the user is
                   not logged in.
     """
 
@@ -508,7 +534,7 @@ def oc_login():
             raise OnCalendarAuthError(error[0]['desc'])
 
     auth_error_message = session.pop('auth_error', None)
-    js = render_template('main_login.js.jinja2')
+    js = render_template('main_login.js')
     login_next = ''
     if 'next' in request.args:
         login_next = '?next={0}'.format(request.args.get('next'))
@@ -541,7 +567,7 @@ def oc_admin():
     The admin interface for the app.
 
     Returns:
-        (string): Rendered template of the admin interface HTML and Javascript.
+        (str): Rendered template of the admin interface HTML and Javascript.
     """
 
     if g.user.app_role == 2:
@@ -552,8 +578,9 @@ def oc_admin():
             'app_role': g.user.app_role
         }
         user_json = json.dumps(user)
-        js = render_template('main_admin.js.jinja2',
-                             user_json=user_json)
+        js = render_template('main_admin.js',
+                             user_json=user_json,
+                             email_gateway_config='true' if config.sms['EMAIL_GATEWAY'] else 'false')
         return render_template('oncalendar_admin.html.jinja2',
                                main_js=js,
                                stylesheet_url=url_for('static', filename='css/oncalendar.css'),
@@ -561,52 +588,13 @@ def oc_admin():
                                datejs_url=url_for('static', filename='js/date.js'),
                                ocjs_url=url_for('static', filename='js/oncalendar.js'),
                                ocadminjs_url=url_for('static', filename='js/oncalendar_admin.js'),
+                               colorwheel_url=url_for('static', filename='js/color_wheel.js'),
                                magnific_url=url_for('static', filename='js/magnific-popup.js'),
+                               datatables_url=url_for('static', filename='js/jquery.dataTables.min.js'),
                                bootstrapjs_url=url_for('static', filename='js/bootstrap.js'))
     else:
         ocapp.logger.error("User {0} not authorized for /admin access".format(g.user.username))
         return redirect(url_for('root'))
-
-
-@ocapp.route('/calendar/<year>/<month>')
-def oc_calendar(year=None, month=None):
-    """
-    Access main page of the app with a specific calendar month.
-
-    Returns:
-        (string): Rendered template of the main page HTML and Javascript.
-    """
-
-    is_anonymous = g.user.is_anonymous()
-    if not is_anonymous:
-        user = {
-            'username': g.user.username,
-            'groups': g.user.groups,
-            'app_role': g.user.app_role
-        }
-    else:
-        user = {
-            'username': 'anonymous',
-            'groups': [],
-            'app_role': 0
-        }
-    user_json = json.dumps(user)
-    js = render_template('main.js.jinja2',
-                         year=year,
-                         month=int(month) - 1,
-                         user_json=user_json)
-
-    return render_template('oncalendar.html.jinja2',
-                           anonymous=is_anonymous,
-                           main_js=js,
-                           stylesheet_url=url_for('static', filename='css/oncalendar.css'),
-                           jquery_url=url_for('static', filename='js/jquery.js'),
-                           datejs_url=url_for('static', filename='js/date.js'),
-                           ocjs_url=url_for('static', filename='js/oncalendar.js'),
-                           colorwheel_url=url_for('static', filename='js/color_wheel.js'),
-                           magnific_url=url_for('static', filename='js/magnific-popup.js'),
-                           bootstrapjs_url=url_for('static', filename='js/bootstrap.js'),
-                           jq_autocomplete_url=url_for('static', filename='js/jquery.autocomplete.js'))
 
 
 @ocapp.route('/edit/month/<group>/<year>/<month>')
@@ -617,8 +605,17 @@ def edit_month_group(group=None, year=None, month=None):
 
     Gives the user an editable month view of the oncall schedule for their group.
 
+    Args:
+        group (str): The name of the group who's schedule to edit
+
+        year (str): The year part of the edit month specification
+
+        month (str): The month part of the edit month specification
+
     Returns:
-        (string): Rendered template of the edit month interface HTML and Javascript.
+        (str): Rendered template of the edit month interface HTML and Javascript.
+
+        (redirect): Sends user back to calendar if they are not authorized to edit.
     """
 
     if g.user.app_role == 2 or (group in g.user.groups):
@@ -660,8 +657,17 @@ def edit_weekly_group(group=None, year=None, month=None):
     where the oncall/shadow/backup victims can be changed on a full
     week basis.
 
+    Args:
+        group (str): The name of the group who's schedule to edit
+
+        year (str): The year part of the edit month specification
+
+        month (str): The month part of the edit month specification
+
     Returns:
         (str): Rendered template of the weekly edit interface HTML and Javascript.
+
+        (redirect): Sends user back to calendar if they are not authorized to edit.
     """
 
     if g.user.app_role == 2 or (group in g.user.groups):
@@ -693,35 +699,82 @@ def edit_weekly_group(group=None, year=None, month=None):
         return redirect(url_for('root'))
 
 
-@ocapp.route('/api/session/ldap_groups')
-def api_get_ldap_groups():
-    if g.user.is_authenticated():
-        return json.dumps(g.user.ldap_groups)
-    else:
-        return json.dumps([])
-
-
 @ocapp.route('/api/calendar/month/<year>/<month>', methods=['GET'])
 @ocapp.route('/api/calendar/month/<year>/<month>/<group>', methods=['GET'])
 def api_get_calendar(year=None, month=None, group=None):
+    """
+    API interface to find the scheduled oncall victims for a specified month.
+
+    Args:
+        year (str): The year portion of the date
+
+        month (str): The month being requested
+
+        group (str): The name of the group to filter on.
+
+    Returns:
+        (str): The victim info as JSON
+
+    Raises:
+        OnCalendarAppError
+
+    """
 
     try:
         ocdb = OnCalendarDB(config.database)
         victims = ocdb.get_calendar(year, month, group)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(victims)
+    return jsonify(victims)
 
 
 @ocapp.route('/api/calendar/month', methods=['POST'])
 def api_calendar_update_month():
+    """
+    API interface to update the schedule for a given month
+
+    Post data must be sent as JSON, and must contain the following:
+        filter_group (str): The group schedule to be updated.
+        reason (str): Text explaining the reason for the update
+        days (dict): Schedule information for each day of the month
+        days[<day_id>] (dict): Schedule information for each day
+            for oncall, shadow and backup users.
+
+    Example post data:
+
+    {
+        'filter_group': 'Core',
+        'reason': 'Example reason for schedule update',
+        'days': {
+            185: {
+                'oncall': 'billybob',
+                'shadow': 'brad',
+                'backup': 'angelina'
+            }
+            <etc>
+        }
+    }
+
+    Returns:
+        (str): Success status as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+
     month_data = request.get_json()
     if not month_data:
         raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+            payload = {
+                'error_code': ocapi_err.NOPOSTDATA,
+                'error_message': 'No data received'
+            }
         )
     else:
         update_group = month_data['filter_group']
@@ -731,16 +784,19 @@ def api_calendar_update_month():
     try:
         ocdb = OnCalendarDB(config.database)
         response = ocdb.update_calendar_month(g.user.id, reason, update_group, days)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         ocapp.logger.error("Could not update month - {0}: {1}".format(
             error.args[0],
             error.args[1]
         ))
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(response)
+    return jsonify({'status': response})
 
 
 @ocapp.route('/api/calendar/boundaries')
@@ -756,28 +812,32 @@ def api_get_cal_boundaries():
         (str): dict of the start and end year, month day as JSON, e.g.:
                start: [year, month, day], end: [year, month, day]
 
-        (str): On error returns a list of the error code and error message
-               as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         cal_start = ocdb.get_caldays_start()
         cal_end = ocdb.get_caldays_end()
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
     start_tuple = cal_start.timetuple()
     start_year, start_month, start_day = start_tuple[0:3]
     end_tuple = cal_end.timetuple()
     end_year, end_month, end_day = end_tuple[0:3]
-    return json.dumps({'start': [start_year, start_month, start_day],
-                       'end': [end_year, end_month, end_day]})
+
+    return jsonify({'start': [start_year, start_month, start_day],
+                    'end': [end_year, end_month, end_day]})
 
 
-@ocapp.route('/api/calendar/calendar_end')
+@ocapp.route('/api/calendar/end')
 def api_get_cal_end():
     """
     API interface to get the last date in the caldays table.
@@ -786,26 +846,34 @@ def api_get_cal_end():
     any calendar can be displayed and any oncall schedule can be created.
 
     Returns:
-        (string): list of the year, month, day of the last entry as JSON.
+        (str): dict of the year, month, day of the last entry as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         cal_end = ocdb.get_caldays_end()
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
     end_tuple = cal_end.timetuple()
     year, month, day = end_tuple[0:3]
-    return json.dumps([year, month, day])
+
+    return jsonify({
+        'year': year,
+        'month': month,
+        'day': day
+    })
 
 
-@ocapp.route('/api/calendar/calendar_start')
+@ocapp.route('/api/calendar/start')
 def api_get_cal_start():
     """
     API interface to get the first date in the caldays table.
@@ -814,46 +882,105 @@ def api_get_cal_start():
     any calendar can be displayed and any oncall schedule can be created.
 
     Returns:
-        (string): list of the year, month, day of the first entry as JSON.
+        (str): dict of the year, month, day of the first entry as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         cal_start = ocdb.get_caldays_start()
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
     start_tuple = cal_start.timetuple()
     year, month, day = start_tuple[0:3]
-    return json.dumps([year, month, day])
+
+    return jsonify({
+        'year': year,
+        'month': month,
+        'day': day
+    })
 
 
 @ocapp.route('/api/calendar/update/day', methods=['POST'])
 def api_calendar_update_day():
+    """
+    API interface to update the schedule for a group on a specific day.
+
+    Post data must be sent as JSON and must contain the following:
+        calday (str): The id of the day being edited
+        cal_date (str): The date string for the day being edited
+        group (str): The group schedule to be updated.
+        note (str): Text explaining the reason for the update
+        slots (dict): Schedule info for each slot of the day,
+            for oncall, shadow and backup
+
+    Example post data:
+
+    {
+        'calday': 183,
+        'cal_date': '2014-7-2',
+        'group': 'Core',
+        'note': 'Example reason for schedule update',
+        'slots': {
+            '00-00': {
+                'oncall': 'mia',
+                'shadow': 'soon-yee',
+                'backup': 'woody'
+            },
+            '00-30': {
+                'oncall': 'mia',
+                'shadow': 'soon-yee',
+                'backup': 'woody'
+            }
+            ...
+            '23-30': {
+                'oncall': 'mia',
+                'shadow': 'soon-yee',
+                'backup': 'woody'
+            }
+        }
+    }
+
+    Returns:
+        (dict): The updated schedule for the day.
+
+    Raises:
+        OnCalendarAppError
+    """
+
     update_day_data = request.get_json()
     if not update_day_data:
         raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
     try:
         ocdb = OnCalendarDB(config.database)
         response = ocdb.update_calendar_day(g.user.id, update_day_data)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         ocapp.logger.error("Could not update calendar day - {0}: {1}".format(
             error.args[0],
             error.args[1]
         ))
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(response)
+    return jsonify(response)
 
 
 @ocapp.route('/api/edits')
@@ -877,10 +1004,13 @@ def api_get_edit_history(group=None):
         edit_history = ocdb.get_edit_history(group)
     except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(edit_history)
+    return jsonify(edit_history)
 
 
 @ocapp.route('/api/edits/<group>/last')
@@ -902,10 +1032,13 @@ def api_get_last_edit(group):
         last_edit = ocdb.get_last_edit(group)
     except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(last_edit)
+    return jsonify(last_edit)
 
 
 @ocapp.route('/api/groups/')
@@ -914,7 +1047,7 @@ def api_get_all_groups_info():
     API interface to get information on all configured groups.
 
     Returns:
-        (string): The dict of all configured groups rendered as JSON.
+        (str): The dict of all configured groups rendered as JSON.
 
     Raises:
         OnCalendarAppError
@@ -923,12 +1056,15 @@ def api_get_all_groups_info():
     try:
         ocdb = OnCalendarDB(config.database)
         groups = ocdb.get_group_info()
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(groups)
+    return jsonify(groups)
 
 
 @ocapp.route('/api/group/by_name/<group>/')
@@ -937,24 +1073,27 @@ def api_get_group_info_by_name(group=None):
     API interface to get information on a specified group.
 
     Args:
-        (string): The name of the requested group.
+        (str): The name of the requested group.
 
     Returns:
-        (string): The dict of the requested group's info rendered as JSON.
+        (str): The dict of the requested group's info rendered as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         group_info = ocdb.get_group_info(False, group)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(group_info)
+    return jsonify(group_info)
 
 
 @ocapp.route('/api/group/by_id/<gid>/')
@@ -963,24 +1102,27 @@ def api_get_group_info_by_id(gid=None):
     API interface to get information on a specified group.
 
     Args:
-        (string): The ID of the requested group.
+        (str): The ID of the requested group.
 
     Returns:
-        (string): The dict of the requested group's info rendered as JSON.
+        (str): The dict of the requested group's info rendered as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         group_info = ocdb.get_group_info(gid, False)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(group_info)
+    return jsonify(group_info)
 
 
 @ocapp.route('/api/group/victims/<group>')
@@ -994,19 +1136,22 @@ def api_get_group_victims(group=None):
     Returns:
         (str): Dict of the group's victims rendered as JSON.
 
-        (str): On error returns a list of the error code and error message
-               as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         group_victims = ocdb.get_group_victims(group)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(group_victims)
+    return jsonify(group_victims)
 
 
 
@@ -1016,21 +1161,24 @@ def api_get_all_victims_info():
     API interface to get information on all configured victims.
 
     Returns:
-        (string): The dict of all configured victims rendered as JSON.
+        (str): The dict of all configured victims rendered as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         victims = ocdb.get_victim_info()
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(victims)
+    return jsonify(victims)
 
 
 @ocapp.route('/api/victims/current', methods=(['GET']))
@@ -1041,19 +1189,23 @@ def api_get_current_victims(group=None):
 
     Returns:
         (str): The dict of current victims as JSON.
-        (str): On error returns a list of the error code and error message
-               as JSON with an HTTP return code of 500.
+
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         victims = ocdb.get_current_victims(group)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(victims)
+    return jsonify(victims)
 
 
 @ocapp.route('/api/victims/suggest')
@@ -1063,6 +1215,9 @@ def api_suggest_victims():
 
     Returns:
         (str): dict of the suggested users' info as JSON.
+
+    Raises:
+        OnCalendarAppError
     """
 
     query = request.args['query']
@@ -1072,39 +1227,96 @@ def api_suggest_victims():
         suggested_victims = ocdb.get_suggested_victims(query)
     except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(suggested_victims)
+    return jsonify(suggested_victims)
 
 
-@ocapp.route('/api/victim/<key>/<id>/')
+@ocapp.route('/api/victim/<key>/<id>/', methods=['GET'])
 def api_get_victim_info(key=None, id=None):
     """
     API interface to get information on a specified victim.
 
     Args:
-        key (string): The key to search by, supported keys are id and username.
-        id (string): The username or id of the requested victim.
+        key (str): The key to search by, supported keys are id and username.
+        id (str): The username or id of the requested victim.
 
     Returns:
-        (string): The dict of the requested victim's info as JSON.
+        (str): The dict of the requested victim's info as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     if key not in ['id', 'username']:
-        return json.dumps(ocapi_err.NOPARAM, 'Invalid search key: {0}'.format(key))
+        return jsonify({
+            'error_code': ocapi_err.NOPARAM,
+            'error_message': 'Invalid search key: {0}'.format(key)
+        })
     try:
         ocdb = OnCalendarDB(config.database)
         victim_info = ocdb.get_victim_info(key, id)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(victim_info)
+    return jsonify(victim_info)
+
+
+@ocapp.route('/api/victim/<id>', methods=['POST'])
+def api_update_victim_info(id=None):
+    """
+    API interface for the edit account function, saves the updated info
+
+    Args:
+        id (str): The user id to update
+
+    Returns:
+        (str): The dict of the updated user info as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+
+    if id is None:
+        raise OnCalendarBadRequest(
+            payload = {
+                'request_status': 'ERROR',
+                'request_error': 'No user id given.'
+            }
+        )
+
+    if not request.json:
+        raise OnCalendarBadRequest(
+            payload = {
+                'request_status': 'ERROR',
+                'request_error': 'No updated user data found.'
+            }
+        )
+    else:
+        victim_data = request.json
+        victim_data['id'] = id
+
+    try:
+        ocdb = OnCalendarDB(config.database)
+        updated_victim_data = ocdb.update_victim(id, victim_data)
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
+        )
+
+    return jsonify(updated_victim_data)
 
 
 #######################################
@@ -1119,14 +1331,14 @@ def api_get_config():
     API interface to get the app config variables.
 
     Returns:
-        (string): JSON formatted app config.
+        (str): JSON formatted app config.
     """
 
     config_vars = [attr for attr in dir(config()) if not attr.startswith('__')]
     oc_config = {}
     for cv in config_vars:
-        oc_config[cv] = getattr(config, cv);
-    return json.dumps(oc_config)
+        oc_config[cv] = getattr(config, cv)
+    return jsonify(oc_config)
 
 
 @ocapp.route('/api/admin/config', methods=['POST'])
@@ -1139,10 +1351,11 @@ def api_update_config():
     out to the config class in the oc_config.py file.
 
     Returns:
-        (string): The updated (current) configuration settings as JSON.
+        (str): The updated (current) configuration settings as JSON.
 
-        (string): On error returns a list of the error code and error message
-              as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarBadRequest
+        OnCalendarAppError
     """
 
     if not request.form:
@@ -1186,7 +1399,7 @@ def api_update_config():
             payload = [API_NOCONFIG, error_string]
         )
 
-    return json.dumps(current_config)
+    return jsonify(current_config)
 
 
 # Group APIs
@@ -1199,47 +1412,35 @@ def api_add_group():
     Receives HTTP POST data with the information for the new group.
 
     Returns:
-        (string): dict of the new group's information as JSON.
+        (str): dict of the new group's information as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarBadRequest
+        OnCalendarAppError
     """
 
-    group_data = {
-        'name': '',
-        'active': '',
-        'autorotate': '',
-        'turnover_day': '',
-        'turnover_hour': '',
-        'turnover_min': '',
-        'shadow': '',
-        'backup': '',
-        'failsafe': '',
-        'alias': '',
-        'backup_alias': '',
-        'failsafe_alias': '',
-        'email': '',
-        'auth_group': ''
-    }
-    if not request.form:
-        raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+    if not request.json:
+        raise OnCalendarBadRequest(
+            payload = {
+                'error_code': ocapi_err.NOPOSTDATA,
+                'error_message': 'No data received'
+            }
         )
     else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    for key in form_keys:
-        group_data[key] = request.form[key]
+        group_data = request.json
 
     try:
         ocdb = OnCalendarDB(config.database)
         new_group = ocdb.add_group(group_data)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(new_group)
+    return jsonify(new_group)
 
 
 @ocapp.route('/api/admin/group/delete/<group_id>')
@@ -1248,24 +1449,27 @@ def api_delete_group(group_id):
     API interface to delete a group.
 
     Args:
-        (string): The ID of the group to remove.
+        (str): The ID of the group to remove.
 
     Returns:
-        (string): dict of the count of remaining groups as JSON.
+        (str): dict of the count of remaining groups as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         group_count = ocdb.delete_group(group_id)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps({'group_count': group_count})
+    return jsonify({'group_count': group_count})
 
 
 @ocapp.route('/api/admin/group/update', methods=['POST'])
@@ -1275,51 +1479,35 @@ def api_update_group():
 
     Receives HTTP POST with the new information for the group.
 
-     Returns:
-        (string): dict of the updated group info as JSON.
+    Returns:
+        (str): dict of the updated group info as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
-    if not request.form:
+    if not request.json:
         raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+            payload = {
+                'error_code': ocapi_err.NOPOSTDATA,
+                'error_message': 'No data received'
+            }
         )
     else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    group_data = {
-        'id': '',
-        'name': '',
-        'active': '',
-        'autorotate': '',
-        'turnover_day': '',
-        'turnover_hour': '',
-        'turnover_min': '',
-        'shadow': '',
-        'backup': '',
-        'failsafe': '',
-        'alias': '',
-        'backup_alias': '',
-        'failsafe_alias': '',
-        'email': '',
-        'auth_group': ''
-    }
-    for key in form_keys:
-        group_data[key] = request.form[key]
-
-    print group_data
+        group_data = request.json
 
     try:
         ocdb = OnCalendarDB(config.database)
         group_info = ocdb.update_group(group_data)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(group_info)
+    return jsonify(group_info)
 
 
 @ocapp.route('/api/admin/group/victims', methods=['POST'])
@@ -1329,13 +1517,17 @@ def api_group_victims():
 
     Returns:
         (str): dict of the updated list of group victims as JSON.
-        (str): On error returns a list of the error code and error message
-               as JSON with an HTTP return code of 500.
+
+    Raises:
+        OnCalendarAppError
     """
 
     if not request.json:
         raise OnCalendarAppError(
-            payload = [ocapi_error.NOPOSTDATA, 'No data received']
+            payload = {
+                'error_code': ocapi_err.NOPOSTDATA,
+                'error_message': 'No data received'
+            }
         )
     else:
         group_victims_data = request.json
@@ -1343,12 +1535,15 @@ def api_group_victims():
     try:
         ocdb = OnCalendarDB(config.database)
         group_victims = ocdb.update_group_victims(group_victims_data)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(group_victims)
+    return jsonify(group_victims)
 
 
 # Victim APIs
@@ -1361,46 +1556,39 @@ def api_add_victim():
     Receives HTTP POST with the information on the new victim.
 
     Returns:
-        (string): dict of the victim's information as JSON.
+        (str): dict of the victim's information as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
-    victim_data = {
-        'username': '',
-        'firstname': '',
-        'lastname': '',
-        'phone': '',
-        'active': '',
-        'sms_email': '',
-        'app_role': '',
-        'groups': []
-    }
-    if not request.form:
+    if not request.json:
         raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
+            payload = {
+                'error_code': ocapi_err.NOPOSTDATA,
+                'error_message': 'No data received'
+            }
         )
     else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    for key in form_keys:
-        if key == "groups[]":
-            for gid in request.form.getlist('groups[]'):
-                print gid
-                victim_data['groups'].append(gid)
-        else:
-            victim_data[key] = request.form[key]
+        victim_data = request.json
 
     try:
         ocdb = OnCalendarDB(config.database)
         new_victim = ocdb.add_victim(victim_data)
-    except OnCalendarDBError, error:
+    except OnCalendarAPIError as error:
+        return jsonify({
+            'api_error': error.args[0],
+            'error_message': error.args[1]
+        })
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(new_victim)
+    return jsonify(new_victim)
 
 
 @ocapp.route('/api/admin/victim/delete/<victim_id>')
@@ -1409,74 +1597,27 @@ def api_delete_victim(victim_id):
     API interface to delete a victim from the database.
 
     Args:
-        (string): The ID of the victim to delete.
+        (str): The ID of the victim to delete.
 
     Returns:
-        (string): dict of the count of remaining victims as JSON.
+        (str): dict of the count of remaining victims as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         victim_count = ocdb.delete_victim(victim_id)
-    except (OnCalendarDBError, OnCalendarAPIError), error:
+    except (OnCalendarDBError, OnCalendarAPIError) as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps({'victim_count': victim_count})
-
-
-@ocapp.route('/api/admin/victim/update', methods=['POST'])
-def api_update_victim():
-    """
-    API interface to update the information for a victim.
-
-    Receives HTTP POST with the new information for the victim.
-
-     Returns:
-        (string): dict of the updated victim info as JSON.
-
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
-    """
-
-    if not request.form:
-        raise OnCalendarAppError(
-            payload = [ocapi_err.NOPOSTDATA, 'No data received']
-        )
-    else:
-        form_keys = [key for key in request.form if request.form[key]]
-
-    victim_data = {
-    'id': '',
-    'username': '',
-    'firstname': '',
-    'lastname': '',
-    'phone': '',
-    'active': '',
-    'sms_email': '',
-    'groups': []
-    }
-
-    for key in form_keys:
-        if key == "groups[]":
-            for gid in request.form.getlist('groups[]'):
-                victim_data['groups'].append(gid)
-        else:
-            victim_data[key] = request.form[key]
-
-    try:
-        ocdb = OnCalendarDB(config.database)
-        victim_info = ocdb.update_victim(victim_data)
-    except OnCalendarDBError, error:
-        raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
-        )
-
-    return json.dumps(victim_info)
+    return jsonify({'victim_count': victim_count})
 
 
 # Calendar APIs
@@ -1487,24 +1628,27 @@ def db_extend(days):
     API interface to extend the configured calendar days in the database.
 
     Args:
-        days (string): The number of days to add
+        days (str): The number of days to add
 
     Returns:
-        (string): list of the new end year, month, day as JSON
+        (str): list of the new end year, month, day as JSON
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         ocapp.logger.error("Unable to extend calendar - {0}: {1}".format(
             error.args[0],
             error.args[1]
         ))
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
     try:
@@ -1513,10 +1657,17 @@ def db_extend(days):
         year, month, day = end_tuple[0:3]
     except OnCalendarDBError, error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps([year, month, day])
+    return jsonify({
+        'year': year,
+        'month': month,
+        'day': day
+    })
 
 
 # Database APIs
@@ -1527,22 +1678,25 @@ def api_db_verify():
     API interface to verify the validity of the OnCalendar database.
 
     Returns:
-        (string): dict of the number of missing tables and the initialization
-                  timestamp of the database as JSON.
+        (str): dict of the number of missing tables and the initialization
+               timestamp of the database as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         init_status = ocdb.verify_database()
-    except OnCalendarDBError, error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(init_status)
+    return jsonify(init_status)
 
 
 @ocapp.route('/api/admin/db/create_db', methods=['POST'])
@@ -1558,22 +1712,25 @@ def api_create_db():
     credentials as an HTTP POST object.
 
     Returns:
-        (string): list containing the 'OK' status as JSON.
+        (str): list containing the 'OK' status as JSON.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         db = mysql.connect(config.database['DBHOST'], request.form['mysql_user'], request.form['mysql_password'])
         cursor = db.cursor()
         cursor.execute('CREATE DATABASE OnCalendar')
-    except mysql.Error, error:
+    except mysql.Error as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(['OK'])
+    return jsonify({'status': 'OK'})
 
 
 @ocapp.route('/api/admin/db/init_db')
@@ -1584,21 +1741,24 @@ def api_db_init():
     Creates the required table structure for the OnCalendar database.
 
     Returns:
-        (string): dict of the init status OK and the initialization timestamp.
+        (str): dict of the init status OK and the initialization timestamp.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         init_status = ocdb.initialize_database()
-    except (OnCalendarDBError, OnCalendarDBInitTSError), error:
+    except (OnCalendarDBError, OnCalendarDBInitTSError) as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(init_status)
+    return jsonify(init_status)
 
 
 @ocapp.route('/api/admin/db/init_db/force')
@@ -1613,23 +1773,22 @@ def api_db_init_force():
     Returns:
         (string): dict of the init status OK and the initialization timestamp.
 
-        (string): On error returns a list of the error code and error message
-                  as JSON with an HTTP return code of 500.
+    Raises:
+        OnCalendarAppError
     """
 
     try:
         ocdb = OnCalendarDB(config.database)
         init_status = ocdb.initialize_database(True)
-    except (OnCalendarDBError, OnCalendarDBInitTSError), error:
+    except (OnCalendarDBError, OnCalendarDBInitTSError) as error:
         raise OnCalendarAppError(
-            payload = [error.args[0], error.args[1]]
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
         )
 
-    return json.dumps(init_status)
-
-
-if __name__ == '__main__':
-    ocapp.run()
+    return jsonify(init_status)
 
 
 @ocapp.route('/api/scheduler/start')
@@ -1637,6 +1796,9 @@ def api_start_scheduler():
     """
     API interface to start the scheduled jobs, primarily used for cluster
     master change events.
+
+    Returns:
+        (str): Status of the scheduler start as JSON
     """
 
     master_takeover = False
@@ -1646,11 +1808,11 @@ def api_start_scheduler():
     if cluster_key == config.basic['CLUSTER_NAME']:
         if not ocapp.scheduler.running:
             start_status = start_scheduler(master_takeover)
-            return json.dumps({'Scheduler_running': start_status})
+            return jsonify({'Scheduler_running': start_status})
         else:
-            return json.dumps({'Scheduler_running': ocapp.scheduler.running})
+            return jsonify({'Scheduler_running': ocapp.scheduler.running})
     else:
-        return json.dumps({'ERROR': 'Invalid Key'})
+        return jsonify({'ERROR': 'Invalid Key'})
 
 
 @ocapp.route('/api/scheduler/stop')
@@ -1658,20 +1820,26 @@ def api_stop_scheduler():
     """
     API interface to stop the scheduled jobs, primarily used for cluster
     master change events.
+
+    Returns:
+        (str): Status of the scheduler stop as JSON
     """
 
     cluster_key = request.args['key']
     if cluster_key == config.basic['CLUSTER_NAME']:
         stop_scheduler()
-        return json.dumps({'Scheduler_running': ocapp.scheduler.running})
+        return jsonify({'Scheduler_running': ocapp.scheduler.running})
     else:
-        return json.dumps({'ERROR': 'Invalid Key'})
+        return jsonify({'ERROR': 'Invalid Key'})
 
 
 @ocapp.route('/api/scheduler/status')
 def api_scheduler_status():
     """
-    Returns the current status of the job scheduler, and all scheduled jobs.
+    API interface to check the status of the jobs scheduler.
+
+    Returns:
+        (str): The scheduler status as JSON
     """
 
     status = {'Running': 'False'}
@@ -1688,23 +1856,50 @@ def api_scheduler_status():
             if job.name in ocapp.job_failures:
                 status[job_index]['failures'] = ocapp.job_failures[job.name]
 
-    return json.dumps(status)
+    return jsonify(status)
 
 
 @ocapp.route('/api/cluster/master')
 def api_cluster_master_status():
     """
-    Returns the cluster master status of this instance
+    API interface to get the cluster master status for this instance.
+
+    Returns:
+        (str): The cluster master status of this instance as JSON
     """
 
     if uwsgi.i_am_the_lord(config.basic['CLUSTER_NAME']) == 1:
-        return json.dumps({'cluster_master': 'True'})
+        return jsonify({'cluster_master': 'True'})
     else:
-        return json.dumps({'cluster_master': 'False'})
+        return jsonify({'cluster_master': 'False'})
 
 
 # Notification APIs
 #--------------------------------------
+@ocapp.route('/api/notification/sms' ,methods=['GET'])
+@ocapp.route('/api/notification/sms/<period>', methods=['GET'])
+def api_sms_history(period=None):
+    """
+    API interface to retrieve the sent SMS notifications for
+    now - the specified period.
+
+    Args:
+        period (str): The period to query
+
+    Returns:
+        (str): Dict of the SMS notifications as JSON
+    """
+
+    if period is not None:
+        period = period.replace(' ', '')
+        match_string = re.search('(\d+)([dhms])', period)
+        match_time = re.search('^(\d+)$', period)
+        if match_string is not None:
+            (period_time, period_unit) = match_string.groups()
+        elif match_time is not None:
+            period_time = match_time.groups(0)[0]
+
+
 @ocapp.route('/api/notification/sms/<victim_type>/<group>', methods=['POST'])
 def api_send_sms(victim_type, group):
     """
@@ -2018,7 +2213,7 @@ def api_send_sms(victim_type, group):
                     notification_data['nagios_master']
                 )
 
-    return json.dumps({'sms_status': sms_status})
+    return jsonify({'sms_status': sms_status})
 
 
 @ocapp.route('/api/notification/email/<victim_type>/<group>', methods=['POST'])
@@ -2186,11 +2381,22 @@ def api_send_email(victim_type, group):
             payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
         )
 
-    return json.dumps({'email_status': 'Notification email sent to {0}'.format(target['email'])})
+    return jsonify({'email_status': 'Notification email sent to {0}'.format(target['email'])})
 
 
 def parse_host_form(form_data):
+    """
+    Parses the incoming host notification data.
 
+    Args:
+        form_data (dict): The incoming data
+
+    Returns:
+        (dict): The parsed form data
+
+    Raises:
+        OnCalendarFormParseError
+    """
     required_fields = [
         'notification_type',
         'host_status',
@@ -2230,6 +2436,18 @@ def parse_host_form(form_data):
 
 
 def parse_service_form(form_data):
+    """
+    Parses the incoming service notification data.
+
+    Args:
+        form_data (dict): The incoming data
+
+    Returns:
+        (dict): The parsed form data
+
+    Raises:
+        OnCalendarFormParseError
+    """
 
     required_fields = [
         'notification_type',

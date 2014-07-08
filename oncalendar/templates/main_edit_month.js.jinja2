@@ -1,8 +1,8 @@
-{% extends "main.js.jinja2" %}
+{% extends "main.js" %}
 
 {% block page_script %}
 
-$(document).ready(function() {
+document.addEventListener('group_info_loaded', function() {
     $.when(oncalendar.build_calendar({{ edit_year }}, {{ edit_month }}, '{{ edit_group }}')).then(function() {
         oncalendar.display_calendar_edit('{{ edit_group }}');
     });

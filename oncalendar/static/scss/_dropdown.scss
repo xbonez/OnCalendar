@@ -21,7 +21,6 @@
 
 .dropdown-menu a {
     text-decoration: none;
-    font-size: 0.8em;
 }
 
 .dropdown-menu a:hover,
@@ -39,6 +38,7 @@
 }
 
 .dropdown-menu li span {
+    font-size: 0.8em;
     line-height: 1.5em;
     margin-left: 8px;
     margin-right: 8px;

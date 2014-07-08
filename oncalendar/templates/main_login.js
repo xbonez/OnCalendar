@@ -3,3 +3,7 @@ $('input').keypress(function(e) {
         $('#oncalendar-login-form').submit();
     }
 });
+
+$(document).ready(function() {
+    $('input#username').focus();
+});

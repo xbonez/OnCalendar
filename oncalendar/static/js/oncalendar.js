@@ -27,7 +27,12 @@ var oc = {
         'Friday',
         'Saturday'
     ],
-    basic_boolean: ['No', 'Yes']
+    basic_boolean: ['No', 'Yes'],
+    roles: [
+        'User',
+        'Group Admin',
+        'App Admin'
+    ]
 };
 
 var oncalendar = {
@@ -117,8 +122,6 @@ var oncalendar = {
                 victim_api_query.resolve(data);
             })
             .fail(function(data) {
-//                console.log(data);
-//                victim_api_query.reject(data);
                 cal.victims = data;
                 victim_api_query.resolve(data);
             })
@@ -419,7 +422,6 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
                                 }
                                 if (victims.backup != null) {
-                                    console.log('group ' + group + ' has a backup: ' + victims.backup);
                                     if (victims.backup !== current_victim[group].backup) {
                                         current_victim[group].backup = victims.backup;
                                         current_victim[group].backup_name = victims.backup_name;
@@ -1213,11 +1215,8 @@ var oncalendar = {
         var cal = this;
         $('table#calendar-table').addClass('hide');
         $('table#calendar-table tbody').empty();
-        console.log($('table#calendar-table'));
         $.when(cal.build_calendar(cal.next_month_year, cal.next_month)).then(
             function() {
-                console.log('calendar built, displaying');
-                console.log(cal.first_day);
                 oncalendar.display_calendar();
                 $('table#calendar-table').removeClass('hide');
             }
@@ -1402,6 +1401,32 @@ var oncalendar = {
 
         return cal.get_victim_info_object.promise();
     },
+    update_victim_info: function(victim_id, victim_data) {
+        var update_victim_url = window.location.origin + '/api/victim/' + victim_id;
+        var update_victim_info_object = new $.Deferred();
+        var update_victim_info_request = $.ajax({
+            url: update_victim_url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(victim_data),
+            dataType: 'json'
+        }),
+        chain = update_victim_info_request.then(function(data) {
+            return(data);
+        });
+
+        chain
+            .done(function(data) {
+                update_victim_info_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseText.error_message;
+                update_victim_info_object.reject(error);
+            });
+
+        return update_victim_info_object.promise();
+
+    },
     update_victim_status: function(victims_data) {
         update_victim_status_url = window.location.origin + '/api/admin/group/victims';
         var update_victim_status_object = new $.Deferred();
@@ -1413,7 +1438,7 @@ var oncalendar = {
                 dataTye: 'json'
             }),
             chain = update_victim_status_request.then(function(data) {
-                return $.parseJSON(data);
+                return (data);
             });
 
         chain
@@ -1421,20 +1446,21 @@ var oncalendar = {
                 update_victim_status_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 update_victim_status_object.reject(error);
             });
 
         return update_victim_status_object.promise();
 
     },
-    add_victim_to_group: function(victim_data) {
-        var add_victim_object = new $.Deferred();
+    add_new_victim: function(victim_data) {
         var add_victim_url = window.location.origin + '/api/admin/victim/add';
+        var add_victim_object = new $.Deferred();
         var add_victim_request = $.ajax({
                 url: add_victim_url,
                 type: 'POST',
-                data: victim_data,
+                contentType: 'application/json',
+                data: JSON.stringify(victim_data),
                 dataType: 'json'
             }),
             chain = add_victim_request.then(function(data) {
@@ -1446,15 +1472,35 @@ var oncalendar = {
                 add_victim_object.resolve(data);
             })
             .fail(function(data) {
-                if (data.status === 404) {
-                    var error = [data.status, 'The requested URL was not found on the server'];
-                } else {
-                    var error = $.parseJSON(data.responseText);
-                }
+                var error = data.responseJSON.error_message;
+                add_victim_object.reject(error);
             });
 
         return add_victim_object.promise();
 
+    },
+    delete_victim: function(victim_id) {
+        var delete_victim_url = window.location.origin + '/api/admin/victim/delete/' + victim_id;
+        var delete_victim_object = new $.Deferred();
+        var delete_victim_request = $.ajax({
+            url: delete_victim_url,
+            type: 'GET',
+            dataType: 'json'
+        }),
+        chain = delete_victim_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                delete_victim_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseJSON.error_message;
+                delete_victim_object.reject(error);
+            });
+
+        return delete_victim_object.promise();
     },
     update_group: function(group_data) {
         var update_group_object = new $.Deferred();
@@ -1462,7 +1508,8 @@ var oncalendar = {
         var update_group_request = $.ajax({
                 url: update_group_url,
                 type: 'POST',
-                data: group_data,
+                contentType: 'application/json',
+                data: JSON.stringify(group_data),
                 dataType: 'json'
             }),
             chain = update_group_request.then(function(data) {
@@ -1479,6 +1526,54 @@ var oncalendar = {
             });
 
         return update_group_object.promise();
+    },
+    add_new_group: function(group_data) {
+        var add_group_url = window.location.origin + '/api/admin/group/add';
+        var add_group_object = new $.Deferred();
+        var add_group_request = $.ajax({
+            url: add_group_url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(group_data),
+            dataType: 'json'
+        }),
+        chain = add_group_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                add_group_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseJSON.error_message;
+                add_group_object.reject(error);
+            });
+
+        return add_group_object.promise();
+    },
+    delete_group: function(group_id) {
+        var delete_group_url = window.location.origin + '/api/admin/group/delete/' + group_id;
+        var delete_group_object = new $.Deferred();
+        var delete_group_request = $.ajax({
+            url: delete_group_url,
+            type: 'GET',
+            dataType: 'json'
+        }),
+        chain = delete_group_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                delete_group_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = data.responseJSON.error_message;
+                delete_group_object.reject(error);
+            });
+
+        return delete_group_object.promise();
     },
     update_month: function(month_data) {
         var update_month_object = new $.Deferred();

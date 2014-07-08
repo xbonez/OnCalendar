@@ -8,8 +8,9 @@
     <script src="{{ datejs_url }}"></script>
     <script src="{{ bootstrapjs_url }}"></script>
     <script src="{{ magnific_url }}"></script>
+    <script src="{{ datatables_url }}"></script>
     <script src="{{ ocjs_url }}"></script>
-    <script src="{{ ocadminjs_url }}"></script>
+	<script src="{{ colorwheel_url }}"></script>
   </head>
 
   <body>
@@ -19,122 +20,364 @@
         <span id="username" data-toggle="dropdown">{{ g.user.username }}</span>
         <span class="input-menu elegant_icons arrow_carrot-down" data-toggle="dropdown"> </span>
         <ul id="user-dropdown" class="dropdown-menu" role="menu">
-          <li><a href="/logout"><span id="user-logout">Logout</span></a></li>
-          <li><a href="/"><span id="calendar-link">Back to Calendar</span></a></li>
+          <li id="user-logout"><span>Logout</span></li>
+          <li id="calendar-link"><span>Back to Calendar</span></li>
         </ul>
       </div>
     </div>
     <div id="admin-console" class="outer-container">
       <div id="console-box" class="inner-container">
         <ul id="admin-functions" class="tablist">
-          <li id="config-tab" class="tab" data-target="config-panel">
-            Configuration
-          </li><li id="groups-tab" class="tab" data-target="groups-panel">
+          <li id="groups-tab" class="tab selected" data-target="groups-panel">
             Groups
           </li><li id="victims-tab" class="tab" data-target="users-panel">
             Users
-          </li><li id="calendar-tab" class="tab" data-target="calendar-panel">
-            Calendar Setup
           </li>
         </ul><div id="admin-function-container" class="tab-panel-container">
-          <div id="config-panel" class="tab-panel active-panel">
-            <div id="config-panel-buttons" class="tab-panel-buttons">
-              <button id="config-edit" class="elegant_icons icon_pencil-edit"></button>
-            </div>
-            <div id="config-panel-data" class="tab-panel-data"></div>
-          </div>
-          <div id="groups-panel" class="tab-panel">
-            <div id="groups-panel-buttons" class="tab-panel-buttons">
-              <button id="groups-add" class="elegant_icons icon_plus_alt2"></button>
-              <button id="groups-delete" class="elegant_icons icon_minus_alt2"></button>
-            </div>
+          <div id="groups-panel" class="tab-panel active-panel">
             <div id="groups-panel-data" class="tab-panel-data"></div>
           </div>
           <div id="users-panel" class="tab-panel">
-            <div id="users-panel-buttons" class="tab-panel-buttons">
-              <button id="users-add" class="elegant_icons icon_plus_alt2"></button>
-              <button id="users-delete" class="elegant_icons icon_minus_alt2"></button>
-            </div>
             <div id="users-panel-data" class="tab-panel-data"></div>
-          </div>
-          <div id="calendar-panel" class="tab-panel">
-            <div id="calendar-panel-buttons" class="tab-panel-buttons"></div>
-            <div id="calendar-panel-data" class="tab-panel-data"></div>
           </div>
         </div>
       </div>
     </div>
-    <div id="create-config-popup" class="popup mfp-hide">
-      <h3>Create/Correct OnCalendar Config</h3>
-      <div id="config-popup-data">
-        <table id="config-popup-table" class="admin-table">
-          <tr class="config-item">
-            <th class="config-key">DB Host</th>
-            <td id="config-popup-dbhost" class="config-value">
-              <input type="text" id="config-popup-dbhost-input" name="DBHOST" value="">
-            </td>
-          </tr>
-          <tr class="config-item">
-            <th class="config-key">DB User</th>
-            <td id="config-popup-dbuser" class="config-value">
-              <input type="text" id="config-popup-dbuser-input" name="DBUSER" value="">
-            </td>
-          </tr>
-          <tr class="config-item">
-            <th class="config-key">DB Password</th>
-            <td id="config-popup-dbpassword" class="config-value">
-              <input type="password" id="config-popup-dbpassword-input" name="DBPASSWORD" value="">
-            </td>
-          </tr>
-          <tr class="config-item">
-            <td class="config-key">Reenter password</td>
-            <td id="config-popup-confirm-dbpassword" class="config-value">
-              <input type="password" id="config-popup-dbpassword-confirm-input" name="dbpassword-config" value="">
-            </td>
-          </tr>
-          <tr class="config-item">
-            <th class="config-key">DB Name</th>
-            <td id="config-popup-dbname" class="config-value">
-              <input type="text" id="config-popup-dbname-input" name="DBNAME" value="">
-            </td>
-          </tr>
-          <tr id="config-popup-edit-buttons" class="config-item">
-            <td><button id="cancel-config-popup-edit">Cancel</button></td>
-            <td><button id="save-config-popup-edit">Save</button></td>
-          </tr>
-        </table>
+    <div id="add-group-popup" class="popup mfp-hide">
+      <h3>Add Group</h3>
+      <table id="add-group-table" class="admin-table">
+        <tr>
+          <th>Group Name</th>
+          <th>Active</th>
+          <th>Autorotate</th>
+          <th>Turnover Day</th>
+          <th>Turnover Time</th>
+          <th>Email</th>
+          <th>Shadow</th>
+          <th>Backup</th>
+          {% if email_gateway_config == 'true' %}
+          <th>Failsafe</th>
+          <th>Oncall Alias</th>
+          <th>Backup Alias</th>
+          <th>Failsafe Alias</th>
+          {% endif %}
+        </tr>
+        <tr>
+          <td><input type="text" id="new-group-name" name="new-group-name"></td>
+          <td>
+            <button id="new-group-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="new-group-active" data-checked="yes"></button>
+            <input type="hidden" id="new-group-active" name="new-group-active" value="1">
+          </td>
+          <td>
+            <button id="new-group-autorotate-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="new-group-autorotate" data-checked="yes"></button>
+            <input type="hidden" id="new-group-autorotate" name="new-group-autorotate" value="1">
+          </td>
+          <td>
+            <span id="new-group-turnover-day-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="new-group-turnover-day-label">Monday <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="new-group-turnover-day-options" class="dropdown-menu" role="menu">
+	            <li data-day="1"><span>Monday</span></li>
+	            <li data-day="2"><span>Tuesday</span></li>
+	            <li data-day="3"><span>Wednesday</span></li>
+	            <li data-day="4"><span>Thursday</span></li>
+	            <li data-day="5"><span>Friday</span></li>
+	            <li data-day="6"><span>Saturday</span></li>
+	            <li data-day="7"><span>Sunday</span></li>
+	          </ul>
+            </span>
+            <input type="hidden" id="new-group-turnover-day" name="new-group-turnover-day" value="1">
+          </td>
+          <td>
+            <span id="new-group-turnover-hour-menu" class="dropdown">
+              <span data-toggle="dropdown">
+	              <button id="new-group-turnover-hour-label">09 <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="new-group-turnover-hour-options" class="dropdown-menu" role="menu">
+	            <li data-hour="00"><span>00</span></li>
+	            <li data-hour="01"><span>01</span></li>
+	            <li data-hour="02"><span>02</span></li>
+	            <li data-hour="03"><span>03</span></li>
+	            <li data-hour="04"><span>04</span></li>
+	            <li data-hour="05"><span>05</span></li>
+	            <li data-hour="06"><span>06</span></li>
+	            <li data-hour="07"><span>07</span></li>
+	            <li data-hour="08"><span>08</span></li>
+	            <li data-hour="09"><span>09</span></li>
+	            <li data-hour="10"><span>10</span></li>
+	            <li data-hour="11"><span>11</span></li>
+	            <li data-hour="12"><span>12</span></li>
+	            <li data-hour="13"><span>13</span></li>
+	            <li data-hour="14"><span>14</span></li>
+	            <li data-hour="15"><span>15</span></li>
+	            <li data-hour="16"><span>16</span></li>
+	            <li data-hour="17"><span>17</span></li>
+	            <li data-hour="18"><span>18</span></li>
+	            <li data-hour="19"><span>19</span></li>
+	            <li data-hour="20"><span>20</span></li>
+	            <li data-hour="21"><span>21</span></li>
+	            <li data-hour="22"><span>22</span></li>
+	            <li data-hour="23"><span>23</span></li>
+	          </ul>
+            </span>
+            <input type="hidden" id="new-group-turnover-hour" name="new-group-turnover-hour" value="09">
+            :<span id="new-group-turnover-min-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="new-group-turnover-min-label">30 <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="new-group-turnover-min-options" class="dropdown-menu" role="menu">
+	            <li data-min="00"><span>00</span></li>
+	            <li data-min="30"><span>30</span></li>
+	          </ul>
+            </span>
+            <input type="hidden" id="new-group-turnover-min" name="new-group-turnover-min" value="30">
+          </td>
+          <td><input type="text" id="new-group-email" name="new-group-email"></td>
+          <td>
+            <button id="new-group-shadow-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="new-group-shadow" data-checked="no"></button>
+            <input type="hidden" id="new-group-shadow" name="new-group-shadow" value="0">
+          </td>
+          <td>
+            <button id="new-group-backup-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="new-group-backup" data-checked="no"></button>
+            <input type="hidden" id="new-group-backup" name="new-group-backup" value="0">
+          </td>
+          {% if email_gateway_config == 'true' %}
+          <td>
+            <button id="new-group-failsafe-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="new-group-failsafe" data-check="no"></button>
+            <input type="hidden" id="new-group-failsafe" name="new-group-failsafe" value="0">
+          </td>
+          <td><input type="text" id="new-group-alias" name="new-group-alias"></td>
+          <td><input type="text" id="new-group-backup-alias" name="new-group-backup-alias"></td>
+          <td><input id="new-group-failsafe-alias" name="new-group-failsafe-alias"></td>
+          {% endif %}
+        </tr>
+      </table>
+      <div id="new-group-action-buttons">
+        <button id="cancel-add-group-button">Cancel</button>
+        <button id="save-add-group-button">Save</button>
       </div>
     </div>
-    <div id="create-db-popup" class="popup mfp-hide">
-      <h3>Database does not exist</h3>
-      <p>If you have credentials that allow you to create databases in your
-      MySQL instance enter them here to create the OnCalendar database.</p>
-      <p>If you don't have permissions to create the database yourself, ask
-      your database administrator to create a database for OnCalendar and give
-      the oncalendar user ownership of it.</p>
-      <div id="create-db-mysql-credentials">
-        <table id="create-db-credentials-table" class="admin-table">
-          <tr class="config-item">
-            <th class="config-key">MySQL User</th>
-            <td class="config-value"><input type="text" id="create-db-user-input" name="create-db-user" value=""></td>
-          </tr>
-          <tr class="config-item">
-            <th class="config-key">Password</th>
-            <td class="config-value"><input type="password" id="create-db-password-input" name="create-db-password" value=""></td>
-          </tr>
-          <tr class="config-item">
-            <th></th>
-            <td><button id="create-db-button">Create Database</button></td>
-          </tr>
-        </table>
+    <div id="edit-group-popup" class="popup mfp-hide">
+      <h3></h3>
+      <table id="edit-group-table" class="admin-table">
+        <tr>
+          <th>Group Name</th>
+          <th>Active</th>
+          <th>Autorotate</th>
+          <th>Turnover Day</th>
+          <th>Turnover Time</th>
+          <th>Email</th>
+          <th>Shadow</th>
+          <th>Backup</th>
+          {% if email_gateway_config == 'true' %}
+            <th>Failsafe</th>
+            <th>Oncall Alias</th>
+            <th>Backup Alias</th>
+            <th>Failsafe Alias</th>
+          {% endif %}
+        </tr>
+        <tr>
+          <td>
+            <input type="hidden" id="edit-group-id" name="edit-groupid">
+            <input type="text" id="edit-group-name" name="edit-group-name">
+          </td>
+          <td>
+            <button id="edit-group-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="edit-group-active" data-checked="yes"></button>
+            <input type="hidden" id="edit-group-active" name="edit-group-active" value="1">
+          </td>
+          <td>
+            <button id="edit-group-autorotate-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="edit-group-autorotate" data-checked="yes"></button>
+            <input type="hidden" id="edit-group-autorotate" name="edit-group-autorotate" value="1">
+          </td>
+          <td>
+            <span id="edit-group-turnover-day-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="edit-group-turnover-day-label">Monday <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="edit-group-turnover-day-options" class="dropdown-menu" role="menu">
+              <li data-day="1"><span>Monday</span></li>
+              <li data-day="2"><span>Tuesday</span></li>
+              <li data-day="3"><span>Wednesday</span></li>
+              <li data-day="4"><span>Thursday</span></li>
+              <li data-day="5"><span>Friday</span></li>
+              <li data-day="6"><span>Saturday</span></li>
+              <li data-day="7"><span>Sunday</span></li>
+            </ul>
+            </span>
+            <input type="hidden" id="edit-group-turnover-day" name="edit-group-turnover-day" value="1">
+          </td>
+          <td>
+            <span id="edit-group-turnover-hour-menu" class="dropdown">
+              <span data-toggle="dropdown">
+	              <button id="edit-group-turnover-hour-label">09 <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="edit-group-turnover-hour-options" class="dropdown-menu" role="menu">
+              <li data-hour="00"><span>00</span></li>
+              <li data-hour="01"><span>01</span></li>
+              <li data-hour="02"><span>02</span></li>
+              <li data-hour="03"><span>03</span></li>
+              <li data-hour="04"><span>04</span></li>
+              <li data-hour="05"><span>05</span></li>
+              <li data-hour="06"><span>06</span></li>
+              <li data-hour="07"><span>07</span></li>
+              <li data-hour="08"><span>08</span></li>
+              <li data-hour="09"><span>09</span></li>
+              <li data-hour="10"><span>10</span></li>
+              <li data-hour="11"><span>11</span></li>
+              <li data-hour="12"><span>12</span></li>
+              <li data-hour="13"><span>13</span></li>
+              <li data-hour="14"><span>14</span></li>
+              <li data-hour="15"><span>15</span></li>
+              <li data-hour="16"><span>16</span></li>
+              <li data-hour="17"><span>17</span></li>
+              <li data-hour="18"><span>18</span></li>
+              <li data-hour="19"><span>19</span></li>
+              <li data-hour="20"><span>20</span></li>
+              <li data-hour="21"><span>21</span></li>
+              <li data-hour="22"><span>22</span></li>
+              <li data-hour="23"><span>23</span></li>
+            </ul>
+            </span>
+            <input type="hidden" id="edit-group-turnover-hour" name="edit-group-turnover-hour" value="09">
+            :<span id="edit-group-turnover-min-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="edit-group-turnover-min-label">30 <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="edit-group-turnover-min-options" class="dropdown-menu" role="menu">
+              <li data-min="00"><span>00</span></li>
+              <li data-min="30"><span>30</span></li>
+            </ul>
+            </span>
+            <input type="hidden" id="edit-group-turnover-min" name="edit-group-turnover-min" value="30">
+          </td>
+          <td><input type="text" id="new-group-email" name="edit-group-email"></td>
+          <td>
+            <button id="edit-group-shadow-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-shadow" data-checked="no"></button>
+            <input type="hidden" id="edit-group-shadow" name="edit-group-shadow" value="0">
+          </td>
+          <td>
+            <button id="edit-group-backup-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-backup" data-checked="no"></button>
+            <input type="hidden" id="edit-group-backup" name="edit-group-backup" value="0">
+          </td>
+          {% if email_gateway_config == 'true' %}
+            <td>
+              <button id="edit-group-failsafe-checkbox" class="oc-checkbox elegant_icons icon_box-empty" data-target="edit-group-failsafe" data-check="no"></button>
+              <input type="hidden" id="edit-group-failsafe" name="edit-group-failsafe" value="0">
+            </td>
+            <td><input type="text" id="edit-group-alias" name="edit-group-alias"></td>
+            <td><input type="text" id="edit-group-backup-alias" name="edit-group-backup-alias"></td>
+            <td><input id="edit-group-failsafe-alias" name="edit-group-failsafe-alias"></td>
+          {% endif %}
+        </tr>
+      </table>
+      <div id="add-edit-group-buttons">
+        <button id="cancel-edit-group-button">Cancel</button>
+        <button id="save-edit-group-button">Save</button>
       </div>
     </div>
-    <div id="init-db-prompt-popup" class="popup mfp-hide">
-      <h3>Database has not been initialized.</h3>
-      <div id="db-init-prompt">
-        <p>Initialize now?</p>
-        <input type="hidden" id="init-db-force" name="init-db-force" value="no">
-        <button id="init-db-button" onClick="oncalendar_admin.initialize_db()">Yes</button>
+    <div id="add-user-popup" class="popup mfp-hide">
+      <h3>Add User</h3>
+      <table id="add-user-table" class="admin-table">
+        <tr>
+          <th>Username</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>SMS Email</th>
+          <th>Throttle Level</th>
+          <th>Truncate SMS</th>
+          <th>App Role</th>
+        </tr>
+        <tr>
+          <td><input type="text" id="add-user-username" name="add-user-username" size="20"></td>
+          <td><input type="text" id="add-user-firstname" name="add-user-firstname" size="20"></td>
+          <td><input type="text" id="add-user-lastname" name="add-user-lastname" size="20"></td>
+          <td><input type="text" id="add-user-phone" name="add-user-phone" size="20"></td>
+          <td><input type="text" id="add-user-email" name="add-user-email" size="20"></td>
+          <td><input type="text" id="add-user-sms-email" name="add-user-sms-email" size="30"></td>
+          <td><input type="text" id="add-user-throttle" name="add-user-throttle" size="2" value="6"></td>
+          <td>
+            <button id="add-user-truncate-checkbox" class="add-user-truncate oc-checkbox elegant_icons icon_box-empty" data-target="add-user-truncate" data-checked="no"></button>
+            <input type="hidden" id="add-user-truncate" name="add-user-truncate" value="0">
+          </td>
+          <td>
+              <span id="add-user-app-role-menu" class="dropdown">
+                <span data-toggle="dropdown">
+                  <button id="add-user-app-role-label">User <span class="elegant_icons arrow_carrot-down"></span></button>
+                </span>
+	            <ul id="add-user-app-role-options" class="dropdown-menu" role="menu">
+                <li data-role="0"><span>User</span></li>
+                <li data-role="1"><span>Group Admin</span></li>
+                <li data-role="2"><span>App Admin</span></li>
+              </ul>
+              </span>
+            <input type="hidden" id="add-user-app-role" name="add-user-app-role" value="0">
+          </td>
+        </tr>
+        <tr>
+          <th>Group</th>
+          <th>Active</th>
+          <th>Inactive</th>
+          <th colspan="4"></th>
+        </tr>
+      </table>
+      <div id="add-user-action-buttons">
+        <button id="cancel-add-user-button">Cancel</button>
+        <button id="save-add-user-button">Save</button>
+      </div>
+    </div>
+    <div id="edit-user-popup" class="popup mfp-hide">
+      <h3></h3>
+      <table id="edit-user-table" class="admin-table">
+        <tr>
+          <th>Username</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>SMS Email</th>
+          <th>Throttle Level</th>
+          <th>Truncate SMS</th>
+          <th>App Role</th>
+        </tr>
+        <tr>
+          <td><input type="hidden" id="edit-user-id" name="edit-user-id"><input type="text" id="edit-user-username" name="edit-user-username" size="20"></td>
+          <td><input type="text" id="edit-user-firstname" name="edit-user-firstname" size="20"></td>
+          <td><input type="text" id="edit-user-lastname" name="edit-user-lastname" size="20"></td>
+          <td><input type="text" id="edit-user-phone" name="edit-user-phone" size="20"></td>
+          <td><input type="text" id="edit-user-email" name="edit-user-email" size="20"></td>
+          <td><input type="text" id="edit-user-sms-email" name="edit-user-sms-email" size="30"></td>
+          <td><input type="text" id="edit-user-throttle" name="edit-user-throttle" size="2" value="6"></td>
+          <td>
+            <button id="edit-user-truncate-checkbox" class="edit-user-truncate oc-checkbox elegant_icons icon_box-empty" data-target="edit-user-truncate" data-checked="no"></button>
+            <input type="hidden" id="edit-user-truncate" name="edit-user-truncate" value="0">
+          </td>
+          <td>
+              <span id="edit-user-app-role-menu" class="dropdown">
+                <span data-toggle="dropdown">
+                  <button id="edit-user-app-role-label">User <span class="elegant_icons arrow_carrot-down"></span></button>
+                </span>
+	            <ul id="edit-user-app-role-options" class="dropdown-menu" role="menu">
+                <li data-role="0"><span>User</span></li>
+                <li data-role="1"><span>Group Admin</span></li>
+                <li data-role="2"><span>App Admin</span></li>
+              </ul>
+              </span>
+            <input type="hidden" id="edit-user-app-role" name="edit-user-app-role" value="0">
+          </td>
+        </tr>
+        <tr>
+          <th>Group</th>
+          <th>Active</th>
+          <th>Inactive</th>
+          <th colspan="4"></th>
+        </tr>
+      </table>
+      <div id="edit-user-action-buttons">
+        <button id="cancel-edit-user-button">Cancel</button>
+        <button id="save-edit-user-button">Save</button>
       </div>
     </div>
     <div id="delete-groups-confirm-popup" class="popup mfp-hide">
@@ -155,6 +398,9 @@
         <button id="delete-victims-confirm-button">Delete</button>
       </div>
     </div>
+
+    <div id="working"><span id="status-message"><h1>Working...</h1></span></div>
+
     <script type="text/javascript">
       {{ main_js|safe }}
     </script>
