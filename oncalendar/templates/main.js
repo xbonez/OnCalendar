@@ -170,6 +170,10 @@ document.addEventListener('group_info_loaded', function() {
 
 }, false);
 
+//-------------------------------------
+// Utility functions
+//-------------------------------------
+
 // Edit the schedule for a specific day
 var edit_calday = function(target_group, calday, cal_date) {
 
@@ -333,6 +337,10 @@ var valid_email = function(email_address) {
         return false;
     }
 };
+
+//-------------------------------------
+// Event handlers
+//-------------------------------------
 
 // Handlers for the previous/next month buttons
 $('#prev-month-button').click(function() {
