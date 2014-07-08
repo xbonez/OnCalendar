@@ -220,7 +220,7 @@ def check_calendar_gaps_48hour():
         gap_check = ocdb.check_48hour_gaps()
         ocsms = OnCalendarSMS(config)
 
-        for group in gap_check.keys():
+        for group in gap_check:
             ocapp.aps_logger.error("Schedule gap in the next 48 hours detected for group {0}".format(group))
             ocsms.send_email(
                 gap_check[group]['email'],
@@ -1705,6 +1705,23 @@ def db_extend(days):
         'month': month,
         'day': day
     })
+
+
+@ocapp.route('/api/admin/calendar/gaps/48')
+def calendar_gap_check():
+
+    try:
+        ocdb = OnCalendarDB(config.database)
+        gapped_groups = ocdb.check_48hour_gaps()
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
+        )
+
+    return jsonify({'gapped_groups': gapped_groups})
 
 
 # Database APIs

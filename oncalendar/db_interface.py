@@ -1951,9 +1951,31 @@ AND month='{1}' AND day='{2}') AND c.groupid={3}"""
             start = start + dt.timedelta(hours=1)
             end = end + dt.timedelta(hours=1)
 
-        gap_check = {}
+        gap_check = []
+        active_groups = {}
 
-        cursor = self.oncalendar_db.cursor()
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+
+        day1_empty_query = """SELECT d.id as calday, g.name,
+        g.id AS groupid, c.hour, c.min, c.victimid
+        FROM calendar c, groups g, caldays d
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}') AND hour>='{3}'
+        AND c.groupid=g.id AND d.id=c.calday AND g.id='{4}'"""
+
+        day2_empty_query = """SELECT d.id as calday, g.name,
+        g.id AS groupid, c.hour, c.min, c.victimid
+        FROM calendar c, groups g, caldays d
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}') AND c.groupid=g.id
+        AND d.id=c.calday AND g.id='{3}'"""
+
+        day3_empty_query = """SELECT d.id as calday, g.name,
+        g.id AS groupid, c.hour, c.min, c.victimid
+        FROM calendar c, groups g, caldays d
+        WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+        AND month='{1}' AND day='{2}') AND hour<'{3}'
+        AND c.groupid=g.id AND d.id=c.calday AND g.id='{4}'"""
 
         day1_query = """SELECT g.name, g.id as groupid, c.hour, c.min
         FROM calendar c, groups g
@@ -1986,24 +2008,55 @@ AND month='{1}' AND day='{2}') AND c.groupid={3}"""
         try:
             cursor.execute(day1_query)
             for row in cursor.fetchall():
-                if row['name'] in gap_check:
-                    gap_check[row['name']].append(row)
-                else:
-                    gap_check[row['name']] = [row]
+                if row['name'] not in gap_check:
+                    gap_check.append(row['name'])
             cursor.execute(day2_query)
             for row in cursor.fetchall():
-                if row in cursor.fetchall():
-                    if row['name'] in gap_check:
-                        gap_check[row['name']].append(row)
-                    else:
-                        gap_check[row['name']] = [row]
+                if row['name'] not in gap_check:
+                    gap_check.append(row['name'])
             cursor.execute(day3_query)
             for row in cursor.fetchall():
-                if row in cursor.fetchall():
-                    if row['name'] in gap_check:
-                        gap_check[row['name']].append(row)
-                    else:
-                        gap_check[row['name']] = [row]
+                if row['name'] in gap_check:
+                    gap_check.append(row['name'])
+
+            cursor.execute("SELECT id, name FROM groups WHERE active=1 AND autorotate=1")
+            for row in cursor.fetchall():
+                active_groups[row['id']] = row['name']
+
+            for groupid in active_groups:
+                if active_groups[groupid] not in gap_check:
+                    cursor.execute(day1_empty_query.format(
+                        start.year,
+                        start.month,
+                        start.day,
+                        start.hour,
+                        groupid
+                    ))
+                    rows = cursor.fetchall()
+                    if len(rows) == 0 and active_groups[groupid] not in gap_check:
+                        gap_check.append(active_groups[groupid])
+                        continue
+                    cursor.execute(day2_empty_query.format(
+                        mid.year,
+                        mid.month,
+                        mid.day,
+                        groupid
+                    ))
+                    rows = cursor.fetchall()
+                    if len(rows) == 0 and active_groups[groupid] not in gap_check:
+                        gap_check.append(active_groups[groupid])
+                        continue
+                    cursor.execute(day3_empty_query.format(
+                        end.year,
+                        end.month,
+                        end.day,
+                        end.hour,
+                        groupid
+                    ))
+                    rows = cursor.fetchall()
+                    if len(rows) == 0 and active_groups[gropuid] not in gap_check:
+                        gap_check.append(active_groups[groupid])
+
         except mysql.Error as error:
             raise OnCalendarDBError(error.args[0], error.args[1])
 
