@@ -148,7 +148,7 @@ document.addEventListener('user_info_loaded', function() {
         $('button#edit-account-sms-email-label').text(oncalendar.gateway_map[current_user.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
         $('input#edit-account-sms-email').attr('value', current_user.sms_email);
     } else {
-        $('button#edit-account-sms-email-label').text('--').append('<span class="elegant_icons" arrow_carrot-down">');
+        $('button#edit-account-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
         $('input#edit-account-sms-email').attr('value', '');
     }
 	$('input#edit-account-throttle').val(current_user.throttle);
