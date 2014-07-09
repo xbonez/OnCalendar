@@ -1550,7 +1550,7 @@ class OnCalendarDB(object):
             if row['shadow'] == 1 and row['shadowid'] is not None:
                 shadow_info = self.get_victim_info('id', row['shadowid'])
                 current_victims[row['name']]['shadow'] = shadow_info[row['shadowid']]
-            if fow['backu'] == 1 and row['backupid'] is not None:
+            if row['backup'] == 1 and row['backupid'] is not None:
                 backup_info = self.get_victim_info('id', row['backupid'])
                 current_victims[row['name']]['backup'] = backup_info[row['backupid']]
 
