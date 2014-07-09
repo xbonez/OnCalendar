@@ -4,6 +4,8 @@
 
 var oc_victims_event = new Event('victims_loaded');
 var master_victims_list = {};
+var sms_gateways = {{ sms_gateway_options }};
+oncalendar.gateway_map = {};
 
 // Get all configured victims for the admin interface User tab
 $.when(oncalendar.get_victims()).then(function(data) {
@@ -32,6 +34,12 @@ $(document).ready(function() {
             window.location.href = '/';
         });
 
+    $.each(sms_gateways, function(i, gateway) {
+        var domain = Object.keys(gateway)[0];
+        oncalendar.gateway_map[domain] = gateway[domain]
+        $('ul#edit-user-sms-email-options').append('<li data-gateway="' + domain + '"><span>' + gateway[domain] + '</span></li>');
+        $('ul#add-user-sms-email-options').append('<li data-gateway="' + domain + '"><span>' + gateway[domain] + '</span></li>');
+    });
 });
 
 // Handlers for the checkboxes, alerts and buttons
@@ -96,7 +104,13 @@ $(document).on('click', 'button.oc-checkbox', function() {
     $('input#edit-user-lastname').attr('value', edit_user_info.lastname);
     $('input#edit-user-phone').attr('value', edit_user_info.phone);
     $('input#edit-user-email').attr('value', edit_user_info.email);
-    $('input#edit-user-sms-email').attr('value', edit_user_info.sms_email);
+    if (oncalendar.gateway_map[edit_user_info.sms_email] !== undefined) {
+        $('button#edit-user-sms-email-label').text(oncalendar.gateway_map[edit_user_info.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
+        $('input#edit-user-sms-email').attr('value', edit_user_info.sms_email);
+    } else {
+        $('button#edit-user-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
+        $('input#edit-user-sms-email').removeProp('value').val('');
+    }
     $('input#edit-user-throttle').attr('value', edit_user_info.throttle);
     if (edit_user_info.truncate == 1) {
         $('button#edit-user-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
@@ -226,6 +240,10 @@ document.addEventListener('victims_loaded', function() {
         $.each(victim_data.groups, function(group, active) {
             victim_groups.push(group);
         });
+        var victim_sms_email = '';
+        if (oncalendar.gateway_map[victim_data.sms_email] !== undefined) {
+            victim_sms_email = oncalendar.gateway_map[victim_data.sms_email];
+        }
         var delete_user_checkbox = '<button id="user-checkbox-' + id + '" ' +
             'class="oc-checkbox elegant_icons icon_box-empty" ' +
             'data-target="user-delete-' + id + '" ' +
@@ -246,7 +264,7 @@ document.addEventListener('victims_loaded', function() {
             victim_data.lastname,
             victim_data.phone,
             victim_data.email,
-            victim_data.sms_email,
+            victim_sms_email,
             victim_data.throttle,
             oc.basic_boolean[victim_data.truncate],
             oc.roles[victim_data.app_role],
@@ -314,6 +332,7 @@ document.addEventListener('victims_loaded', function() {
                     $('input#add-user-lastname').removeProp('value').val('');
                     $('input#add-user-phone').removeProp('value').val('');
                     $('input#add-user-email').removeProp('value').val('');
+                    $('button#add-user-sms-email-label').text('-- ').append('<span class="elegant_icons arrow_carrot-down">');
                     $('input#add-user-sms-email').removeProp('value').val('');
                     $('input#add-user-throttle').removeProp('value').val('');
                     $('button#add-user-truncate-button').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
@@ -331,6 +350,18 @@ document.addEventListener('victims_loaded', function() {
 $('ul#add-user-app-role-options').on('click', 'li', function() {
     $('#add-user-app-role-label').text(oc.roles[$(this).attr('data-role')]).append('<span class="elegant_icons arrow_carrot-down">');
     $('input#add-user-app-role').attr('value', $(this).attr('data-role'));
+});
+$('ul#edit-user-app-role-options').on('click', 'li', function() {
+    $('#edit-user-app-role-label').text(oc.roles[$(this).attr('data-role')]).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-user-app-role').attr('value', $(this).attr('data-role'));
+});
+// Handler for the sms email dropdown menu
+$('ul#add-user-sms-email-options').on('click', 'li', function() {
+    $('#add-user-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')]).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#add-user-sms-email').attr('value', $(this).attr('data-gateway'));
+});
+$('ul#edit-user-sms-email-options').on('click', 'li', function() {
+    $('#edit-user-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')]).append('<span class="elegant_icons arrow_carrot-down">');
 });
 
 // Event listener to populate the groups tab once the group info is loaded.

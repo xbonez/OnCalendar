@@ -250,7 +250,15 @@
 		    <td><input type="text" id="add-victim-lastname" name="add-victim-lastname" value="" size="20"></td>
 		    <td><input type="text" id="add-victim-phone" name="add-victim-phone" value="" size="20"></td>
 		    <td><input type="text" id="add-victim-email" name="add-victim-email" value="" size="20"></td>
-		    <td><input type="text" id="add-victim-sms-email" name="add-victim-sms-email" value="" size="20"></td>
+		    <td>
+              <span id="add-victim-sms-email-menu" class="dropdown">
+                <span data-toggle="dropdown">
+                  <button id="add-victim-sms-email-label">--<span class="elegant_icons arrow_carrot-down"></span></button>
+                </span>
+                <ul id="add-victim-sms-email-options" class="dropdown-menu" role="menu"></ul>
+              </span>
+             <input type="hidden" id="add-victim-sms-email" name="add-victim-sms-email">
+		    </td>
 		    <td><button id="add-new-victim-save-button" class="button" title="Add user to group">Add</button></td>
 		    <td colspan="5"></td>
 		  </tr>
@@ -279,7 +287,7 @@
             <td>
               <span id="edit-account-sms-email-menu" class="dropdown">
                 <span data-toggle="dropdown">
-                  <button id="edit-account-sms-email-label">-- <span class="elegant_icons arrow_carrot-down"></span></button>
+                  <button id="edit-account-sms-email-label">--<span class="elegant_icons arrow_carrot-down"></span></button>
                 </span>
                 <ul id="edit-account-sms-email-options" class="dropdown-menu" role="menu"></ul>
               </span>

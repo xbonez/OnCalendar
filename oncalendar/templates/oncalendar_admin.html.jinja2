@@ -296,23 +296,31 @@
           <td><input type="text" id="add-user-lastname" name="add-user-lastname" size="20"></td>
           <td><input type="text" id="add-user-phone" name="add-user-phone" size="20"></td>
           <td><input type="text" id="add-user-email" name="add-user-email" size="20"></td>
-          <td><input type="text" id="add-user-sms-email" name="add-user-sms-email" size="30"></td>
+          <td>
+            <span id="add-user-sms-email-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="add-user-sms-email-label">--<span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+              <ul id="add-user-sms-email-options" class="dropdown-menu" role="menu"></ul>
+            </span>
+            <input type="hidden" id="add-user-sms-email" name="add-user-sms-email">
+          </td>
           <td><input type="text" id="add-user-throttle" name="add-user-throttle" size="2" value="6"></td>
           <td>
             <button id="add-user-truncate-checkbox" class="add-user-truncate oc-checkbox elegant_icons icon_box-empty" data-target="add-user-truncate" data-checked="no"></button>
             <input type="hidden" id="add-user-truncate" name="add-user-truncate" value="0">
           </td>
           <td>
-              <span id="add-user-app-role-menu" class="dropdown">
-                <span data-toggle="dropdown">
-                  <button id="add-user-app-role-label">User <span class="elegant_icons arrow_carrot-down"></span></button>
-                </span>
-	            <ul id="add-user-app-role-options" class="dropdown-menu" role="menu">
+            <span id="add-user-app-role-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="add-user-app-role-label">User <span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+	          <ul id="add-user-app-role-options" class="dropdown-menu" role="menu">
                 <li data-role="0"><span>User</span></li>
                 <li data-role="1"><span>Group Admin</span></li>
                 <li data-role="2"><span>App Admin</span></li>
               </ul>
-              </span>
+            </span>
             <input type="hidden" id="add-user-app-role" name="add-user-app-role" value="0">
           </td>
         </tr>
@@ -348,7 +356,15 @@
           <td><input type="text" id="edit-user-lastname" name="edit-user-lastname" size="20"></td>
           <td><input type="text" id="edit-user-phone" name="edit-user-phone" size="20"></td>
           <td><input type="text" id="edit-user-email" name="edit-user-email" size="20"></td>
-          <td><input type="text" id="edit-user-sms-email" name="edit-user-sms-email" size="30"></td>
+          <td>
+            <span id="edit-user-sms-email-menu" class="dropdown">
+              <span data-toggle="dropdown">
+                <button id="edit-user-sms-email-label">--<span class="elegant_icons arrow_carrot-down"></span></button>
+              </span>
+              <ul id="edit-user-sms-email-options" class="dropdown-menu" role="menu"></ul>
+            </span>
+            <input type="hidden" id="edit-user-sms-email" name="edit-user-sms-email">
+          </td>
           <td><input type="text" id="edit-user-throttle" name="edit-user-throttle" size="2" value="6"></td>
           <td>
             <button id="edit-user-truncate-checkbox" class="edit-user-truncate oc-checkbox elegant_icons icon_box-empty" data-target="edit-user-truncate" data-checked="no"></button>

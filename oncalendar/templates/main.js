@@ -99,6 +99,7 @@ $(document).ready(function() {
             $('input#add-victim-lastname').val(suggestion.data.lastname);
             $('input#add-victim-phone').val(suggestion.data.phone);
             $('input#add-victim-email').val(suggestion.data.email);
+            $('button#add-victim-sms-email-label').text(oncalendar.gateway_map[suggestion.data.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
             $('input#add-victim-sms-email').val(suggestion.data.sms_email);
         }
     });
@@ -107,6 +108,7 @@ $(document).ready(function() {
         var domain = Object.keys(gateway)[0];
         oncalendar.gateway_map[domain] = gateway[domain]
         $('ul#edit-account-sms-email-options').append('<li data-gateway="' + domain + '"><span>' + gateway[domain] + '</span></li>');
+        $('ul#add-victim-sms-email-options').append('<li data-gateway="' + domain + '"><span>' + gateway[domain] + '</span></li>');
     });
     // Handler for user menu items
     $('div#user-menu')
@@ -140,7 +142,7 @@ document.addEventListener('user_info_loaded', function() {
 	$('input#edit-account-phone').attr('value', current_user.phone);
 	$('input#edit-account-email').attr('value', current_user.email);
     if (oncalendar.gateway_map[current_user.sms_email] !== undefined) {
-        $('button#edit-account-sms-email-label').text(oncalendar.gateway_map[current_user.sms_email] + ' ').append('<span class="elegant_icons arrow_carrot-down">');
+        $('button#edit-account-sms-email-label').text(oncalendar.gateway_map[current_user.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
         $('input#edit-account-sms-email').attr('value', current_user.sms_email);
     } else {
         $('input#edit-account-sms-email').removeProp('value').val('')
@@ -527,7 +529,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 '<td>' + victim.lastname + '</td>' +
                 '<td>' + victim.phone + '</td>' +
                 '<td>' + victim.email + '</td>' +
-                '<td>' + victim.sms_email + '</td><td></td>'
+                '<td>' + oncalendar.gateway_map[victim.sms_email] + '</td><td></td>'
         );
     });
 
@@ -776,6 +778,10 @@ $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function()
 });
 
 // Handlers for the edit group members dialog box
+$('ul#add-victim-sms-email-options').on('click', 'li', function() {
+    $('#add-victim-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')] + ' ').append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#add-victim-sms-email').attr('value', $(this).attr('data-gateway'));
+});
 $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', function() {
     var target_victim = $(this).attr('data-target');
     if ($(this).siblings('input').val() === "no") {
@@ -851,7 +857,7 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
                     '<td>' + data[id].lastname + '</td>' +
                     '<td>' + data[id].phone + '</td>' +
                     '<td>' + data[id].email + '</td>' +
-                    '<td>' + data[id].sms_email + '</td><td></td>'
+                    '<td>' + oncalendar.gateway_map[data[id].sms_email] + '</td><td></td>'
                 );
 			});
         } else {
@@ -881,7 +887,7 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 		                    '<td>' + data.lastname + '</td>' +
 		                    '<td>' + data.phone + '</td>' +
 		                    '<td>' + data.email + '</td>' +
-		                    '<td>' + data.sms_email + '</td><td></td>'
+		                    '<td>' + oncalendar.gateway_map[data.sms_email] + '</td><td></td>'
 		            );
 				}
 	        });

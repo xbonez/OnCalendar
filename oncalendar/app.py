@@ -2014,7 +2014,7 @@ def api_send_sms(victim_type, group):
                     panic_status['successful'] += 1
                 except OnCalendarSMSError:
                     if target['sms_email'] is not None:
-                        fallback_address = target['phone'] + '@' + target['sms_email']
+                        fallback_address = target['phone'][1:] + '@' + target['sms_email']
                         try:
                             ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
                         except OnCalendarSMSError:
@@ -2063,7 +2063,7 @@ def api_send_sms(victim_type, group):
                             panic_status['successful'] += 1
                         except OnCalendarSMSError as error:
                             if target['sms_email'] is not None:
-                                fallback_address = target['phone'] + '@' + target['sms_email']
+                                fallback_address = target['phone'][1:] + '@' + target['sms_email']
                                 try:
                                     ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
                                 except OnCalendarSMSError, error:
@@ -2106,7 +2106,7 @@ def api_send_sms(victim_type, group):
                 )
             except OnCalendarSMSError as error:
                 if target['sms_email'] is not None:
-                    fallback_address = target['phone'] + '@' + target['sms_email']
+                    fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
                         sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
@@ -2186,7 +2186,7 @@ def api_send_sms(victim_type, group):
                 sms_status = 'SMS handoff to Twilio successful'
             except OnCalendarSMSError, error:
                 if target['sms_email'] is not None:
-                    fallback_address = target['phone'] + '@' + target['sms_email']
+                    fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
                         sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
