@@ -1753,6 +1753,12 @@ class OnCalendarDB(object):
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking shadow for {0})'.format(row['name']))
                 else:
                     schedule_status[row['name']]['shadow'] = {'updated': False}
+            else:
+                if current_victims[row['name']]['shadowid'] is not None:
+                    try:
+                        rotate_cursor.execute("UPDATE groups SET shadowid='' WHERE id='{0}'".format(row['groupid']))
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1] + ' (setting shadowid to empty for {0})'.format(row['name']))
 
             if row['backupid'] is not None:
                 if row['backupid'] != current_victims[row['name']]['backupid']:
