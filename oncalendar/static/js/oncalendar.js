@@ -192,7 +192,7 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                 day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
-                                if (victims.shadow != null) {
+                                if (cal.oncall_groups[group].shadow && victims.shadow != null) {
                                     if (victims.shadow !== current_victim[group].shadow) {
                                         current_victim[group].shadow = victims.shadow;
                                         current_victim[group].shadow_name = victims.shadow_name;
@@ -204,7 +204,7 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
                                 }
-                                if (victims.backup != null) {
+                                if (cal.oncall_groups[group].backup && victims.backup != null) {
                                     if (victims.backup !== current_victim[group].backup) {
                                         current_victim[group].backup = victims.backup;
                                         current_victim[group].backup_name = victims.backup_name;
@@ -227,25 +227,29 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
                                 }
-                                if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
-                                    current_victim[group].shadow = victims.shadow;
-                                    current_victim[group].shadow_name = victims.shadow_name;
-                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                if (cal.oncall_groups[group].shadow) {
+                                    if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
+                                        current_victim[group].shadow = victims.shadow;
+                                        current_victim[group].shadow_name = victims.shadow_name;
+                                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                        day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                    }
                                 }
-                                if (victims.backup != null && victims.backup !== current_victim[group].backup) {
-                                    current_victim[group].backup = victims.backup;
-                                    current_victim[group].backup_name = victims.backup_name;
-                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                if (cal.oncall_groups[group].backup) {
+                                    if (victims.backup != null && victims.backup !== current_victim[group].backup) {
+                                        current_victim[group].backup = victims.backup;
+                                        current_victim[group].backup_name = victims.backup_name;
+                                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                        day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                    }
                                 }
                             }
                         });
@@ -307,7 +311,7 @@ var oncalendar = {
                             day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                             day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                             day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
-                            if (victims.shadow != null) {
+                            if (cal.oncall_groups[group].shadow && victims.shadow != null) {
                                 if (victims.shadow !== current_victim[group].shadow) {
                                     current_victim[group].shadow = victims.shadow;
                                     current_victim[group].shadow_name = victims.shadow_name;
@@ -319,7 +323,7 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                 day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
                             }
-                            if (victims.backup != null) {
+                            if (cal.oncall_groups[group].backup && victims.backup != null) {
                                 if (victims.backup !== current_victim[group].backup) {
                                     current_victim[group].backup = victims.backup;
                                     current_victim[group].backup_name = victims.backup_name;
@@ -342,25 +346,29 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                 day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
                             }
-                            if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
-                                current_victim[group].shadow = victims.shadow;
-                                current_victim[group].shadow_name = victims.shadow_name;
-                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                            if (cal.oncall_groups[group].shadow) {
+                                if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
+                                    current_victim[group].shadow = victims.shadow;
+                                    current_victim[group].shadow_name = victims.shadow_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                }
                             }
-                            if (victims.backup != null && victims.backup !== current_victim[group].backup) {
-                                current_victim[group].backup = victims.backup;
-                                current_victim[group].backup_name = victims.backup_name;
-                                day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
-                                day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                            if (cal.oncall_groups[group].backup) {
+                                if (victims.backup != null && victims.backup !== current_victim[group].backup) {
+                                    current_victim[group].backup = victims.backup;
+                                    current_victim[group].backup_name = victims.backup_name;
+                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                }
                             }
                         }
                     });
@@ -409,7 +417,7 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                 day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
-                                if (victims.shadow != null) {
+                                if (cal.oncall_groups[group].shadow && victims.shadow != null) {
                                     if (victims.shadow !== current_victim[group].shadow) {
                                         current_victim[group].shadow = victims.shadow;
                                         current_victim[group].shadow_name = victims.shadow_name;
@@ -421,7 +429,7 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
                                 }
-                                if (victims.backup != null) {
+                                if (cal.oncall_groups[group].backup && victims.backup != null) {
                                     if (victims.backup !== current_victim[group].backup) {
                                         current_victim[group].backup = victims.backup;
                                         current_victim[group].backup_name = victims.backup_name;
@@ -444,25 +452,29 @@ var oncalendar = {
                                     day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
                                     day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
                                 }
-                                if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
-                                    current_victim[group].shadow = victims.shadow;
-                                    current_victim[group].shadow_name = victims.shadow_name;
-                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                if (cal.oncall_groups[group].shadow) {
+                                    if (victims.shadow != null && victims.shadow !== current_victim[group].shadow) {
+                                        current_victim[group].shadow = victims.shadow;
+                                        current_victim[group].shadow_name = victims.shadow_name;
+                                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' shadow - ' + current_victim[group].shadow_name);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                        day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].shadow + ' (S)';
+                                    }
                                 }
-                                if (victims.backup != null && victims.backup !== current_victim[group].backup) {
-                                    current_victim[group].backup = victims.backup;
-                                    current_victim[group].backup_name = victims.backup_name;
-                                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
-                                    day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                    day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                if (cal.oncall_groups[group].backup) {
+                                    if (victims.backup != null && victims.backup !== current_victim[group].backup) {
+                                        current_victim[group].backup = victims.backup;
+                                        current_victim[group].backup_name = victims.backup_name;
+                                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('class', p_group_class[group]);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' backup - ' + current_victim[group].backup_name);
+                                        day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
+                                        day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].backup + ' (B)';
+                                    }
                                 }
                             }
                         });

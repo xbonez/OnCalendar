@@ -63,12 +63,12 @@ $('button#edit-month-save-button').click(function() {
 	    $.each($('td'), function(index, element) {
 	        var day_id = $(element).attr('id');
 	        month_data.days[day_id] = {};
-	        month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').val();
+	        month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').attr('value');
 	        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
-	            month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').val();
+	            month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').attr('value');
 	        }
 	        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
-	            month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').val();
+	            month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').attr('value');
 	        }
 	    });
 

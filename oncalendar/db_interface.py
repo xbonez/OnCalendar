@@ -1525,7 +1525,7 @@ class OnCalendarDB(object):
 
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         get_victims_query = """SELECT name, id AS groupid, email AS group_email,
-        victimid, shadowid, backupid
+        victimid, shadow, shadowid, backup, backupid
         FROM groups"""
         if group:
             get_victims_query += " WHERE id=(SELECT id FROM groups WHERE name='{0}')".format(group)
@@ -1547,10 +1547,10 @@ class OnCalendarDB(object):
             if row['victimid'] is not None:
                 victim_info = self.get_victim_info('id', row['victimid'])
                 current_victims[row['name']]['oncall'] = victim_info[row['victimid']]
-            if row['shadowid'] is not None:
+            if row['shadow'] == 1 and row['shadowid'] is not None:
                 shadow_info = self.get_victim_info('id', row['shadowid'])
                 current_victims[row['name']]['shadow'] = shadow_info[row['shadowid']]
-            if row['backupid'] is not None:
+            if fow['backu'] == 1 and row['backupid'] is not None:
                 backup_info = self.get_victim_info('id', row['backupid'])
                 current_victims[row['name']]['backup'] = backup_info[row['backupid']]
 

@@ -15,8 +15,6 @@ $.when(oncalendar.get_victims()).then(function(data) {
 
 $(document).ready(function() {
 
-//    verify_oncalendar();
-
     // Handler for the interface tabs
     $('#admin-functions').on('click', 'li', function() {
         $('li.tab.selected').removeClass('selected');
@@ -42,6 +40,16 @@ $(document).ready(function() {
     });
 });
 
+// Simple validation for email addresses
+var valid_email = function(email_address) {
+    valid = email_address.match(/^[^\s]+@[^\s]+\.[^\s]{2,3}$/);
+    if (valid !== null) {
+        return true;
+    } else {
+        return false;
+    }
+};
+
 // Handlers for the checkboxes, alerts and buttons
 $(document).on('click', 'button.oc-checkbox', function() {
     if ($(this).attr('data-checked') === "no") {
@@ -66,7 +74,7 @@ $(document).on('click', 'button.oc-checkbox', function() {
 }).on('click', 'button#users-delete', function() {
     var users_to_delete = {};
     $.each($('input[data-type="user-delete"]'), function () {
-        if ($(this).val() == 1) {
+        if ($(this).attr('value') == 1) {
             users_to_delete[$(this).attr('data-username')] = $(this).attr('data-id');
         }
     });
@@ -99,19 +107,19 @@ $(document).on('click', 'button.oc-checkbox', function() {
     var edit_user_info = master_victims_list[edit_user_id];
     $('#edit-user-popup').children('h3').text('Edit User ' + edit_user_info.username);
     $('input#edit-user-id').attr('value', edit_user_id);
-    $('input#edit-user-username').attr('value', edit_user_info.username);
-    $('input#edit-user-firstname').attr('value', edit_user_info.firstname);
-    $('input#edit-user-lastname').attr('value', edit_user_info.lastname);
-    $('input#edit-user-phone').attr('value', edit_user_info.phone);
-    $('input#edit-user-email').attr('value', edit_user_info.email);
+    $('input#edit-user-username').val(edit_user_info.username);
+    $('input#edit-user-firstname').val(edit_user_info.firstname);
+    $('input#edit-user-lastname').val(edit_user_info.lastname);
+    $('input#edit-user-phone').val(edit_user_info.phone);
+    $('input#edit-user-email').val(edit_user_info.email);
     if (oncalendar.gateway_map[edit_user_info.sms_email] !== undefined) {
         $('button#edit-user-sms-email-label').text(oncalendar.gateway_map[edit_user_info.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
         $('input#edit-user-sms-email').attr('value', edit_user_info.sms_email);
     } else {
         $('button#edit-user-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
-        $('input#edit-user-sms-email').removeProp('value').val('');
+        $('input#edit-user-sms-email').attr('value','');
     }
-    $('input#edit-user-throttle').attr('value', edit_user_info.throttle);
+    $('input#edit-user-throttle').val(edit_user_info.throttle);
     if (edit_user_info.truncate == 1) {
         $('button#edit-user-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#edit-user-truncate').attr('value', 1);
@@ -147,7 +155,7 @@ $(document).on('click', 'button.oc-checkbox', function() {
 }).on('click', 'button#groups-delete', function() {
     var groups_to_delete = {};
     $.each($('input[data-type="group-delete"]'), function() {
-        if ($(this).val() == 1) {
+        if ($(this).attr('value') == 1) {
             groups_to_delete[$(this).attr('data-name')] = $(this).attr('data-id');
         }
     });
@@ -171,7 +179,7 @@ $(document).on('click', 'button.oc-checkbox', function() {
     var edit_group_info = oncalendar.oncall_groups[edit_group];
     $('#edit-group-popup').children('h3').text('Edit Group ' + edit_group);
     $('input#edit-group-id').attr('value', edit_group_info.id);
-    $('input#edit-group-name').attr('value', edit_group);
+    $('input#edit-group-name').val(edit_group);
     if (edit_group_info.active == 1) {
         $('button#edit-group-active-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#edit-group-active').attr('value', 1);
@@ -192,7 +200,7 @@ $(document).on('click', 'button.oc-checkbox', function() {
     $('input#edit-group-turnover-hour').attr('value', edit_group_info.turnover_hour);
     $('button#edit-group-turnover-min-label').text(edit_group_info.turnover_min);
     $('input#edit-group-turnover-min').attr('value', edit_group_info.turnover_min);
-    $('input#edit-group-email').attr('value', edit_group_info.email);
+    $('input#edit-group-email').val(edit_group_info.email);
     if (edit_group_info.shadow == 1) {
         $('button#edit-group-shadow-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#edit-group-shadow').attr('value', 1);
@@ -215,9 +223,9 @@ $(document).on('click', 'button.oc-checkbox', function() {
             $('button#edit-group-failsafe-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
             $('input#edit-group-failsafe').attr('value', 0);
         }
-        $('input#edit-group-alias').attr('value', edit_group_info.alias);
-        $('input#edit-group-backup-alias').attr('value', edit_group_info.backup_alias);
-        $('input#edit-group-failsafe-alias').attr('value', edit_group_info.failsafe_alias);
+        $('input#edit-group-alias').val(edit_group_info.alias);
+        $('input#edit-group-backup-alias').val(edit_group_info.backup_alias);
+        $('input#edit-group-failsafe-alias').val(edit_group_info.failsafe_alias);
     }
     $.magnificPopup.open({
         items: {
@@ -327,14 +335,14 @@ document.addEventListener('victims_loaded', function() {
             mainClass: 'popup-animate',
             callbacks: {
                 close: function() {
-                    $('input#add-user-username').removeProp('value').val('');
-                    $('input#add-user-firstname').removeProp('value').val('');
-                    $('input#add-user-lastname').removeProp('value').val('');
-                    $('input#add-user-phone').removeProp('value').val('');
-                    $('input#add-user-email').removeProp('value').val('');
+                    $('input#add-user-username').val('');
+                    $('input#add-user-firstname').val('');
+                    $('input#add-user-lastname').val('');
+                    $('input#add-user-phone').val('');
+                    $('input#add-user-email').val('');
                     $('button#add-user-sms-email-label').text('-- ').append('<span class="elegant_icons arrow_carrot-down">');
-                    $('input#add-user-sms-email').removeProp('value').val('');
-                    $('input#add-user-throttle').removeProp('value').val('');
+                    $('input#add-user-sms-email').attr('value', '');
+                    $('input#add-user-throttle').val('');
                     $('button#add-user-truncate-button').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
                     $('input#add-user-truncate').attr('value', '0');
                     $('button#add-user-app-role-label').text('User ').append('<span class="elegant_icons arrow_carrot-down">');
@@ -362,6 +370,7 @@ $('ul#add-user-sms-email-options').on('click', 'li', function() {
 });
 $('ul#edit-user-sms-email-options').on('click', 'li', function() {
     $('#edit-user-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')]).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-user-sms-email').attr('value', $(this).attr('data-gateway'));
 });
 
 // Event listener to populate the groups tab once the group info is loaded.
@@ -487,27 +496,27 @@ document.addEventListener('group_info_loaded', function() {
             mainClass: 'popup-animate',
             callbacks: {
                 close: function() {
-                    $('input#new-group-name').removeProp('value').val('');
+                    $('input#new-group-name').val('');
                     $('button#new-group-active-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
-                    $('input#new-group-active').val('1');
+                    $('input#new-group-active').attr('value', '1');
                     $('button#new-group-autorotate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
-                    $('input#new-group-autorotate').val('1');
+                    $('input#new-group-autorotate').attr('value', '1');
                     $('button#new-group-turnover-day-label').text('Monday ').append('<span class="elegant_icons arrow_carrot-down">');
-                    $('input#new-group-turnover-day').val('1');
+                    $('input#new-group-turnover-day').attr('value', '1');
                     $('button#new-group-turnover-hour-label').text('09 ').append('<span class="elegant_icons arrow_carrot-down">');
-                    $('input#new-group-turnover-hour').val('09');
+                    $('input#new-group-turnover-hour').attr('value', '09');
                     $('button#new-group-turnover-min-label').text('30 ').append('<span class="elegant_icons arrow_carrot-down">');
-                    $('input#new-group-turnover-hour').val('30');
-                    $('input#new-group-email').removeProp('value').val('');
+                    $('input#new-group-turnover-hour').attr('value', '30');
+                    $('input#new-group-email').val('');
                     $('button#new-group-shadow-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-                    $('input#new-group-shadow').val('0');
+                    $('input#new-group-shadow').attr('value', '0');
                     $('button#new-group-backup-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
                     if (email_gateway_config) {
                         $('button#new-group-failsafe-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-                        $('input#new-group-failsafe').val('0');
-                        $('input#new-group-alias').removeProp('value').val('');
-                        $('input#new-group-backup-alias').removeProp('value').val('');
-                        $('input#new-group-failsafe-alias').removeProp('value').val('');
+                        $('input#new-group-failsafe').attr('value', '0');
+                        $('input#new-group-alias').val('');
+                        $('input#new-group-backup-alias').val('');
+                        $('input#new-group-failsafe-alias').val('');
                     }
                     $('div#add-group-popup').children('.alert-box').remove();
                 }
@@ -522,13 +531,25 @@ $('ul#new-group-turnover-day-options').on('click', 'li', function() {
     $('#new-group-turnover-day-label').text(oc.day_strings[$(this).attr('data-day')]).append('<span class="elegant_icons arrow_carrot-down">');
     $('input#new-group-turnover-day').attr('value', $(this).attr('data-day'));
 });
+$('ul#edit-group-turnover-day-options').on('click', 'li', function() {
+    $('#edit-group-turnover-day-label').text(oc.day_strings[$(this).attr('data-day')]).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-group-turnover-day').attr('value', $(this).attr('data-day'));
+});
 $('ul#new-group-turnover-hour-options').on('click', 'li', function() {
     $('#new-group-turnover-hour-label').text($(this).attr('data-hour')).append('<span class="elegant_icons arrow_carrot-down">');
-    $('input#new-group-turnover-day').attr('value', $(this).attr('data-hour'));
+    $('input#new-group-turnover-hour').attr('value', $(this).attr('data-hour'));
+});
+$('ul#edit-group-turnover-hour-options').on('click', 'li', function() {
+    $('#edit-group-turnover-hour-label').text($(this).attr('data-hour')).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-group-turnover-hour').attr('value', $(this).attr('data-hour'));
 });
 $('ul#new-group-turnover-min-options').on('click', 'li', function() {
     $('#new-group-turnover-min-label').text($(this).attr('data-min')).append('<span class="elegant_icons arrow_carrot-down">');
     $('input#new-group-turnover-min').attr('value', $(this).attr('data-min'));
+});
+$('ul#edit-group-turnover-min-options').on('click', 'li', function() {
+    $('#edit-group-turnover-min-label').text($(this).attr('data-min')).append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-group-turnover-min').attr('value', $(this).attr('data-min'));
 });
 
 // Handlers for the dialog box buttons.
@@ -537,38 +558,40 @@ $('#add-user-popup').on('click', 'button.add-user-group-active', function() {
     if ($(this).attr('data-checked') === "no") {
         var group_flip = $(this).attr('data-group');
         $('button#add-user-group-inactive-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-        $('input#add-user-group-inactive-' + group_flip).val('0');
+        $('input#add-user-group-inactive-' + group_flip).attr('value', '0');
     }
 }).on('click', 'button.add-user-group-inactive', function() {
     if ($(this).attr('data-checked') === "no") {
         var group_flip = $(this).attr('data-group');
         $('button#add-user-group-active-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-        $('input#add-user-group-active-' + group_flip).val('0');
+        $('input#add-user-group-active-' + group_flip).attr('value', '0');
     }
 }).on('click', 'button#cancel-add-user-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#save-add-user-button', function() {
-    var victim_phone = $('input#add-user-phone').val().replace(/\D/g,'');
-    if (victim_phone.length == 10 ) {
-        victim_phone = "1" + victim_phone;
-    } else if (victim_phone.length == 11) {
-        var country_code = victim_phone.substring(0,1);
-        if (country_code !== "1") {
-            victim_phone = "1" + victim_phone.substring(1)
+    if ($('input#add-user-phone').val() !== undefined) {
+        var victim_phone = $('input#add-user-phone').val().replace(/\D/g,'');
+        if (victim_phone.length == 10 ) {
+            victim_phone = "1" + victim_phone;
+        } else if (victim_phone.length == 11) {
+            var country_code = victim_phone.substring(0,1);
+            if (country_code !== "1") {
+                victim_phone = "1" + victim_phone.substring(1)
+            }
         }
+        $('input#add-user-phone').val(victim_phone);
     }
-    $('input#add-user-phone').val(victim_phone);
-    if ($('input#add-user-username').val().length == 0) {
+    if ($('input#add-user-username').val() === undefined || $('input#add-user-username').val().length == 0) {
         $('input#add-user-username').addClass('missing-input').focus();
-    } else if ($('input#add-user-firstname').val().length == 0) {
+    } else if ($('input#add-user-firstname').val() === undefined || $('input#add-user-firstname').val().length == 0) {
         $('input#add-user-firstname').addClass('missing-input').focus();
-    } else if ($('input#add-user-lastname').val().length == 0) {
+    } else if ($('input#add-user-lastname').val() === undefined || $('input#add-user-lastname').val().length == 0) {
         $('input#add-user-lastname').addClass('missing-input').focus();
-    } else if (($('input#add-user-email').val().length == 0) || !(valid_email($('input#add-user-email').val()))) {
+    } else if ($('input#add-user-email').val() === undefined || $('input#add-user-email').val().length == 0 || !valid_email($('input#add-user-email').val())) {
         $('input#add-user-email').addClass('missing-input').focus();
     } else if ($('input#add-user-throttle').val() < 6) {
         $('input#add-user-throttle').addClass('missing-input').val('6').focus();
-    } else if (victim_phone.length !== 11) {
+    } else if ($('input#add-user-phone').val() === undefined || $('input#add-user-phone').val().length !== 11) {
         $('input#add-user-phone').addClass('missing-input').focus();
     } else {
         var new_user_data = {
@@ -577,18 +600,18 @@ $('#add-user-popup').on('click', 'button.add-user-group-active', function() {
             lastname: $('input#add-user-lastname').val(),
             phone: $('input#add-user-phone').val(),
             email: $('input#add-user-email').val(),
-            sms_email: $('input#add-user-sms-email').val(),
+            sms_email: $('input#add-user-sms-email').attr('value'),
             throttle: $('input#add-user-throttle').val(),
-            truncate: $('input#add-user-truncate').val(),
-            app_role: $('input#add-user-app-role').val(),
+            truncate: $('input#add-user-truncate').attr('value'),
+            app_role: $('input#add-user-app-role').attr('value'),
             groups: {}
         };
         $.each($('tr.add-user-group-row'), function() {
             var group_active = $(this).children('td').children('input.add-user-group-active');
             var group_inactive = $(this).children('td').children('input.add-user-group-inactive');
-            if ($(group_active).val() === "1") {
+            if ($(group_active).attr('value') === "1") {
                 new_user_data.groups[$(group_active).attr('data-group')] = 1;
-            } else if ($(group_inactive).val() === "1") {
+            } else if ($(group_inactive).attr('value') === "1") {
                 new_user_data.groups[$(group_inactive).attr('data-group')] = 0;
             }
         });
@@ -639,59 +662,61 @@ $('#edit-user-popup').on('click', 'button.edit-user-group-active', function() {
     if ($(this).attr('data-checked') === "no") {
         var group_flip = $(this).attr('data-group');
         $('button#edit-user-group-inactive-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-        $('input#edit-user-group-inactive-' + group_flip).val('0');
+        $('input#edit-user-group-inactive-' + group_flip).attr('value', '0');
     }
 }).on('click', 'button.edit-user-group-inactive', function() {
     if ($(this).attr('data-checked') === "no") {
         var group_flip = $(this).attr('data-group');
         $('button#edit-user-group-active-' + group_flip + '-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-        $('input#edit-user-group-active-' + group_flip).val('0');
+        $('input#edit-user-group-active-' + group_flip).attr('value', '0');
     }
 }).on('click', 'button#cancel-edit-user-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#save-edit-user-button', function() {
-    var victim_phone = $('input#edit-user-phone').val().replace(/\D/g,'');
-    if (victim_phone.length == 10) {
-        victim_phone = "1" + victim_phone;
-    } else if (victim_phone.length == 11) {
-        var country_code = victim_phone.substring(0,1);
-        if (country_code !== "1") {
-            victim_phone = "1" + victim_phone.substring(1);
+    if ($('input#edit-user-phone').val() !== undefined) {
+        var victim_phone = $('input#edit-user-phone').val().replace(/\D/g,'');
+        if (victim_phone.length == 10 ) {
+            victim_phone = "1" + victim_phone;
+        } else if (victim_phone.length == 11) {
+            var country_code = victim_phone.substring(0,1);
+            if (country_code !== "1") {
+                victim_phone = "1" + victim_phone.substring(1)
+            }
         }
+        $('input#edit-user-phone').val(victim_phone);
     }
-    $('input#edit-user-phone').val(victim_phone);
-    if ($('input#edit-user-username').val().length == 0) {
+    if ($('input#edit-user-username').val() === undefined || $('input#edit-user-username').val().length == 0) {
         $('input#edit-user-username').addClass('missing-input').focus();
-    } else if ($('input#edit-user-firstname').val().length == 0) {
+    } else if ($('input#edit-user-firstname').val() === undefined || $('input#edit-user-firstname').val().length == 0) {
         $('input#edit-user-lastname').addClass('missing-input').focus();
-    } else if ($('input#edit-user-lastname').val().length == 0) {
+    } else if ($('input#edit-user-lastname').val() || $('input#edit-user-lastname').val().length == 0) {
         $('input#edit-user-lastname').addClass('missing-input').focus();
-    } else if (($('input#edit-user-email').val().length == 0) || !(valid_email($('input#edit-user-email').val()))) {
+    } else if ($('input#edit-user-email').val() === undefined || $('input#edit-user-email').val().length == 0 || !valid_email($('input#edit-user-email').val())) {
         $('input#edit-user-email').addClass('missing-input').focus();
-    } else if ($('input#edit-user-throttle').val() < 6) {
+    } else if ($('input#edit-user-throttle').val() === undefined || $('input#edit-user-throttle').val() < 6) {
         $('input#edit-user-throttle').addClass('missing-input').val('6').focus();
-    } else if (victim_phone.length !== 11) {
+    } else if ($('input#edit-user-phone').val() === undefined || $('input#edit-user-phone').val().length !== 11) {
         $('input#edit-user-phone').addClass('missing-input').focus();
     } else {
         var edit_user_data = {
-            id: $('input#edit-user-id').val(),
+            id: $('input#edit-user-id').attr('value'),
             username: $('input#edit-user-username').val(),
             firstname: $('input#edit-user-firstname').val(),
             lastname: $('input#edit-user-lastname').val(),
             phone: $('input#edit-user-phone').val(),
             email: $('input#edit-user-email').val(),
-            sms_email: $('input#edit-user-sms-email').val(),
+            sms_email: $('input#edit-user-sms-email').attr('value'),
             throttle: $('input#edit-user-throttle').val(),
-            truncate: $('input#edit-user-truncate').val(),
-            app_role: $('input#edit-user-app-role').val(),
+            truncate: $('input#edit-user-truncate').attr('value'),
+            app_role: $('input#edit-user-app-role').attr('value'),
             groups: {}
         };
         $.each($('tr.edit-user-group-row'), function() {
             var group_active = $(this).children('td').children('input.edit-user-group-active');
             var group_inactive = $(this).children('td').children('input.edit-user-group-inactive');
-            if ($(group_active).val() === "1") {
+            if ($(group_active).attr('value') === "1") {
                 edit_user_data.groups[$(group_active).attr('data-group')] = 1;
-            } else if ($(group_inactive).val() === "1") {
+            } else if ($(group_inactive).attr('value') === "1") {
                 edit_user_data.groups[$(group_inactive).attr('data-group')] = 0;
             }
         });
@@ -714,23 +739,23 @@ $('#edit-user-popup').on('click', 'button.edit-user-group-active', function() {
 $('#add-group-popup').on('click', 'button#cancel-add-group-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#save-add-group-button', function() {
-    if ($('input#new-group-name').val().length == 0) {
+    if ($('input#new-group-name').val() === undefined || $('input#new-group-name').val().length == 0) {
         $('input#new-group-name').addClass('missing-input').focus();
     } else {
         var new_group_name = $('input#new-group-name').val();
         var new_group_data = {
             name: new_group_name,
-            active: $('input#new-group-active').val(),
-            autorotate: $('input#new-group-autorotate').val(),
-            turnover_day: $('input#new-group-turnover_day').val(),
-            turnover_hour: $('input#new-group-turnover-hour').val(),
-            turnover_min: $('input#new-group-turnover-min').val(),
+            active: $('input#new-group-active').attr('value'),
+            autorotate: $('input#new-group-autorotate').attr('value'),
+            turnover_day: $('input#new-group-turnover_day').attr('value'),
+            turnover_hour: $('input#new-group-turnover-hour').attr('value'),
+            turnover_min: $('input#new-group-turnover-min').attr('value'),
             email: $('input#new-group-email').val(),
-            shadow: $('input#new-group-shadow').val(),
-            backup: $('input#new-group-shadow').val()
+            shadow: $('input#new-group-shadow').attr('value'),
+            backup: $('input#new-group-shadow').attr('value')
         };
         if (email_gateway_config) {
-            new_group_data.failsafe = $('input#new-group-failsafe').val();
+            new_group_data.failsafe = $('input#new-group-failsafe').attr('value');
             new_group_data.alias = $('input#new-group-alias').val();
             new_group_data.backup_alias = $('input#new-group-backup-alias').val();
             new_group_data.failsafe_alias = $('input#new-group-failsafe-alias').val();
@@ -786,26 +811,28 @@ $('#delete-groups-confirm-popup').on('click', 'button#delete-groups-cancel-butto
 $('#edit-group-popup').on('click', 'button#cancel-edit-group-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#save-edit-group-button', function() {
-    if ($('input#edit-group-name').val().length == 0) {
+    if ($('input#edit-group-name').val() === undefined || $('input#edit-group-name').val().length == 0) {
         $('input#edit-group-name').addClass('missing-input').focus();
-    } else if (!valid_email($('input#edit-group-email').val())) {
-        $('input#edit-group-email').addClass('missing-input').focus();
+    } else if ($('input#edit-group-email').val() !== undefined) {
+        if (!valid_email($('input#edit-group-email').val())) {
+            $('input#edit-group-email').addClass('missing-input').focus();
+        }
     } else {
         var edit_group_name = $('input#edit-group-name').val();
         var edit_group_data = {
             name: edit_group_name,
-            id: $('input#edit-group-id').val(),
-            active: $('input#edit-group-active').val(),
-            autorotate: $('input#edit-group-autorotate').val(),
-            turnover_day: $('input#edit-group-turnover-day').val(),
-            turnover_hour: $('input#edit-group-turnover-hour').val(),
-            turnover_min: $('input#edit-group-turnover-min').val(),
+            id: $('input#edit-group-id').attr('value'),
+            active: $('input#edit-group-active').attr('value'),
+            autorotate: $('input#edit-group-autorotate').attr('value'),
+            turnover_day: $('input#edit-group-turnover-day').attr('value'),
+            turnover_hour: $('input#edit-group-turnover-hour').attr('value'),
+            turnover_min: $('input#edit-group-turnover-min').attr('value'),
             email: $('input#edit-group-email').val(),
-            shadow: $('input#edit-group-shadow').val(),
-            backup: $('input#edit-group-backup').val()
+            shadow: $('input#edit-group-shadow').attr('value'),
+            backup: $('input#edit-group-backup').attr('value')
         };
         if (email_gateway_config) {
-            edit_group_data.failsafe = $('input#edit-group-failsafe').val();
+            edit_group_data.failsafe = $('input#edit-group-failsafe').attr('value');
             edit_group_data.alias = $('input#edit-group-alias').val();
             edit_group_data.backup_alias = $('input#edit-group-backup-alias').val();
             edit_group_data.failsafe_alias = $('input#edit-group-failsafe-alias').val();

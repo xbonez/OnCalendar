@@ -631,6 +631,7 @@ def edit_month_group(group=None, year=None, month=None):
                              edit_year=year,
                              edit_month=int(month) - 1,
                              edit_group=group,
+                             email_gateway_config='true' if config.sms['EMAIL_GATEWAY'] else 'false',
                              user_json=user_json,)
         return render_template('oncalendar_edit_month.html.jinja2',
                                main_js=js,
@@ -683,6 +684,7 @@ def edit_weekly_group(group=None, year=None, month=None):
                              edit_year=year,
                              edit_month=int(month) - 1,
                              edit_group=group,
+                             email_gateway_config='true' if config.sms['EMAIL_GATEWAY'] else 'false',
                              user_json=user_json,)
         return render_template('oncalendar_edit_by_week.html.jinja2',
                                main_js=js,

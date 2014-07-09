@@ -94,7 +94,7 @@ $(document).ready(function() {
         maxHeight: 300,
         maxWidth: 300,
         onSelect: function(suggestion) {
-            $('input#victim-id').val(suggestion.data.id);
+            $('input#victim-id').attr('value', suggestion.data.id);
             $('input#add-victim-firstname').val(suggestion.data.firstname);
             $('input#add-victim-lastname').val(suggestion.data.lastname);
             $('input#add-victim-phone').val(suggestion.data.phone);
@@ -102,7 +102,7 @@ $(document).ready(function() {
             var sms_email_suggestion = '';
             if (oncalendar.gateway_map[suggestion.data.sms_email] !== undefined) {
                 $('button#add-victim-sms-email-label').text(oncalendar.gateway_map[suggestion.data.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
-                $('input#add-victim-sms-email').val(suggestion.data.sms_email);
+                $('input#add-victim-sms-email').attr('value', suggestion.data.sms_email);
             }
         }
     });
@@ -140,17 +140,18 @@ $(document).ready(function() {
 // Listen for the user_info_loaded event and populate
 // the account info form when we have it
 document.addEventListener('user_info_loaded', function() {
-	$('input#edit-account-firstname').attr('value', current_user.firstname);
-	$('input#edit-account-lastname').attr('value', current_user.lastname);
-	$('input#edit-account-phone').attr('value', current_user.phone);
-	$('input#edit-account-email').attr('value', current_user.email);
+	$('input#edit-account-firstname').val(current_user.firstname);
+	$('input#edit-account-lastname').val(current_user.lastname);
+	$('input#edit-account-phone').val(current_user.phone);
+	$('input#edit-account-email').val(current_user.email);
     if (oncalendar.gateway_map[current_user.sms_email] !== undefined) {
         $('button#edit-account-sms-email-label').text(oncalendar.gateway_map[current_user.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
         $('input#edit-account-sms-email').attr('value', current_user.sms_email);
     } else {
-        $('input#edit-account-sms-email').removeProp('value').val('')
+        $('button#edit-account-sms-email-label').text('--').append('<span class="elegant_icons" arrow_carrot-down">');
+        $('input#edit-account-sms-email').attr('value', '');
     }
-	$('input#edit-account-throttle').attr('value', current_user.throttle);
+	$('input#edit-account-throttle').val(current_user.throttle);
 	if (current_user.truncate > 0) {
 		$('button#edit-account-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
 		$('input#edit-account-truncate').attr('value', 'yes');
@@ -250,7 +251,7 @@ var edit_calday = function(target_group, calday, cal_date) {
             close: function() {
                 $('ul.slot-menu').empty();
                 $('#edit-day-group').empty();
-                $('textarea#edit-day-note').attr('value', '');
+                $('textarea#edit-day-note').val('').removeClass('missing-input');
                 $('tr.shadow-row').addClass('hide');
 				$('tr.backup-row').addClass('hide');
                 $('button.edit-day-oncall-button').text('').removeAttr('data-target', '');
@@ -429,8 +430,7 @@ $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
     target_group = $(this).attr('data-target');
     $('span#edit-group-info-title-name').text(target_group);
     $('input#edit-group-id').attr('value', oncalendar.oncall_groups[target_group].id);
-    $('input#edit-group-name').attr('value', oncalendar.oncall_groups[target_group].name);
-    $('input#edit-group-auth-group').attr('value', oncalendar.oncall_groups[target_group].auth_group);
+    $('input#edit-group-name').val(oncalendar.oncall_groups[target_group].name);
     $('button#edit-group-turnover-day-label').empty()
         .append(oc.day_strings[oncalendar.oncall_groups[target_group].turnover_day] +
         '<span class="elegant_icons arrow_carrot-down"></span>');
@@ -446,25 +446,18 @@ $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
         $('button#edit-group-shadow-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
         $('input#edit-group-shadow').attr('value', 0);
     }
-    $('input#edit-group-email').attr('value', oncalendar.oncall_groups[target_group].email);
-    $('input#edit-group-alias').attr('value', oncalendar.oncall_groups[target_group].alias);
+    $('input#edit-group-email').val(oncalendar.oncall_groups[target_group].email);
     if (oncalendar.oncall_groups[target_group].backup) {
-        $('input#edit-group-backup-alias').attr('value', oncalendar.oncall_groups[target_group].backup_alias).attr('readonly', false);
         $('button#edit-group-backup-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#edit-group-backup').attr('value', 1);
     } else {
-        backup_placeholder  = oncalendar.oncall_groups[target_group].backup_alias ? oncalendar.oncall_groups[target_group].backup_alias : 'Not Enabled';
-        $('input#edit-group-backup-alias').attr('value', '').attr('placeholder', backup_placeholder).attr('readonly', true);
         $('button#edit-group-backup-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
         $('input#edit-group-backup').attr('value', 0);
     }
     if (oncalendar.oncall_groups[target_group].failsafe) {
-        $('input#edit-group-failsafe-alias').attr('value', oncalendar.oncall_groups[target_group].failsafe_alias).attr('readonly', false);
         $('button#edit-group-failsafe-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
         $('input#edit-group-failsafe').attr('value', 1);
     } else {
-        failsafe_placeholder = oncalendar.oncall_groups[target_group].failsafe_alias ? oncalendar.oncall_groups[target_group].failsafe_alias : 'Not Enabled';
-        $('input#edit-group-failsafe-alias').attr('value', '').attr('placeholder', failsafe_placeholder).attr('readonly', true);
         $('button#edit-group-failsafe-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
         $('input#edit-group-failsafe').attr('value', 0);
     }
@@ -478,6 +471,7 @@ $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
         mainClass: 'popup-animate',
         callbacks: {
             close: function() {
+                $('input#edit-group-name').removeClass('missing-input');
 				$('input#edit-group-email').removeClass('missing-input');
 				$('span#edit-group-info-title-name').text('');
             }
@@ -507,13 +501,13 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 $('tr.victim-row').remove();
                 $('tr#edit-victims-form-buttons').remove();
                 $('tr#victim-table-divider').remove();
-                $('input#add-victim-username').val('');
-                $('input#add-victim-firstname').val('');
-                $('input#add-victim-lastname').val('');
-                $('input#add-victim-phone').val('');
+                $('input#add-victim-username').val('').removeClass('missing-input');
+                $('input#add-victim-firstname').val('').removeClass('missing-input');
+                $('input#add-victim-lastname').val('').removeClass('missing-input');
+                $('input#add-victim-phone').val('').removeClass('missing-input');
                 $('input#add-victim-email').val('');
                 $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
-                $('input#add-victim-sms-email').val('');
+                $('input#add-victim-sms-email').attr('value', '');
             }
         }
     });
@@ -629,10 +623,10 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 }, 100);
             },
             close: function() {
-                $('input#oncall-page-originator').removeAttr('value');
-                $('input#oncall-page-group').removeAttr('value');
+                $('input#oncall-page-originator').attr('value', '');
+                $('input#oncall-page-group').attr('value', '');
                 $('span#page-primary-groupname').empty();
-                $('textarea#page-primary-body').prop('value', '');
+                $('textarea#page-primary-body').val('').removeClass('missing-input');
             }
         }
     });
@@ -659,10 +653,10 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 }, 100);
             },
             close: function() {
-                $('input#panic-page-originator').removeAttr('value');
-                $('input#panic-page-group').removeAttr('value');
+                $('input#panic-page-originator').attr('value', '');
+                $('input#panic-page-group').attr('value', '');
                 $('span#panic-page-groupname').empty();
-                $('textarea#panic-page-body').prop('value', '');
+                $('textarea#panic-page-body').val('').removeClass('missing-input');
             }
         }
     });
@@ -672,8 +666,8 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
 $('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#send-oncall-page-button', function() {
-	var group = $('input#oncall-page-group').val();
-    var sender = $('input#oncall-page-originator').val();
+	var group = $('input#oncall-page-group').attr('value');
+    var sender = $('input#oncall-page-originator').attr('value');
     var message_text = $('textarea#page-primary-body').val();
     $.when(oncalendar.send_oncall_sms(group, sender, message_text)).then(
         function(data) {
@@ -691,8 +685,8 @@ $('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page-button', fun
 $('#send-panic-page-popup').on('click', 'button#cancel-panic-page-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#send-panic-page-button', function() {
-    var group = $('input#panic-page-group').val();
-    var sender = $('input#panic-page-originator').val();
+    var group = $('input#panic-page-group').attr('value');
+    var sender = $('input#panic-page-originator').attr('value');
     var message_text = $('textarea#panic-page-body').val();
     $.when(oncalendar.send_panic_sms(group, sender, message_text)).then(
         function(data) {
@@ -747,23 +741,23 @@ $('.oncalendar-edit-popup').on('click', 'button.oc-checkbox', function() {
 $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#edit-group-save-button', function() {
-	if ($('input#edit-group-name').val().length == 0) {
+	if ($('input#edit-group-name').val() === undefined || $('input#edit-group-name').val().length == 0) {
         $('input#edit-group-name').addClass('missing-input').focus();
-    } else if (! valid_email($('input#edit-group-email').val())) {
+    } else if ($('input#edit-group-email').val() === undefined || ! valid_email($('input#edit-group-email').attr('value'))) {
 		$('input#edit-group-email').addClass('missing-input');
 	} else {
         var group_data = {
-            id: $('input#edit-group-id').val(),
+            id: $('input#edit-group-id').attr('value'),
             name: $('input#edit-group-name').val(),
             email: $('input#edit-group-email').val(),
-            turnover_day: $('input#edit-group-turnover-day').val(),
-            turnover_hour: $('input#edit-group-turnover-hour').val(),
-            turnover_min: $('input#edit-group-turnover-min').val(),
-            shadow: $('input#edit-group-shadow').val(),
-            backup: $('input#edit-group-backup').val()
+            turnover_day: $('input#edit-group-turnover-day').attr('value'),
+            turnover_hour: $('input#edit-group-turnover-hour').attr('value'),
+            turnover_min: $('input#edit-group-turnover-min').attr('value'),
+            shadow: $('input#edit-group-shadow').attr('value'),
+            backup: $('input#edit-group-backup').attr('value')
         };
         if (email_gateway_config) {
-            group_data.failsafe = $('input#edit-group-failsafe').val();
+            group_data.failsafe = $('input#edit-group-failsafe').attr('value');
             group_data.alias = $('input#edit-group-alias').val();
             group_data.backup_alias = $('input#edit-group-backup-alias').val();
             group_data.failsafe_alias = $('input#edit-group-failsafe-alias').val();
@@ -798,20 +792,20 @@ $('ul#add-victim-sms-email-options').on('click', 'li', function() {
 });
 $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', function() {
     var target_victim = $(this).attr('data-target');
-    if ($(this).siblings('input').val() === "no") {
-        $(this).siblings('input').val('yes');
+    if ($(this).siblings('input').attr('value') === "no") {
+        $(this).siblings('input').attr('value', 'yes');
         $(this).parents('td').parents('tr').addClass('strikethrough');
     } else {
-        $(this).siblings('input').val('no');
+        $(this).siblings('input').attr('value', 'no');
         $(this).parents('td').parents('tr').removeClass('strikethrough');
     }
 }).on('click', 'button.group-victim-active-status', function() {
     if ($(this).hasClass('icon_box-empty')) {
         $(this).removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
-        $(this).siblings('input').val('yes');
+        $(this).siblings('input').attr('value', 'yes');
     } else {
         $(this).removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-        $(this).siblings('input').val('no');
+        $(this).siblings('input').attr('value', 'no');
     }
 }).on('click', 'button#edit-group-victims-cancel', function() {
     $.magnificPopup.close();
@@ -821,43 +815,45 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 	}
 }).on('click', 'button#add-new-victim-save-button', function() {
     var victim_data = {
-		victim_id: $('input#victim-id').val(),
+		victim_id: $('input#victim-id').attr('value'),
         username: $('input#add-victim-username').val(),
         firstname: $('input#add-victim-firstname').val(),
         lastname: $('input#add-victim-lastname').val(),
         phone: $('input#add-victim-phone').val(),
         email: $('input#add-victim-email').val(),
-        sms_email: $('input#add-victim-sms-email').val(),
+        sms_email: $('input#add-victim-sms-email').attr('value'),
         active: 1,
         app_role: 0,
-        groups: [$('input#target-groupid').val()]
+        groups: [$('input#target-groupid').attr('value')]
     };
 
     // Sanity check the phone number
-    victim_data.phone = victim_data.phone.replace(/\D/g,'');
-    var country_code = victim_data.phone.substring(0,1);
-    if (country_code !== "1") {
-        victim_data.phone = "1" + victim_data.phone
+    if (victim_data.phone !== undefined) {
+        victim_data.phone = victim_data.phone.replace(/\D/g,'');
+        var country_code = victim_data.phone.substring(0,1);
+        if (country_code !== "1") {
+            victim_data.phone = "1" + victim_data.phone
+        }
     }
     if (victim_data.phone.length !== 11) {
-        $('input#add-victim-phone').val(victim_data.phone).css('border', '1px solid red');
+        $('input#add-victim-phone').val(victim_data.phone).addClass('missing-input');
     } else {
         // Brand new victim
 		if (victim_data.victim_id > 0) {
 			victim_changes = {};
 			victim_changes.victims = [];
-			victim_changes.groupid = $('input#target-groupid').val();
+			victim_changes.groupid = $('input#target-groupid').attr('value');
 			victim_changes.victims.push({victimid: victim_data.victim_id, remove: 0, active: 1})
 			$.when(oncalendar.update_victim_status(victim_changes)).then(function(data) {
 				var id = victim_data.victim_id;
-				$('input#victim-id').removeProp('value').val('0');
-				$('input#add-victim-username').removeProp('value').val('');
-				$('input#add-victim-firstname').removeProp('value').val('');
-				$('input#add-victim-lastname').removeProp('value').val('');
-				$('input#add-victim-phone').removeProp('value').val('');
-				$('input#add-victim-email').removeProp('value').val('');
+				$('input#victim-id').attr('value', '0');
+				$('input#add-victim-username').val('').removeClass('missing-input');
+				$('input#add-victim-firstname').val('').removeClass('missing-input');
+				$('input#add-victim-lastname').val('').removeClass('missing-input');
+				$('input#add-victim-phone').val('').removeClass('missing-input');
+				$('input#add-victim-email').val('');
                 $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
-				$('input#add-victim-sms-email').removeProp('value').val('');
+				$('input#add-victim-sms-email').attr('value', '');
                 $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
                     .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
                 var victim_row = $('tr#victim' + id);
@@ -886,12 +882,13 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 					$('#edit-group-victims-popup').append('<div class="alert-box">User name/data conflict, please try again</div>');
 				} else {
 		            var id = data.id;
-		            $('input#add-victim-username').val('');
-		            $('input#add-victim-firstname').val('');
-		            $('input#add-victim-lastname').val('');
-		            $('input#add-victim-phone').val('');
+		            $('input#add-victim-username').val('').removeClass('missing-input');
+		            $('input#add-victim-firstname').val('').removeClass('missing-input');
+		            $('input#add-victim-lastname').val('').removeClass('missing-input');
+		            $('input#add-victim-phone').val('').removeClass('missing-input');
 		            $('input#add-victim-email').val('');
-		            $('input#add-victim-sms-email').val('');
+		            $('input#add-victim-sms-email').attr('value', '');
+                    $('input').removeClass('missing-input');
 		            $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
 		                .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
 		            var victim_row = $('tr#victim' + id);
@@ -920,13 +917,13 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 }).on('click', 'button#edit-group-victims-save', function() {
     var victim_changes = {};
     victim_changes.victims = [];
-    victim_changes.groupid = $('input#target-groupid').val();
+    victim_changes.groupid = $('input#target-groupid').attr('value');
     $.each($('tr.victim-row'), function() {
         var victim_id = $(this).attr('data-victim-id');
-		if ($('input#target-victim' + victim_id).val() === "no") {
+		if ($('input#target-victim' + victim_id).attr('value') === "no") {
 	        var victim = {
 	            victimid: victim_id,
-	            active: $('input#victim' + victim_id + '-active').val() === "yes" ? 1 : 0
+	            active: $('input#victim' + victim_id + '-active').attr('value') === "yes" ? 1 : 0
 	        };
 	        victim_changes.victims.push(victim);
 		}
@@ -948,7 +945,7 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 
 // Handlers for edit account info dialog box
 $('ul#edit-account-sms-email-options').on('click', 'li', function() {
-    $('#edit-account-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')] + ' ').append('<span class="elegant_icons arrow_carrot-down">');
+    $('#edit-account-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')]).append('<span class="elegant_icons arrow_carrot-down">');
     $('input#edit-account-sms-email').attr('value', $(this).attr('data-gateway'));
 });
 $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
@@ -969,18 +966,21 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 	];
 	var missing_input = 0;
 	$.each(account_text_fields, function(i, field) {
-		if ($('input#edit-account-' + field).val().length == 0) {
+		if ($('input#edit-account-' + field).val() === undefined || $('input#edit-account-' + field).val().length == 0) {
 			$('input#edit-account-' + field).addClass('missing-input');
 			missing_input++;
 		}
 	});
-	victim_phone = $('input#edit-account-phone').val().replace(/\D/g,'');
-    var country_code = victim_phone.substring(0,1);
-    if (country_code !== "1") {
-        victim_phone = "1" + victim_phone
+	if ($('input#edit-account-phone').val() !== undefined) {
+        victim_phone = $('input#edit-account-phone').val().replace(/\D/g,'');
+        var country_code = victim_phone.substring(0,1);
+        if (country_code !== "1") {
+            victim_phone = "1" + victim_phone
+        }
+        $('input#edit-account-phone').val(victim_phone);
     }
-    if (victim_phone.length !== 11) {
-        $('input#add-victim-phone').val(victim_phone).addClass('missing-input').focus();
+    if ($('input#edit-account-phone').val() === undefined || $('input#edit-account-phone').val().length !== 11) {
+        $('input#edit-account-phone').addClass('missing-input').focus();
 		missing_input++;
 	}
 
@@ -996,14 +996,14 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 			firstname: $('input#edit-account-firstname').val(),
 			lastname: $('input#edit-account-lastname').val(),
 			phone: $('input#edit-account-phone').val(),
-			sms_email: $('input#edit-account-sms-email').val(),
+			sms_email: $('input#edit-account-sms-email').attr('value'),
 			throttle: throttle_value,
-			truncate: $('input#edit-account-truncate').val() === "yes" ? '1' : '0',
+			truncate: $('input#edit-account-truncate').attr('value') === "yes" ? '1' : '0',
 			groups: {}
 		};
 		$.each($('input.group-active-input'), function() {
 			var victim_group = $(this).attr('data-group');
-			victim_data.groups[victim_group] = $(this).val() === "yes" ? '1' : '0';
+			victim_data.groups[victim_group] = $(this).attr('value') === "yes" ? '1' : '0';
 		});
 
 		$.when(oncalendar.update_victim_info(current_user.id, victim_data)).then(
