@@ -99,8 +99,11 @@ $(document).ready(function() {
             $('input#add-victim-lastname').val(suggestion.data.lastname);
             $('input#add-victim-phone').val(suggestion.data.phone);
             $('input#add-victim-email').val(suggestion.data.email);
-            $('button#add-victim-sms-email-label').text(oncalendar.gateway_map[suggestion.data.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
-            $('input#add-victim-sms-email').val(suggestion.data.sms_email);
+            var sms_email_suggestion = '';
+            if (oncalendar.gateway_map[suggestion.data.sms_email] !== undefined) {
+                $('button#add-victim-sms-email-label').text(oncalendar.gateway_map[suggestion.data.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
+                $('input#add-victim-sms-email').val(suggestion.data.sms_email);
+            }
         }
     });
 
@@ -504,6 +507,13 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
                 $('tr.victim-row').remove();
                 $('tr#edit-victims-form-buttons').remove();
                 $('tr#victim-table-divider').remove();
+                $('input#add-victim-username').val('');
+                $('input#add-victim-firstname').val('');
+                $('input#add-victim-lastname').val('');
+                $('input#add-victim-phone').val('');
+                $('input#add-victim-email').val('');
+                $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
+                $('input#add-victim-sms-email').val('');
             }
         }
     });
@@ -524,19 +534,23 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
             $('#victim' + id + '-active-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
             $('input#victim' + id + '-active').attr('value', 'yes');
         }
+        var victim_sms_email = '';
+        if (oncalendar.gateway_map[victim.sms_email] !== undefined) {
+            victim_sms_email = oncalendar.gateway_map[victim.sms_email];
+        }
         victim_row.append('<td>' + victim.username + '</td>' +
                 '<td>' + victim.firstname + '</td>' +
                 '<td>' + victim.lastname + '</td>' +
                 '<td>' + victim.phone + '</td>' +
                 '<td>' + victim.email + '</td>' +
-                '<td>' + oncalendar.gateway_map[victim.sms_email] + '</td><td></td>'
+                '<td>' + victim_sms_email + '</td><td></td>'
         );
     });
 
     victims_table.append('<tr id="edit-victims-form-buttons">' +
-        '<td colspan="5"></td>' +
         '<td><button id="edit-group-victims-cancel">Cancel</button></td>' +
-        '<td><button id="edit-group-victims-save">Save Changes</button></td></tr>');
+        '<td><button id="edit-group-victims-save">Save Changes</button></td></tr>' +
+        '<td colspan="5"></td>');
 }) // Edit month by day button
     .on('click', 'button#edit-month-button', function() {
     var edit_group = $(this).attr('data-target');
@@ -842,6 +856,7 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 				$('input#add-victim-lastname').removeProp('value').val('');
 				$('input#add-victim-phone').removeProp('value').val('');
 				$('input#add-victim-email').removeProp('value').val('');
+                $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
 				$('input#add-victim-sms-email').removeProp('value').val('');
                 $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
                     .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
@@ -852,12 +867,16 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
                     '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
                     ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
                     '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
+                var victim_sms_email = '';
+                if (oncalendar.gateway_map[data[id].sms_email] !== undefined) {
+                    victim_sms_email = oncalendar.gateway_map[data[id].sms_email];
+                }
                 victim_row.append('<td>' + data[id].username + '</td>' +
                     '<td>' + data[id].firstname + '</td>' +
                     '<td>' + data[id].lastname + '</td>' +
                     '<td>' + data[id].phone + '</td>' +
                     '<td>' + data[id].email + '</td>' +
-                    '<td>' + oncalendar.gateway_map[data[id].sms_email] + '</td><td></td>'
+                    '<td>' + victim_sms_email + '</td><td></td>'
                 );
 			});
         } else {
@@ -882,12 +901,16 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 		                '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
 		                ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
 		                '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
+                    var victim_sms_email = '';
+                    if (oncalendar.gateway_map[data.sms_email] !== undefined) {
+                        victim_sms_email = oncalendar.gateway_map[data.sms_email];
+                    }
 		            victim_row.append('<td>' + data.username + '</td>' +
 		                    '<td>' + data.firstname + '</td>' +
 		                    '<td>' + data.lastname + '</td>' +
 		                    '<td>' + data.phone + '</td>' +
 		                    '<td>' + data.email + '</td>' +
-		                    '<td>' + oncalendar.gateway_map[data.sms_email] + '</td><td></td>'
+		                    '<td>' + victim_sms_email + '</td><td></td>'
 		            );
 				}
 	        });
