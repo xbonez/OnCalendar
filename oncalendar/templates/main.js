@@ -13,7 +13,7 @@ var email_gateway_config = {{ email_gateway_config }};
 // If the user is logged in, get their info,
 // otherwise use generic anonymous info
 {% if g.user.is_anonymous() %}
-current_user = {{ user_json }}
+current_user = {{ user_json }};
 {% else %}
 $.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
 	current_user = data[{{ g.user.id }}];
@@ -48,6 +48,9 @@ $.when(oncalendar.get_group_info()).then(function(data) {
 // Page specific functions, for the main calendar display
 //-------------------------------------
 {% block page_script %}
+
+var sms_gateways = {{ sms_gateway_options }};
+oncalendar.gateway_map = {};
 
 for (i = 0; i <= 23; i++) {
     if (i < 10) {
@@ -100,6 +103,11 @@ $(document).ready(function() {
         }
     });
 
+    $.each(sms_gateways, function(i, gateway) {
+        var domain = Object.keys(gateway)[0];
+        oncalendar.gateway_map[domain] = gateway[domain]
+        $('ul#edit-account-sms-email-options').append('<li data-gateway="' + domain + '"><span>' + gateway[domain] + '</span></li>');
+    });
     // Handler for user menu items
     $('div#user-menu')
         .on('click', 'li#user-login', function() {
@@ -131,7 +139,12 @@ document.addEventListener('user_info_loaded', function() {
 	$('input#edit-account-lastname').attr('value', current_user.lastname);
 	$('input#edit-account-phone').attr('value', current_user.phone);
 	$('input#edit-account-email').attr('value', current_user.email);
-	$('input#edit-account-sms-email').attr('value', current_user.sms_email);
+    if (oncalendar.gateway_map[current_user.sms_email] !== undefined) {
+        $('button#edit-account-sms-email-label').text(oncalendar.gateway_map[current_user.sms_email] + ' ').append('<span class="elegant_icons arrow_carrot-down">');
+        $('input#edit-account-sms-email').attr('value', current_user.sms_email);
+    } else {
+        $('input#edit-account-sms-email').removeProp('value').val('')
+    }
 	$('input#edit-account-throttle').attr('value', current_user.throttle);
 	if (current_user.truncate > 0) {
 		$('button#edit-account-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
@@ -905,6 +918,10 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 });
 
 // Handlers for edit account info dialog box
+$('ul#edit-account-sms-email-options').on('click', 'li', function() {
+    $('#edit-account-sms-email-label').text(oncalendar.gateway_map[$(this).attr('data-gateway')] + ' ').append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#edit-account-sms-email').attr('value', $(this).attr('data-gateway'));
+});
 $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
     if ($(this).attr('data-checked') === "no") {
         $(this).removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');

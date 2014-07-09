@@ -276,7 +276,15 @@
             <td><input type="text" id="edit-account-lastname" name="edit-account-lastname" value="" size="20"></td>
             <td><input type="text" id="edit-account-phone" name="edit-account-phone" value="" size="20"></td>
             <td><input type="text" id="edit-account-email" name="edit-account-email" value="" size="20"></td>
-            <td><input type="text" id="edit-account-sms-email" name="edit-account-sms-email" value="" size="30"></td>
+            <td>
+              <span id="edit-account-sms-email-menu" class="dropdown">
+                <span data-toggle="dropdown">
+                  <button id="edit-account-sms-email-label">-- <span class="elegant_icons arrow_carrot-down"></span></button>
+                </span>
+                <ul id="edit-account-sms-email-options" class="dropdown-menu" role="menu"></ul>
+              </span>
+              <input type="hidden" id="edit-account-sms-email" name="edit-account-sms-email">
+            </td>
             <td><input type="text" id="edit-account-throttle" name="edit-account-throttle" value="" size="2"></td>
             <td>
               <button id="edit-account-truncate-checkbox" class="edit-account-truncate oc-checkbox elegant_icons icon_box-empty" data-target="edit-account-truncate" data-checked="no"></button>
