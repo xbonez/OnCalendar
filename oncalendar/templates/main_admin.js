@@ -813,10 +813,8 @@ $('#edit-group-popup').on('click', 'button#cancel-edit-group-button', function()
 }).on('click', 'button#save-edit-group-button', function() {
     if ($('input#edit-group-name').val() === undefined || $('input#edit-group-name').val().length == 0) {
         $('input#edit-group-name').addClass('missing-input').focus();
-    } else if ($('input#edit-group-email').val() !== undefined) {
-        if (!valid_email($('input#edit-group-email').val())) {
-            $('input#edit-group-email').addClass('missing-input').focus();
-        }
+    } else if ($('input#edit-group-email').val() !== undefined && !valid_email($('input#edit-group-email').val())) {
+        $('input#edit-group-email').addClass('missing-input').focus();
     } else {
         var edit_group_name = $('input#edit-group-name').val();
         var edit_group_data = {

@@ -287,7 +287,7 @@ var populate_group_info = function(target_group) {
     }
 
     // App admin and group members can edit the schedule
-    if (current_user.app_role === 2 || $.inArray(target_group, current_user.groups) != -1) {
+    if (current_user.app_role === 2 || $.inArray(target_group, Object.keys(current_user.groups)) != -1) {
         $('span#edit-month-link-container')
             .html('<button id="edit-month-button" data-target="' + target_group + '">Edit Month By Day</button>');
         $('span#edit-by-week-link-container')
@@ -327,7 +327,7 @@ var populate_group_info = function(target_group) {
 
     // Last entry in the schedule edit log
 	$('td#group-edit-log').empty();
-    if (current_user.app_role === 2 || $.inArray(target_group, current_user.groups) != -1) {
+    if (current_user.app_role === 2 || $.inArray(target_group, Object.keys(current_user.groups)) != -1) {
         $('th#group-edit-log-head').removeClass('hide');
         $.when(oncalendar.get_last_group_edit(oncalendar.oncall_groups[target_group].id)).then(function(data) {
             if (data.ts) {
@@ -748,7 +748,7 @@ $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function()
 }).on('click', 'button#edit-group-save-button', function() {
 	if ($('input#edit-group-name').val() === undefined || $('input#edit-group-name').val().length == 0) {
         $('input#edit-group-name').addClass('missing-input').focus();
-    } else if ($('input#edit-group-email').val() === undefined || ! valid_email($('input#edit-group-email').attr('value'))) {
+    } else if ($('input#edit-group-email').val() === undefined || ! valid_email($('input#edit-group-email').val())) {
 		$('input#edit-group-email').addClass('missing-input');
 	} else {
         var group_data = {
