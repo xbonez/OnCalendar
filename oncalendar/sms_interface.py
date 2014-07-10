@@ -82,7 +82,7 @@ class OnCalendarSMS(object):
             except OnCalendarDBError, error:
                 raise OnCalendarSMSError([error.args[0], error.args[1]])
 
-            response_key = "[[{0}]]\n".format(sms_hash)
+            response_key = "[{0}]\n".format(sms_hash)
             body = response_key + body[:self.smsconfig['SMS_CLIP'] - len(response_key)]
 
             try:
