@@ -66,7 +66,7 @@ class User(object):
 
     @classmethod
     def get_id(cls):
-        return cls.id
+        return unicode(cls.id)
 
 
     @classmethod

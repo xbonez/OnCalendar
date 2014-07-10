@@ -413,6 +413,13 @@ def load_user(id):
 @ocapp.before_request
 def before_request():
     g.user = flogin.current_user
+    if 'username' in session:
+        if g.user.username != session['username']:
+            ocapp.logger.warning('Chicanery! User {0} does not match session user {1}!'.format(
+                g.user.username,
+                session['username']
+            ))
+            flogin.logout_user()
 
 
 @ocapp.after_request
@@ -456,6 +463,7 @@ def handle_auth_error(error):
     """
 
     session['auth_error'] = error[0]
+    session.modified = True
     return redirect(url_for('oc_login'))
 
 
@@ -489,6 +497,7 @@ def oc_calendar(year=None, month=None):
         }
 
     user_json = json.dumps(user)
+    ocapp.logger.debug(session)
     js = render_template('main.js',
                          year=year,
                          month=int(month) - 1,
@@ -526,15 +535,41 @@ def oc_login():
     #    return redirect(url_for('root'))
     form = forms.LoginForm()
     if form.validate_on_submit():
+        if 'username' in session:
+            if session['username'] != form.username.data:
+                ocapp.logger.warning('session user mismatch, session user {0} != {1}'.format(
+                    session['username'],
+                    form.username.data
+                ))
+                session.pop('username', None)
+                session.modified = True
         try:
             ldap = auth.ldap_auth()
             user = ldap.authenticate_user(form.username.data, form.password.data)
             flogin.login_user(user)
+            session['username'] = form.username.data
+            session.modified = True
+            ocapp.logger.info('User {0} logged in.'.format(g.user.username))
+            ocapp.logger.debug(session)
             return redirect(request.args.get('next') or url_for('root'))
         except OnCalendarAuthError, error:
             raise OnCalendarAuthError(error[0]['desc'])
 
-    auth_error_message = session.pop('auth_error', None)
+    ocapp.logger.debug(session)
+    auth_error_message = ''
+    if 'auth_error' in session:
+        auth_error_message = session.pop('auth_error', None)
+        session.modified = True
+        ocapp.logger.error('Failed login attempt for {0}: {1}'.format(
+            form.username.data,
+            auth_error_message
+        ))
+    if 'username' in session:
+        ocapp.logger.debug('Login function called for already logged in user ({0}), resetting'.format(session['username']))
+        session.pop('username', None)
+        flogin.logout_user()
+        ocapp.logger.debug(session)
+
     js = render_template('main_login.js')
     login_next = ''
     if 'next' in request.args:
@@ -558,6 +593,10 @@ def oc_logout():
     """
 
     flogin.logout_user()
+    if 'username' in session:
+        ocapp.logger.info('User {0} logged out.'.format(session['username']))
+        session.pop('username', None)
+        session.modified = True
     return redirect(url_for('root'))
 
 
