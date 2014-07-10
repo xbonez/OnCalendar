@@ -2054,7 +2054,7 @@ class OnCalendarDB(object):
         return sms_id
 
 
-    def get_sms_record(self, userid, hash):
+    def get_sms_record(self, userid, hash=False):
         """
         Retrieves a record of a sent SMS alert
 
@@ -2071,11 +2071,15 @@ class OnCalendarDB(object):
         """
 
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        get_record_query = """SELECT * FROM sms_send
-        WHERE victimid='{0}' AND sms_hash='{1}'""".format(
-            userid,
-            hash
-        )
+        if hash:
+            get_record_query = """SELECT * FROM sms_send WHERE victimid='{0}'
+            AND sms_hash='{1}' ORDER BY ts DESC""".format(
+                userid,
+                hash
+            )
+        else:
+            get_record_query = """SELECT * FROM sms_send WHERE victimid='{0}'
+            ORDER BY ts DESC LIMIT 1""".format(userid)
 
         try:
             cursor.execute(get_record_query)

@@ -278,20 +278,10 @@ def get_incoming_sms():
             ocdb.update_last_incoming_sms(message.sid)
 
             from_number = message.from_.replace('+', '')
-            matches = re.search(
-                r'^(?:\s+|)(?:\[\[(?P<hash>\w+)\]\]|)(?:\s+|)(?P<command>\w+)(?:\s+|)(?P<extra>.*)$',
-                message.body
-            )
-            if matches is None:
-                ocapp.aps_logger.debug("No hash or command found in message")
-                ocsms.send_sms(
-                    from_number,
-                    "Que?",
-                    config.sms['TWILIO_USE_CALLBACK']
-                )
-                continue
-            else:
-                matches = matches.groupdict()
+
+            ocapp.logger.debug('Incoming SMS body before parsing: {0}'.format(message.body))
+            message_string = message.body.lower().replace('[','').replace(']','')
+            message_bits = message_string.split()
 
             try:
                 sms_user_info = ocdb.get_victim_info('phone', from_number)
@@ -316,8 +306,10 @@ def get_incoming_sms():
                 sms_user_info['id'],
                 sms_user_info['username'],
                 from_number,
-                matches
+                message_bits
             )
+
+            ocapp.logger.debug('Response to SMS command: {0}'.format(sms_response))
 
             try:
                 ocsms.send_sms(
@@ -2511,221 +2503,292 @@ def process_incoming_sms(userid, username, phone, sms):
         (str): Result of parsing the command, to send to the user
     """
 
-    valid_commands = [
-        'help',
-        'ping',
-        'ack',
-        'unack',
-        'dt',
-        'downtime',
-        'truncate',
-        'throttle'
-    ]
-
-    ocapp.logger.debug("Checking incoming SMS - hash: {0}, command: {1}, extra: {2}".format(
-        sms['hash'],
-        sms['command'],
-        sms['extra']
-    ))
-
-    if sms['hash'] is None:
-        sms_response = "No keyword found in message, unable to comply"
-        hash_word = None
-    else:
-        hash_word = sms['hash'].lower()
-
-    command = sms['command'].lower()
-
     ocdb = OnCalendarDB(config.database)
     nagios = OnCalendarNagiosLivestatus(config.monitor)
 
-    if command in valid_commands:
+    def ping(sms):
+        return 'pong'
 
-        if command == 'ping':
-            sms_response = 'pong'
-
-        elif command == 'help':
-            sms_response = """[[<keyword>]] <command>
+    def help(sms):
+        help_response = """<keyword> <command> or <command> <keyword>
 help: This output
 ack: Ack an alert
 unack: Unack an alert
 dt|downtime: Downtime problem until 11AM tomorrow
 truncate [on|off]: Set SMS truncate preference
 throttle <#>: Set throttle threshold"""
+        return help_response
 
-        elif command == 'truncate':
-            if not sms['extra'] in ('on', 'off'):
-                sms_response = "Usage: truncate [on|off]"
+    def truncate(sms):
+        if not sms['extra'] in ('on', 'off'):
+            truncate_response = "Usage: truncate [on|off]"
+        else:
+            truncate = 1 if sms['extra'] == "on" else 0
+            try:
+                ocdb.set_victim_preference(userid, 'truncate', truncate)
+                truncate_response = "SMS truncate preference updated"
+            except OnCalendarDBError as error:
+                ocapp.logger.error("DB error updating truncate pref - {0}: {1}".format(
+                    error.args[0],
+                    error.args[1]
+                ))
+                truncate_response = "There was an error updating your truncate setting, please try again later"
+
+        return truncate_response
+
+    def throttle(sms):
+        if re.match('^\d+$', sms['extra']) is None:
+            throttle_response = "Usage: throttle [threshold]"
+        else:
+            throttle = int(sms['extra'])
+            if throttle < config.sms['SMS_THROTTLE_MIN']:
+                throttle_response = "Throttle setting must be larger than {0}".format(config.sms['SMS_THROTTLE_MIN'])
             else:
-                truncate = 1 if sms['extra'] == "on" else 0
                 try:
-                    ocdb.set_victim_preference(userid, 'truncate', truncate)
-                    sms_response = "SMS truncate preference updated"
+                    ocdb.set_victim_preference(userid, 'throttle', throttle)
+                    throttle_response = "SMS throttle setting updated"
                 except OnCalendarDBError as error:
-                    ocapp.logger.error("DB error updating truncate pref - {0}: {1}".format(
+                    ocapp.logger.error("DB error updating throttle pref - {0}: {1}".format(
                         error.args[0],
                         error.args[1]
                     ))
-                    sms_response = "There was an error updating your truncate setting, please try again later"
+                    throttle_response = "There was an error updating your throttle setting, please try again later"
 
-        elif command == "throttle":
-            if re.match('^\d+$', sms['extra']) is None:
-                sms_response = "Usage: throttle [threshold]"
+        return throttle_response
+
+    def ack(sms):
+        sms_record = ocdb.get_sms_record(userid, sms['hash'])
+        if sms_record is None:
+            if sms['hash']:
+                ack_response = "Alert for keyword {0} was not found.".format(sms['hash'])
             else:
-                throttle = int(sms['extra'])
-                if throttle < config.sms['SMS_THROTTLE_MIN']:
-                    sms_response = "Throttle setting must be larger than {0}".format(config.sms['SMS_THROTTLE_MIN'])
-                else:
-                    try:
-                        ocdb.set_victim_preference(userid, 'throttle', throttle)
-                        sms_response = "SMS throttle setting updated"
-                    except OnCalendarDBError as error:
-                        ocapp.logger.error("DB error updating throttle pref - {0}: {1}".format(
-                            error.args[0],
-                            error.args[1]
-                        ))
-                        sms_response = "There was an error updating your throttle setting, please try again later"
-
-        elif command == 'ack' and hash_word is not None:
-            sms_record = ocdb.get_sms_record(userid, hash_word)
-            if sms_record is None:
-                sms_response = "Alert for keyword {0} was not found.".format(hash_word)
+                ack_response = "No alerts found for you to ack."
+        else:
+            if sms_record['nagios_master'] is not None:
+                nagios_masters = [sms_record['nagios_master']]
             else:
-                if sms_record['nagios_master'] is not None:
-                    nagios_masters = [sms_record['nagios_master']]
-                else:
-                    nagios_masters = nagios.nagios_masters
+                nagios_masters = nagios.nagios_masters
 
-                if len(sms['extra']) == 0:
-                    sms['extra'] = "Acknowledged via SMS by {0}".format(username)
+            if len(sms['extra']) == 0:
+                sms['extra'] = "Acknowledged via SMS by {0}".format(username)
 
-                if sms_record['type'] == "Host":
-                    command = "ACKNOWLEDGE_HOST_PROBLEM;{0};1;1;0;{1};{2}".format(
-                        sms_record['host'],
-                        username,
-                        sms['extra']
-                    )
-                    sms_response = "Alert for host {0} acked by {1}".format(
-                        sms_record['host'],
-                        username
-                    )
-                else:
-                    command = "ACKNOWLEDGE_SVC_PROBLEM;{0};{1};1;1;0;{2};{3}".format(
-                        sms_record['host'],
-                        sms_record['service'],
-                        username,
-                        sms['extra']
-                    )
-                    sms_response = "Alert for service {0} on host {1} acked by {2}".format(
-                        sms_record['service'],
-                        sms_record['host'],
-                        username
-                    )
-
-                for master in nagios_masters:
-                    try:
-                        ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
-                        nagios.nagios_command(master, nagios.default_port, command)
-                    except OnCalendarNagiosError as error:
-                        ocapp.logger.error("Nagios command failed - {0}: {1}".format(
-                            error.args[0],
-                            error.args[1]
-                        ))
-
-        elif command == 'unack' and hash_word is not None:
-            sms_record = ocdb.get_sms_record(userid, hash_word)
-            if sms_record is None:
-                sms_response = "Alert for keyword {0} was not found.".format(hash_word)
+            if sms_record['type'] == "Host":
+                command = "ACKNOWLEDGE_HOST_PROBLEM;{0};1;1;0;{1};{2}".format(
+                    sms_record['host'],
+                    username,
+                    sms['extra']
+                )
+                ack_response = "Alert for host {0} acked by {1}".format(
+                    sms_record['host'],
+                    username
+                )
             else:
-                if sms_record['nagios_master'] is not None:
-                    nagios_masters = [sms_record['nagios_master']]
-                else:
-                    nagios_masters = nagios.nagios_masters
+                command = "ACKNOWLEDGE_SVC_PROBLEM;{0};{1};1;1;0;{2};{3}".format(
+                    sms_record['host'],
+                    sms_record['service'],
+                    username,
+                    sms['extra']
+                )
+                ack_response = "Alert for service {0} on host {1} acked by {2}".format(
+                    sms_record['service'],
+                    sms_record['host'],
+                    username
+                )
 
-                if sms_record['type'] == "Host":
-                    command = "REMOVE_HOST_ACKNOWLEDGEMENT;{0}".format(sms_record['host'])
-                    sms_response = "Acknowledgement for host {0} removed by {1}".format(
-                        sms_record['host'],
-                        username
-                    )
-                else:
-                    command = "REMOVE_SVC_ACKNOWLEDGEMENT;{0};{1}".format(
-                        sms_record['host'],
-                        sms_record['service']
-                    )
-                    sms_response = "Acknowledgement for service {0} on host {1} removed by {2}".format(
-                        sms_record['service'],
-                        sms_record['host'],
-                        username
-                    )
-
-                for master in nagios_masters:
+            for master in nagios_masters:
+                try:
                     ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
                     nagios.nagios_command(master, nagios.default_port, command)
+                except OnCalendarNagiosError as error:
+                    ocapp.logger.error("Nagios command failed - {0}: {1}".format(
+                        error.args[0],
+                        error.args[1]
+                    ))
+                    ack_response = 'Nagios command failed: {0} {0}'.format(
+                        error.args[0],
+                        error.args[1]
+                    )
 
-        elif command in ('dt', 'downtime') and hash_word is not None:
-            sms_record = ocdb.get_sms_record(userid, hash_word)
-            if sms_record is None:
-                sms_response = "Alert for keyword {0} was not found.".format(hash_word)
+        return ack_response
+
+    def unack(sms):
+        sms_record = ocdb.get_sms_record(userid, sms['hash'])
+        if sms_record is None:
+            if sms['hash']:
+                unack_response = "Alert for keyword {0} was not found.".format(sms['hash'])
             else:
-                start, end, duration = nagios.calculate_downtime()
+                unack_response = "No alerts found for you to unack."
+        else:
+            if sms_record['nagios_master'] is not None:
+                nagios_masters = [sms_record['nagios_master']]
+            else:
+                nagios_masters = nagios.nagios_masters
 
-                if sms_record['nagios_master'] is not None:
-                    nagios_masters = [sms_record['nagios_master']]
-                else:
-                    nagios_masters = nagios.nagios_masters
+            if sms_record['type'] == "Host":
+                command = "REMOVE_HOST_ACKNOWLEDGEMENT;{0}".format(sms_record['host'])
+                unack_response = "Acknowledgement for host {0} removed by {1}".format(
+                    sms_record['host'],
+                    username
+                )
+            else:
+                command = "REMOVE_SVC_ACKNOWLEDGEMENT;{0};{1}".format(
+                    sms_record['host'],
+                    sms_record['service']
+                )
+                unack_response = "Acknowledgement for service {0} on host {1} removed by {2}".format(
+                    sms_record['service'],
+                    sms_record['host'],
+                    username
+                )
 
-                if len(sms['extra']) == 0:
-                    sms['extra'] = "Host downtimed via SMS byb {0}".format(username)
-
-                if sms_record['type'] == "Host":
-                    command = "SCHEDULE_HOST_DOWNTIME;{0};{1};{2};{3};{4};{5};{6};{7}".format(
-                        sms_record['host'],
-                        start,
-                        end,
-                        1,
-                        0,
-                        duration,
-                        username,
-                        phone,
-                        sms['extra']
-                    )
-                    sms_response = "Host {0} downtimed by {1}".format(
-                        sms_record['host'],
-                        username
-                    )
-                else:
-                    command = "SCHEDULE_SVC_DOWNTIME;{0};{1};{2};{3};{4};{5};{6};{7};{8}".format(
-                        sms_record['host'],
-                        sms_record['service'],
-                        start,
-                        end,
-                        1,
-                        0,
-                        duration,
-                        username,
-                        phone,
-                        sms['extra']
-                    )
-                    sms_response = "Service {0} on host {1} downtimed by {2}".format(
-                        sms_record['service'],
-                        sms_record['host'],
-                        username
-                    )
-
-                for master in nagios_masters:
+            for master in nagios_masters:
+                try:
                     ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
                     nagios.nagios_command(master, nagios.default_port, command)
+                except OnCalendarNagiosError as error:
+                    ocapp.logger.error("Nagios command failed - {0}: {1}".format(
+                        error.args[0],
+                        error.args[1]
+                    ))
+                    unack_response = 'Nagios command failed: {0} {0}'.format(
+                        error.args[0],
+                        error.args[1]
+                    )
 
+        return unack_response
+
+    def downtime(sms):
+        sms_record = ocdb.get_sms_record(userid, sms['hash'])
+        if sms_record is None:
+            if sms['hash']:
+                downtime_response = "Alert for keyword {0} was not found.".format(sms['hash'])
+            else:
+                downtime_response = "No alert found for you to downtime."
+        else:
+            start, end, duration = nagios.calculate_downtime()
+
+            if sms_record['nagios_master'] is not None:
+                nagios_masters = [sms_record['nagios_master']]
+            else:
+                nagios_masters = nagios.nagios_masters
+
+            if len(sms['extra']) == 0:
+                sms['extra'] = "Host downtimed via SMS byb {0}".format(username)
+
+            if sms_record['type'] == "Host":
+                command = "SCHEDULE_HOST_DOWNTIME;{0};{1};{2};{3};{4};{5};{6};{7}".format(
+                    sms_record['host'],
+                    start,
+                    end,
+                    1,
+                    0,
+                    duration,
+                    username,
+                    phone,
+                    sms['extra']
+                )
+                downtime_response = "Host {0} downtimed by {1}".format(
+                    sms_record['host'],
+                    username
+                )
+            else:
+                command = "SCHEDULE_SVC_DOWNTIME;{0};{1};{2};{3};{4};{5};{6};{7};{8}".format(
+                    sms_record['host'],
+                    sms_record['service'],
+                    start,
+                    end,
+                    1,
+                    0,
+                    duration,
+                    username,
+                    phone,
+                    sms['extra']
+                )
+                downtime_response = "Service {0} on host {1} downtimed by {2}".format(
+                    sms_record['service'],
+                    sms_record['host'],
+                    username
+                )
+
+            for master in nagios_masters:
+                try:
+                    ocapp.logger.debug("Sending command {0} to {1}".format(command, master))
+                    nagios.nagios_command(master, nagios.default_port, command)
+                except OnCalendarNagiosError as error:
+                    ocapp.logger.error("Nagios command failed - {0}: {1}".format(
+                        error.args[0],
+                        error.args[1]
+                    ))
+                    downtime_response = 'Nagios command failed: {0} {0}'.format(
+                        error.args[0],
+                        error.args[1]
+                    )
+
+        return downtime_response
+
+    commands = {
+        'help': help,
+        'ping': ping,
+        'ack': ack,
+        'unack': unack,
+        'dt': downtime,
+        'downtime': downtime,
+        'truncate': truncate,
+        'throttle': throttle
+    }
+
+    parsed_sms = {
+        'command': False,
+        'hash': False,
+        'extra': False
+    }
+
+    ocapp.logger.debug("Checking incoming SMS - {0}".format(' '.join(sms)))
+
+    # If the incoming sms has only one word it must be the command
+    if len(sms) == 1:
+        if sms[0] in commands:
+            parsed_sms['command'] = sms[0]
+        else:
+            ocapp.logger.debug("Invalid command: {0}".format(sms[0]))
+            sms_response = """<keyword> <command> or <command> <keyword>
+    help: This output
+    ack: Ack an alert
+    unack: Unack an alert
+    dt|downtime: Downtime problem until 11AM tomorrow
+    truncate [on|off]: Set SMS truncate preference
+    throttle <#>: Set throttle threshold"""
+            return sms_response
     else:
-        ocapp.logger.debug("Invalid command: {0}".format(command))
-        sms_response = """[[<keyword>]] <command>
+        # Otherwise the command must be one of the first two words in the message.
+        # If the command requires a hash word, that'll be the first remaining item,
+        # and then we look for extras
+        if sms[0] in commands:
+            parsed_sms['command'] = sms.pop(0)
+        elif sms[1] in commands:
+            parsed_sms['command'] = sms.pop(1)
+        else:
+            ocapp.logger.debug("No valid commands found - {0}".format(' '.join(sms)))
+            sms_response = """<keyword> <command> or <command> <keyword>
 help: This output
 ack: Ack an alert
 unack: Unack an alert
 dt|downtime: Downtime problem until 11AM tomorrow
 truncate [on|off]: Set SMS truncate preference
 throttle <#>: Set throttle threshold"""
+            return sms_response
+
+        if parsed_sms['command'] in ['ack', 'unack', 'dt', 'downtime']:
+            parsed_sms['hash'] = sms.pop(0)
+            if len(sms) > 0:
+                parsed_sms['extra'] = ' '.join(sms)
+        else:
+            parsed_sms['extra'] = ' '.join(sms)
+
+        if parsed_sms['command'] == "dt":
+            parsed_sms['command'] = 'downtime'
+
+    sms_response = commands[parsed_sms['command']](parsed_sms)
 
     return sms_response
 
