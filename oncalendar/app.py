@@ -407,7 +407,7 @@ def load_user(id):
 @ocapp.before_request
 def before_request():
     g.user = flogin.current_user
-    if 'username' in session:
+    if not g.user.is_anonymous() and 'username' in session:
         if g.user.username != session['username']:
             ocapp.logger.warning('Chicanery! User {0} does not match session user {1}!'.format(
                 g.user.username,
@@ -1289,7 +1289,7 @@ def api_get_victim_info(key=None, id=None):
         OnCalendarAppError
     """
 
-    if key not in ['id', 'username']:
+    if key not in ['id', 'username', 'phone']:
         return jsonify({
             'error_code': ocapi_err.NOPARAM,
             'error_message': 'Invalid search key: {0}'.format(key)
