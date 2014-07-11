@@ -1598,7 +1598,7 @@ def api_add_victim():
     """
 
     if not request.json:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'error_code': ocapi_err.NOPOSTDATA,
                 'error_message': 'No data received'
@@ -1616,7 +1616,7 @@ def api_add_victim():
             'error_message': error.args[1]
         })
     except OnCalendarDBError as error:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'error_code': error.args[0],
                 'error_message': error.args[1]

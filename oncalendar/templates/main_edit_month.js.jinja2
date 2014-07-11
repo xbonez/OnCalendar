@@ -5,6 +5,7 @@
 document.addEventListener('group_info_loaded', function() {
     $.when(oncalendar.build_calendar({{ edit_year }}, {{ edit_month }}, '{{ edit_group }}')).then(function() {
         oncalendar.display_calendar_edit('{{ edit_group }}');
+        $('div#working').remove();
     });
 });
 
@@ -29,18 +30,18 @@ $('#calendar-header')
         $(this).removeClass('arrow_carrot-right_alt').addClass('arrow_carrot-right_alt2');
     });
 
-$('table#calendar-table').on('click', 'span.oncall-option', function() {
-    var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
+$('table#calendar-table').on('click', 'li.oncall-option', function() {
+    var day_id = $(this).parent('ul').attr('data-day-id');
     $('button#' + day_id + '-oncall-label').text($(this).attr('data-victim'))
         .append('<span class="elegant_icons arrow_carrot-down"></span>');
     $('input#' + day_id + '-oncall').attr('value', $(this).attr('data-victim'));
-}).on('click', 'span.shadow-option', function() {
-    var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
+}).on('click', 'li.shadow-option', function() {
+    var day_id = $(this).parent('ul').attr('data-day-id');
     $('button#' + day_id + '-shadow-label').text($(this).attr('data-victim'))
         .append('<span class="elegant_icons arrow_carrot-down"></span>');
     $('input#' + day_id + '-shadow').attr('value', $(this).attr('data-victim'));
-}).on('click', 'span.backup-option', function() {
-    var day_id = $(this).parent('li').parent('ul').attr('data-day-id');
+}).on('click', 'li.backup-option', function() {
+    var day_id = $(this).parent('ul').attr('data-day-id');
     $('button#' + day_id + '-backup-label').text($(this).attr('data-victim'))
         .append('<span class="elegant_icons arrow_carrot-down"></span>');
     $('input#' + day_id + '-backup').attr('value', $(this).attr('data-victim'));
@@ -55,33 +56,33 @@ $('button#edit-month-save-button').click(function() {
     if (reason_for_edit.length < 3) {
         $('textarea#edit-month-note').addClass('missing-input').focus();
     } else {
-		$('body').append('<div id="working"><span id="status-message"><h1>Working...</h1></span></div>');
-	    var month_data = {};
-	    month_data.filter_group = oncalendar.filter_group;
+        $('body').append('<div id="working"><span id="status-message"><h1>Working...</h1></span></div>');
+        var month_data = {};
+        month_data.filter_group = oncalendar.filter_group;
         month_data.note = reason_for_edit;
-	    month_data.days = {};
-	    $.each($('td'), function(index, element) {
-	        var day_id = $(element).attr('id');
-	        month_data.days[day_id] = {};
-	        month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').attr('value');
-	        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
-	            month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').attr('value');
-	        }
-	        if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
-	            month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').attr('value');
-	        }
-	    });
+        month_data.days = {};
+        $.each($('td'), function(index, element) {
+            var day_id = $(element).attr('id');
+            month_data.days[day_id] = {};
+            month_data.days[day_id].oncall = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-oncall').attr('value');
+            if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-shadow')) {
+                month_data.days[day_id].shadow = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-shadow').attr('value');
+            }
+            if ($(element).children('div.calendar-day-victims').has('input#' + day_id + '-backup')) {
+                month_data.days[day_id].backup = $(element).children('div.calendar-day-victims').children('input#' + day_id + '-backup').attr('value');
+            }
+        });
 
-	    $.when(oncalendar.update_month(month_data)).then(function(data) {
-			$('div#working').children('span').children('h1').text('Update complete');
-			setTimeout(function() {
-				$('div#working').addClass('transparent');
-			}, 1000);
-			setTimeout(function() {
-				window.location.href='/calendar/' + oncalendar.current_year + '/' + oncalendar.real_month;
-			}, 1250);
-	    });
-	}
+        $.when(oncalendar.update_month(month_data)).then(function(data) {
+            $('div#working').children('span').children('h1').text('Update complete');
+            setTimeout(function() {
+                $('div#working').addClass('transparent');
+            }, 1000);
+            setTimeout(function() {
+                window.location.href='/calendar/' + oncalendar.current_year + '/' + oncalendar.real_month;
+            }, 1250);
+        });
+    }
 });
 
 {% endblock %}

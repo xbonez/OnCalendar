@@ -689,7 +689,7 @@ $('#edit-user-popup').on('click', 'button.edit-user-group-active', function() {
         $('input#edit-user-username').addClass('missing-input').focus();
     } else if ($('input#edit-user-firstname').val() === undefined || $('input#edit-user-firstname').val().length == 0) {
         $('input#edit-user-lastname').addClass('missing-input').focus();
-    } else if ($('input#edit-user-lastname').val() || $('input#edit-user-lastname').val().length == 0) {
+    } else if ($('input#edit-user-lastname').val() === undefined || $('input#edit-user-lastname').val().length == 0) {
         $('input#edit-user-lastname').addClass('missing-input').focus();
     } else if ($('input#edit-user-email').val() === undefined || $('input#edit-user-email').val().length == 0 || !valid_email($('input#edit-user-email').val())) {
         $('input#edit-user-email').addClass('missing-input').focus();

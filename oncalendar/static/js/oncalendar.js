@@ -502,9 +502,9 @@ var oncalendar = {
         var current_day = new Date(cal.view_start);
         var today_string = cal.now.toString('yyyy-M-d');
         var day_victims = {};
-        var victim_options = '<li><span class="oncall-option" data-victim="--">--</span></li>';
-        var shadow_options = '<li><span class="shadow-option" data-victim="--">--</span></li>';
-        var backup_options = '<li><span class="backup-option" data-victim="--">--</span></li>';
+        var victim_options = '<li class="oncall-option" data-victim="--"><span>--</span></li>';
+        var shadow_options = '<li class="shadow-option" data-victim="--"><span>--</span></li>';
+        var backup_options = '<li class="backup-option" data-victim="--"><span>--</span></li>';
         var current_week = 0,
             calday,
             day_cell,
@@ -528,9 +528,9 @@ var oncalendar = {
 
         $.each(cal.oncall_groups[group].victims, function(i, v) {
             if (v.group_active === 1) {
-                victim_options += '<li><span class="oncall-option" data-victim="' + v.username + '">' + v.username + '</span></li>';
-                shadow_options += '<li><span class="shadow-option" data-victim="' + v.username + '">' + v.username + '</span></li>';
-                backup_options += '<li><span class="backup-option" data-victim="' + v.username + '">' + v.username + '</span></li>';
+                victim_options += '<li class="oncall-option" data-victim="' + v.username + '"><span>' + v.username + '</span></li>';
+                shadow_options += '<li class="shadow-option" data-victim="' + v.username + '"><span>' + v.username + '</span></li>';
+                backup_options += '<li class="backup-option" data-victim="' + v.username + '"><span>' + v.username + '</span></li>';
             }
         });
 
@@ -773,9 +773,9 @@ var oncalendar = {
         var current_day = new Date(cal.view_start);
         var today_string = cal.now.toString('yyyy-M-d');
         var day_victims = {};
-        var victim_options = '<li><span class="oncall-option" data-victim="--">--</span></li>';
-        var shadow_options = '<li><span class="shadow-option" data-victim="--">--</span></li>';
-        var backup_options = '<li><span class="backup-option" data-victim="--">--</span></li>';
+        var victim_options = '<li class="oncall-option" data-victim="--"><span>--</span></li>';
+        var shadow_options = '<li class="shadow-option" data-victim="--"><span>--</span></li>';
+        var backup_options = '<li class="backup-option" data-victim="--"><span>--</span></li>';
         var current_week = 0,
             oncall_week = 0,
             week_row,
@@ -799,9 +799,9 @@ var oncalendar = {
 
         $.each(cal.oncall_groups[group].victims, function(i, v) {
             if (v.group_active === 1) {
-                victim_options += '<li><span class="oncall-option" data-victim="' + v.username + '">' + v.username + '</span></li>';
-                shadow_options += '<li><span class="shadow-option" data-victim="' + v.username + '">' + v.username + '</span></li>';
-                backup_options += '<li><span class="backup-option" data-victim="' + v.username + '">' + v.username + '</span></li>';
+                victim_options += '<li class="oncall-option" data-victim="' + v.username + '"><span>' + v.username + '</span></li>';
+                shadow_options += '<li class="shadow-option" data-victim="' + v.username + '"><span>' + v.username + '</span></li>';
+                backup_options += '<li class="backup-option" data-victim="' + v.username + '"><span>' + v.username + '</span></li>';
             }
         });
 

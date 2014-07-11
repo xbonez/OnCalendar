@@ -16,7 +16,7 @@ var email_gateway_config = {{ email_gateway_config }};
 current_user = {{ user_json }};
 {% else %}
 $.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
-	current_user = data[{{ g.user.id }}];
+    current_user = data[{{ g.user.id }}];
     document.dispatchEvent(oc_user_event);
 });
 {% endif %}
@@ -25,9 +25,9 @@ $.when(oncalendar.get_victim_info('id', {{ g.user.id }})).then(function(data) {
 oncalendar.group_color_map = {};
 $.when(oncalendar.get_group_info()).then(function(data) {
     oncalendar.oncall_groups = data;
-	if (typeof oncalendar.oncall_groups === "undefined") {
-		alert('no group info found, please try again');
-	}
+    if (typeof oncalendar.oncall_groups === "undefined") {
+        alert('no group info found, please try again');
+    }
     group_count = 0;
     $.each(Object.keys(oncalendar.oncall_groups).sort(), function (i, name) {
         if (oncalendar.oncall_groups[name].turnover_hour < 10) {
@@ -39,8 +39,8 @@ $.when(oncalendar.get_group_info()).then(function(data) {
         oncalendar.oncall_groups[name].turnover_string = oncalendar.oncall_groups[name].turnover_hour + '-' + oncalendar.oncall_groups[name].turnover_min;
         oncalendar.group_color_map[name] = color_wheel.Wheel[5][group_count];
         group_count++;
-	});
-	document.dispatchEvent(oc_group_event);
+    });
+    document.dispatchEvent(oc_group_event);
 });
 
 
@@ -66,9 +66,9 @@ for (i = 0; i <= 23; i++) {
             '<button id="slot-' + i + '-00-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-00">--</button></span>' +
             '<ul id="slot-' + i + '-00-shadow-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
         .append('<tr id="slot' + i + '-00-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
-			'<span data-toggle="dropdown">' +
+            '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-00-backup-button" class="edit-day-backup-button" data-slot="' + i + '-00">--</button></span>' +
-			'<ul id="slot-' + i + '-00-backup-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
+            '<ul id="slot-' + i + '-00-backup-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
         .append('<tr id="slot-' + i + '-30-oncall" class="oncall-row"><td>' + i + ':30</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-30-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-30">--</button></span>' +
@@ -77,7 +77,7 @@ for (i = 0; i <= 23; i++) {
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-30-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-30">--</button></span>' +
             '<ul id="slot-' + i + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
-		.append('<tr id="slot' + i + '-30-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
+        .append('<tr id="slot' + i + '-30-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
             '<span data-toggle="dropdown">' +
             '<button id="slot-' + i + '-30-backup-button" class="edit-day-backup-button" data-slot="' + i + '-30">--</button></span>' +
             '<ul id="slot-' + i + '-30-backup-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
@@ -105,7 +105,9 @@ $(document).ready(function() {
                 $('input#add-victim-sms-email').attr('value', suggestion.data.sms_email);
             }
             $.each(suggestion.data.groups, function(group, status) {
-                $('tr#victim-table-divider').children('td').append('<input type="hidden" class="victim-group" id="victim-group-' + group + '" data-group="' + group + '" value="' + status + '">');
+                if (group !== "null") {
+                    $('tr#victim-table-divider').children('td').append('<input type="hidden" class="victim-group" id="victim-group-' + group + '" data-group="' + group + '" value="' + status + '">');
+                }
             });
         }
     });
@@ -151,33 +153,33 @@ $(document).ready(function() {
 // Listen for the user_info_loaded event and populate
 // the account info form when we have it
 document.addEventListener('user_info_loaded', function() {
-	$('input#edit-account-firstname').val(current_user.firstname);
-	$('input#edit-account-lastname').val(current_user.lastname);
-	$('input#edit-account-phone').val(current_user.phone);
-	$('input#edit-account-email').val(current_user.email);
+    $('input#edit-account-firstname').val(current_user.firstname);
+    $('input#edit-account-lastname').val(current_user.lastname);
+    $('input#edit-account-phone').val(current_user.phone);
+    $('input#edit-account-email').val(current_user.email);
     if (oncalendar.gateway_map[current_user.sms_email] !== undefined) {
         $('button#edit-account-sms-email-label').text(oncalendar.gateway_map[current_user.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
         $('input#edit-account-sms-email').attr('value', current_user.sms_email);
     }
-	$('input#edit-account-throttle').val(current_user.throttle);
-	if (current_user.truncate > 0) {
-		$('button#edit-account-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
-		$('input#edit-account-truncate').attr('value', 'yes');
-	}
-	$.each(current_user.groups, function(group, active) {
-		$('table#account-info-table').children('tbody').append('<tr><td>' + group + '</td>' +
-			'<td><button id="edit-account-' + group + '-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="edit-account-' + group + '-active" data-group="' + group + '" data-checked="yes"></button>' +
-			'<input type="hidden" id="edit-account-' + group + '-active" name="edit-account-' + group + '-active" class="group-active-input" data-group="' + group + '" value="yes"></td><td colspan="5"></td></tr>');
-		if (active == 0) {
-			$('button#edit-account-' + group + '-active-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
-			$('input#edit-account-' + group + '-active').attr('value', 'no');
-		}
-	});
+    $('input#edit-account-throttle').val(current_user.throttle);
+    if (current_user.truncate > 0) {
+        $('button#edit-account-truncate-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+        $('input#edit-account-truncate').attr('value', 'yes');
+    }
+    $.each(current_user.groups, function(group, active) {
+        $('table#account-info-table').children('tbody').append('<tr><td>' + group + '</td>' +
+            '<td><button id="edit-account-' + group + '-active-checkbox" class="oc-checkbox elegant_icons icon_box-checked" data-target="edit-account-' + group + '-active" data-group="' + group + '" data-checked="yes"></button>' +
+            '<input type="hidden" id="edit-account-' + group + '-active" name="edit-account-' + group + '-active" class="group-active-input" data-group="' + group + '" value="yes"></td><td colspan="5"></td></tr>');
+        if (active == 0) {
+            $('button#edit-account-' + group + '-active-checkbox').removeClass('icon_box-checked').addClass('icon_box-empty').attr('data-checked', 'no');
+            $('input#edit-account-' + group + '-active').attr('value', 'no');
+        }
+    });
 }, false);
 
 // Listen for the group_info_loaded event and populate the group header info
 document.addEventListener('group_info_loaded', function() {
-	$.each(Object.keys(oncalendar.oncall_groups).sort(), function (i, name) {
+    $.each(Object.keys(oncalendar.oncall_groups).sort(), function (i, name) {
         if (oncalendar.oncall_groups[name].active ==1 && oncalendar.oncall_groups[name].autorotate == 1) {
             $('div#group-legend').append('<div class="expander"><span class="expander-arrow elegant_icons arrow_carrot-right" ' +
                 'data-state="closed"  data-group="' + name + '" data-groupid="' + oncalendar.oncall_groups[name].id + '"></span>' +
@@ -186,14 +188,14 @@ document.addEventListener('group_info_loaded', function() {
     });
 
     // Build and display the calendar
-	var incoming_month = {{ month }};
-	var incoming_year = {{ year }};
-	$.when(oncalendar.build_calendar(incoming_year, incoming_month)).then(
-		function() {
-			oncalendar.display_calendar();
+    var incoming_month = {{ month }};
+    var incoming_year = {{ year }};
+    $.when(oncalendar.build_calendar(incoming_year, incoming_month)).then(
+        function() {
+            oncalendar.display_calendar();
             $('div#working').remove();
-		}
-	);
+        }
+    );
 
 }, false);
 
@@ -261,7 +263,7 @@ var edit_calday = function(target_group, calday, cal_date) {
                 $('#edit-day-group').empty();
                 $('textarea#edit-day-note').val('').removeClass('missing-input');
                 $('tr.shadow-row').addClass('hide');
-				$('tr.backup-row').addClass('hide');
+                $('tr.backup-row').addClass('hide');
                 $('button.edit-day-oncall-button').text('').removeAttr('data-target', '');
                 $('button.edit-day-shadow-button').text('').removeAttr('data-target', '');
                 $('button#edit-day-save-button').removeAttr('data-calday', '').removeAttr('data-group', '');
@@ -314,7 +316,7 @@ var populate_group_info = function(target_group) {
         if (current_user.username !== "anonymous") {
             $('td#group-current-oncall').append(
                 '<span>&bull;<button id="page-oncall-button" class="page-primary-button" data-target="' + target_group + '">Send Page</button>' +
-				'</span><span>&bull;<button id="panic-page-group-button" class="panic-page-button" data-target="' + target_group + '">Panic Page to Group</button></span>'
+                '</span><span>&bull;<button id="panic-page-group-button" class="panic-page-button" data-target="' + target_group + '">Panic Page to Group</button></span>'
             );
         }
     }
@@ -329,7 +331,7 @@ var populate_group_info = function(target_group) {
     $('td#group-members').text(oncalendar.oncall_groups[target_group].active_victims.join(', '));
 
     // Last entry in the schedule edit log
-	$('td#group-edit-log').empty();
+    $('td#group-edit-log').empty();
     if (current_user.app_role === 2 || $.inArray(target_group, Object.keys(current_user.groups)) != -1) {
         $('th#group-edit-log-head').removeClass('hide');
         $.when(oncalendar.get_last_group_edit(oncalendar.oncall_groups[target_group].id)).then(function(data) {
@@ -480,11 +482,11 @@ $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
         callbacks: {
             close: function() {
                 $('input#edit-group-name').removeClass('missing-input');
-				$('input#edit-group-email').removeClass('missing-input');
-				$('span#edit-group-info-title-name').text('');
+                $('input#edit-group-email').removeClass('missing-input');
+                $('span#edit-group-info-title-name').text('');
             }
         }
-	});
+    });
 });
 
 // Handlers for buttons in the group info box
@@ -612,7 +614,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
     });
 }) // Page the oncall button
     .on('click', 'button#page-oncall-button', function() {
-	target_group = $(this).attr('data-target');
+    target_group = $(this).attr('data-target');
     $('input#oncall-page-originator').attr('value', current_user.username);
     $('input#oncall-page-group').attr('value', target_group);
     $('span#page-primary-groupname').text(target_group);
@@ -675,7 +677,7 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
 $('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#send-oncall-page-button', function() {
-	var group = $('input#oncall-page-group').attr('value');
+    var group = $('input#oncall-page-group').attr('value');
     var sender = $('input#oncall-page-originator').attr('value');
     var message_text = $('textarea#page-primary-body').val();
     $.when(oncalendar.send_oncall_sms(group, sender, message_text)).then(
@@ -750,11 +752,11 @@ $('.oncalendar-edit-popup').on('click', 'button.oc-checkbox', function() {
 $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#edit-group-save-button', function() {
-	if ($('input#edit-group-name').val() === undefined || $('input#edit-group-name').val().length == 0) {
+    if ($('input#edit-group-name').val() === undefined || $('input#edit-group-name').val().length == 0) {
         $('input#edit-group-name').addClass('missing-input').focus();
     } else if ($('input#edit-group-email').val() === undefined || ! valid_email($('input#edit-group-email').val())) {
-		$('input#edit-group-email').addClass('missing-input');
-	} else {
+        $('input#edit-group-email').addClass('missing-input');
+    } else {
         var group_data = {
             id: $('input#edit-group-id').attr('value'),
             name: $('input#edit-group-name').val(),
@@ -771,26 +773,26 @@ $('#edit-group-popup').on('click', 'button#edit-group-cancel-button', function()
             group_data.backup_alias = $('input#edit-group-backup-alias').val();
             group_data.failsafe_alias = $('input#edit-group-failsafe-alias').val();
         }
-	    $.when(oncalendar.update_group(group_data)).then(
-	        function(data) {
-	            if (data.turnover_hour < 10) {
-	                data.turnover_hour = '0' + data.turnover_hour;
-	            }
-	            if (data.turnover_min < 10) {
-	                data.turnover_min = '0' + data.turnover_min;
-	            }
-	            data.turnover_time = [data.turnover_hour, data.turnover_min].join(':');
-	            data.victims = oncalendar.oncall_groups[data.name].victims;
-	            oncalendar.oncall_groups[data.name] = data;
-	            populate_group_info(data.name);
-	            $.magnificPopup.close();
-				$('div#group-info-box').prepend('<div class="info-box">Changes have been saved</div>');
-	        },
-	        function(data) {
-	            $('div#edit-group-popup').prepend('<div class="alert-box">Update failed: ' + data[1] + '</div>');
-	        }
-	    );
-	}
+        $.when(oncalendar.update_group(group_data)).then(
+            function(data) {
+                if (data.turnover_hour < 10) {
+                    data.turnover_hour = '0' + data.turnover_hour;
+                }
+                if (data.turnover_min < 10) {
+                    data.turnover_min = '0' + data.turnover_min;
+                }
+                data.turnover_time = [data.turnover_hour, data.turnover_min].join(':');
+                data.victims = oncalendar.oncall_groups[data.name].victims;
+                oncalendar.oncall_groups[data.name] = data;
+                populate_group_info(data.name);
+                $.magnificPopup.close();
+                $('div#group-info-box').prepend('<div class="info-box">Changes have been saved</div>');
+            },
+            function(data) {
+                $('div#edit-group-popup').prepend('<div class="alert-box">Update failed: ' + data[1] + '</div>');
+            }
+        );
+    }
 
 });
 
@@ -820,12 +822,12 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     $.magnificPopup.close();
 }).on('blur', 'input#add-victim-username', function() {
     if ($('input#add-victim-email').val().length < 9) {
-		$('input#add-victim-email').val($(this).val() + '@box.com');
-	}
+        $('input#add-victim-email').val($(this).val() + '@box.com');
+    }
 }).on('click', 'button#add-new-victim-save-button', function() {
     var group_name = $('input#target-group').attr('value');
     var victim_data = {
-		id: $('input#victim-id').attr('value'),
+        id: $('input#victim-id').attr('value'),
         username: $('input#add-victim-username').val(),
         firstname: $('input#add-victim-firstname').val(),
         lastname: $('input#add-victim-lastname').val(),
@@ -849,7 +851,7 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     if (victim_data.phone.length !== 11) {
         $('input#add-victim-phone').val(victim_data.phone).addClass('missing-input');
     } else {
-		if (victim_data.victim_id !== "0") {
+        if (victim_data.id !== "0") {
             delete victim_data.active;
             delete victim_data.app_role;
             $.each($('tr#victim-table-divider').children('td').children('input.victim-group'), function() {
@@ -857,74 +859,84 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
                 var victim_group_status = $(this).attr('value');
                 victim_data.groups[victim_group] = victim_group_status;
             });
-			$.when(oncalendar.update_victim_info(victim_data.id, victim_data)).then(function(data) {
-				var id = victim_data.id;
-				$('input#victim-id').attr('value', '0');
-				$('input#add-victim-username').val('').removeClass('missing-input');
-				$('input#add-victim-firstname').val('').removeClass('missing-input');
-				$('input#add-victim-lastname').val('').removeClass('missing-input');
-				$('input#add-victim-phone').val('').removeClass('missing-input');
-				$('input#add-victim-email').val('');
-                $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
-				$('input#add-victim-sms-email').attr('value', '');
-                $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
-                    .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
-                var victim_row = $('tr#victim' + id);
-                victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
-                    'data-target="victim' + id + '-active"></button>' +
-                    '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
-                    '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
-                    ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
-                    '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
-                var victim_sms_email = '';
-                if (oncalendar.gateway_map[data.sms_email] !== undefined) {
-                    victim_sms_email = oncalendar.gateway_map[data.sms_email];
-                }
-                victim_row.append('<td>' + data.username + '</td>' +
-                    '<td>' + data.firstname + '</td>' +
-                    '<td>' + data.lastname + '</td>' +
-                    '<td>' + data.phone + '</td>' +
-                    '<td>' + data.email + '</td>' +
-                    '<td>' + victim_sms_email + '</td><td></td>'
-                );
-			});
-        } else {
-            delete(victim_data.id);
-	        $.when(oncalendar.add_new_victim(victim_data)).then(function(data) {
-				if (typeof data.api_error !== "undefined") {
-					$('#edit-group-victims-popup').append('<div class="alert-box">User name/data conflict, please try again</div>');
-				} else {
-		            var id = data.id;
-		            $('input#add-victim-username').val('').removeClass('missing-input');
-		            $('input#add-victim-firstname').val('').removeClass('missing-input');
-		            $('input#add-victim-lastname').val('').removeClass('missing-input');
-		            $('input#add-victim-phone').val('').removeClass('missing-input');
-		            $('input#add-victim-email').val('');
-		            $('input#add-victim-sms-email').attr('value', '');
-                    $('input').removeClass('missing-input');
-		            $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
-		                .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
-		            var victim_row = $('tr#victim' + id);
-		            victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
-		                'data-target="victim' + id + '-active"></button>' +
-		                '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
-		                '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
-		                ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
-		                '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
+            $.when(oncalendar.update_victim_info(victim_data.id, victim_data)).then(
+                function(data) {
+                    var id = victim_data.id;
+                    $('input#victim-id').attr('value', '0');
+                    $('input#add-victim-username').val('').removeClass('missing-input');
+                    $('input#add-victim-firstname').val('').removeClass('missing-input');
+                    $('input#add-victim-lastname').val('').removeClass('missing-input');
+                    $('input#add-victim-phone').val('').removeClass('missing-input');
+                    $('input#add-victim-email').val('');
+                    $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
+                    $('input#add-victim-sms-email').attr('value', '');
+                    $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
+                        .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
+                    var victim_row = $('tr#victim' + id);
+                    victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
+                        'data-target="victim' + id + '-active"></button>' +
+                        '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
+                        '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
+                        ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
+                        '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
                     var victim_sms_email = '';
                     if (oncalendar.gateway_map[data.sms_email] !== undefined) {
                         victim_sms_email = oncalendar.gateway_map[data.sms_email];
                     }
-		            victim_row.append('<td>' + data.username + '</td>' +
-		                    '<td>' + data.firstname + '</td>' +
-		                    '<td>' + data.lastname + '</td>' +
-		                    '<td>' + data.phone + '</td>' +
-		                    '<td>' + data.email + '</td>' +
-		                    '<td>' + victim_sms_email + '</td><td></td>'
-		            );
-				}
-	        });
-		}
+                    victim_row.append('<td>' + data.username + '</td>' +
+                        '<td>' + data.firstname + '</td>' +
+                        '<td>' + data.lastname + '</td>' +
+                        '<td>' + data.phone + '</td>' +
+                        '<td>' + data.email + '</td>' +
+                        '<td>' + victim_sms_email + '</td><td></td>'
+                    );
+                },
+                function(data) {
+                    $('#edit-group-victims-popup').prepend('<span class="alert-box">' + data + '</span>');
+                }
+            );
+        } else {
+            delete(victim_data.id);
+            $.when(oncalendar.add_new_victim(victim_data)).then(
+                function(data) {
+                    if (typeof data.api_error !== "undefined") {
+                        $('#edit-group-victims-popup').append('<div class="alert-box">User name/data conflict, please try again</div>');
+                    } else {
+                        var id = data.id;
+                        $('input#add-victim-username').val('').removeClass('missing-input');
+                        $('input#add-victim-firstname').val('').removeClass('missing-input');
+                        $('input#add-victim-lastname').val('').removeClass('missing-input');
+                        $('input#add-victim-phone').val('').removeClass('missing-input');
+                        $('input#add-victim-email').val('');
+                        $('input#add-victim-sms-email').attr('value', '');
+                        $('input').removeClass('missing-input');
+                        $('table#group-victims-list-table').children('tbody').children('tr#edit-victims-form-buttons')
+                            .before('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
+                        var victim_row = $('tr#victim' + id);
+                        victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
+                            'data-target="victim' + id + '-active"></button>' +
+                            '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
+                            '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-checked' +
+                            ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
+                            '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
+                        var victim_sms_email = '';
+                        if (oncalendar.gateway_map[data.sms_email] !== undefined) {
+                            victim_sms_email = oncalendar.gateway_map[data.sms_email];
+                        }
+                        victim_row.append('<td>' + data.username + '</td>' +
+                                '<td>' + data.firstname + '</td>' +
+                                '<td>' + data.lastname + '</td>' +
+                                '<td>' + data.phone + '</td>' +
+                                '<td>' + data.email + '</td>' +
+                                '<td>' + victim_sms_email + '</td><td></td>'
+                        );
+                    }
+                },
+                function(data) {
+                    $('#edit-group-victims-popup').prepend('<span class="alert-box">' + data + '</span>');
+                }
+            );
+        }
     }
 
 }).on('click', 'button#edit-group-victims-save', function() {
@@ -933,13 +945,13 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     victim_changes.groupid = $('input#target-groupid').attr('value');
     $.each($('tr.victim-row'), function() {
         var victim_id = $(this).attr('data-victim-id');
-		if ($('input#target-victim' + victim_id).attr('value') === "no") {
-	        var victim = {
-	            victimid: victim_id,
-	            active: $('input#victim' + victim_id + '-active').attr('value') === "yes" ? 1 : 0
-	        };
-	        victim_changes.victims.push(victim);
-		}
+        if ($('input#target-victim' + victim_id).attr('value') === "no") {
+            var victim = {
+                victimid: victim_id,
+                active: $('input#victim' + victim_id + '-active').attr('value') === "yes" ? 1 : 0
+            };
+            victim_changes.victims.push(victim);
+        }
     });
 
     $.when(oncalendar.update_victim_status(victim_changes)).then(
@@ -947,12 +959,12 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
             var group_name = $('div#group-info-box-head').children('h2').text();
             oncalendar.oncall_groups[group_name].victims = data;
             populate_group_info(group_name);
-			$('#group-info-box').prepend('<div class="info-box">Group member changes saved</div>');
+            $('#group-info-box').prepend('<div class="info-box">Group member changes saved</div>');
             $.magnificPopup.close();
         },
-		function(data) {
-			$('#edit-group-victims-popup').prepend('<div class="alert-box">Unable to save changes: ' + data[1] +'</div>');
-		}
+        function(data) {
+            $('#edit-group-victims-popup').prepend('<div class="alert-box">Unable to save changes: ' + data[1] +'</div>');
+        }
     );
 });
 
@@ -970,21 +982,21 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
         $('input#' + $(this).attr('data-target')).attr('value', 'no');
     }
 }).on('click', 'button#edit-account-cancel-button', function() {
-	$.magnificPopup.close();
+    $.magnificPopup.close();
 }).on('click', 'button#edit-account-save-button', function() {
-	var account_text_fields = [
-		'firstname',
-		'lastname',
-		'phone'
-	];
-	var missing_input = 0;
-	$.each(account_text_fields, function(i, field) {
-		if ($('input#edit-account-' + field).val() === undefined || $('input#edit-account-' + field).val().length == 0) {
-			$('input#edit-account-' + field).addClass('missing-input');
-			missing_input++;
-		}
-	});
-	if ($('input#edit-account-phone').val() !== undefined) {
+    var account_text_fields = [
+        'firstname',
+        'lastname',
+        'phone'
+    ];
+    var missing_input = 0;
+    $.each(account_text_fields, function(i, field) {
+        if ($('input#edit-account-' + field).val() === undefined || $('input#edit-account-' + field).val().length == 0) {
+            $('input#edit-account-' + field).addClass('missing-input');
+            missing_input++;
+        }
+    });
+    if ($('input#edit-account-phone').val() !== undefined) {
         victim_phone = $('input#edit-account-phone').val().replace(/\D/g,'');
         var country_code = victim_phone.substring(0,1);
         if (country_code !== "1") {
@@ -994,50 +1006,50 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
     }
     if ($('input#edit-account-phone').val() === undefined || $('input#edit-account-phone').val().length !== 11) {
         $('input#edit-account-phone').addClass('missing-input').focus();
-		missing_input++;
-	}
+        missing_input++;
+    }
 
-	var throttle_value = $('input#edit-account-throttle').val().replace(/\D/g,'');
-	if (throttle_value.length == 0 || throttle_value < {{ throttle_min }}) {
-		throttle_value = {{ throttle_min }};
-		$('input#edit-account-throttle').val({{ throttle_min }});
-	}
+    var throttle_value = $('input#edit-account-throttle').val().replace(/\D/g,'');
+    if (throttle_value.length == 0 || throttle_value < {{ throttle_min }}) {
+        throttle_value = {{ throttle_min }};
+        $('input#edit-account-throttle').val({{ throttle_min }});
+    }
 
-	if (missing_input == 0) {
-		var victim_data = {
-			username: current_user.username,
-			firstname: $('input#edit-account-firstname').val(),
-			lastname: $('input#edit-account-lastname').val(),
-			phone: $('input#edit-account-phone').val(),
-			sms_email: $('input#edit-account-sms-email').attr('value'),
-			throttle: throttle_value,
-			truncate: $('input#edit-account-truncate').attr('value') === "yes" ? '1' : '0',
-			groups: {}
-		};
-		$.each($('input.group-active-input'), function() {
-			var victim_group = $(this).attr('data-group');
-			victim_data.groups[victim_group] = $(this).attr('value') === "yes" ? '1' : '0';
-		});
+    if (missing_input == 0) {
+        var victim_data = {
+            username: current_user.username,
+            firstname: $('input#edit-account-firstname').val(),
+            lastname: $('input#edit-account-lastname').val(),
+            phone: $('input#edit-account-phone').val(),
+            sms_email: $('input#edit-account-sms-email').attr('value'),
+            throttle: throttle_value,
+            truncate: $('input#edit-account-truncate').attr('value') === "yes" ? '1' : '0',
+            groups: {}
+        };
+        $.each($('input.group-active-input'), function() {
+            var victim_group = $(this).attr('data-group');
+            victim_data.groups[victim_group] = $(this).attr('value') === "yes" ? '1' : '0';
+        });
 
-		$.when(oncalendar.update_victim_info(current_user.id, victim_data)).then(
-			// done: update current_user and the victim record on oncalendar.oncall_groups
-			function(data) {
-				current_user = data;
-				var current_user_groups = data.groups;
-				delete(data.groups);
-				$.each(current_user_groups, function(group, status) {
-					oncalendar.oncall_groups[group].victims[current_user.id] = data;
-					oncalendar.oncall_groups[group].victims[current_user.id].group_active = status;
-				});
-			},
-			// fail: show error message
-			function(status) {
-				$('div#page-head').append('<div class="alert-box">' + status + '</div>');
-			}
-		);
-		$.magnificPopup.close();
+        $.when(oncalendar.update_victim_info(current_user.id, victim_data)).then(
+            // done: update current_user and the victim record on oncalendar.oncall_groups
+            function(data) {
+                current_user = data;
+                var current_user_groups = data.groups;
+                delete(data.groups);
+                $.each(current_user_groups, function(group, status) {
+                    oncalendar.oncall_groups[group].victims[current_user.id] = data;
+                    oncalendar.oncall_groups[group].victims[current_user.id].group_active = status;
+                });
+            },
+            // fail: show error message
+            function(status) {
+                $('div#page-head').append('<div class="alert-box">' + status + '</div>');
+            }
+        );
+        $.magnificPopup.close();
 
-	}
+    }
 });
 
 // Handlers for the edit day dialog box
@@ -1047,155 +1059,155 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
 }).on('click', 'button#edit-day-cancel-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#edit-day-save-button', function() {
-	var reason_for_edit = $('textarea#edit-day-note').val();
-	if (reason_for_edit.length < 3) {
-		$('textarea#edit-day-note').addClass('missing-input').focus();
-	} else {
+    var reason_for_edit = $('textarea#edit-day-note').val();
+    if (reason_for_edit.length < 3) {
+        $('textarea#edit-day-note').addClass('missing-input').focus();
+    } else {
         $('div#edit-day-popup').append('<div id="popup-working"><span id="status-message"><h3>Working...</h3></span></div>');
-	    var update_day_data = {
-	        calday: $(this).attr('data-calday'),
-	        cal_date: $(this).attr('data-date'),
-	        group: $(this).attr('data-group'),
-			note: reason_for_edit,
-	        slots: {}
-	    };
+        var update_day_data = {
+            calday: $(this).attr('data-calday'),
+            cal_date: $(this).attr('data-date'),
+            group: $(this).attr('data-group'),
+            note: reason_for_edit,
+            slots: {}
+        };
 
-	    $.each($('button.edit-day-oncall-button'), function() {
-	        if (typeof $(this).attr('data-target') !== "undefined") {
-	            update_day_data.slots[$(this).attr('data-slot')] = {
-	                oncall: $(this).attr('data-target')
-	            }
-	        }
-	    });
-	    $.each($('button.edit-day-shadow-button'), function() {
-	        if (typeof $(this).attr('data-target') !== "undefined") {
-	            if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
-	                update_day_data.slots[$(this).attr('data-slot')].shadow = $(this).attr('data-target');
-	            } else {
-	                update_day_data.slots[$(this).attr('data-slot')] = {
-	                    shadow: $(this).attr('data-target')
-	                }
-	            }
-	        }
-	    });
-		$.each($('button.edit-day-backup-button'), function() {
-			if (typeof $(this).attr('data-target') !== "undefined") {
-				if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
-					update_day_data.slots[$(this).attr('data-slot')].backup = $(this).attr('data-target');
-				} else {
-					update_day_data.slots[$(this).attr('data-slot')] = {
-						backup: $(this).attr('data-target')
-					}
-				}
-			}
-		});
+        $.each($('button.edit-day-oncall-button'), function() {
+            if (typeof $(this).attr('data-target') !== "undefined") {
+                update_day_data.slots[$(this).attr('data-slot')] = {
+                    oncall: $(this).attr('data-target')
+                }
+            }
+        });
+        $.each($('button.edit-day-shadow-button'), function() {
+            if (typeof $(this).attr('data-target') !== "undefined") {
+                if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
+                    update_day_data.slots[$(this).attr('data-slot')].shadow = $(this).attr('data-target');
+                } else {
+                    update_day_data.slots[$(this).attr('data-slot')] = {
+                        shadow: $(this).attr('data-target')
+                    }
+                }
+            }
+        });
+        $.each($('button.edit-day-backup-button'), function() {
+            if (typeof $(this).attr('data-target') !== "undefined") {
+                if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
+                    update_day_data.slots[$(this).attr('data-slot')].backup = $(this).attr('data-target');
+                } else {
+                    update_day_data.slots[$(this).attr('data-slot')] = {
+                        backup: $(this).attr('data-target')
+                    }
+                }
+            }
+        });
 
-	    $.when(oncalendar.update_day(update_day_data)).then(
-	        function(data) {
-		        $('div#popup-working').children('span').children('h3').text('Update Complete');
-	            var slots = data;
-	            var date_bits = update_day_data.cal_date.split('-');
-	            var date_object = new Date(date_bits[0], date_bits[1], date_bits[2]).addMonths(-1);
-	            var current_victim = {};
-	            var p_group_class = {};
-	            $.each(oncalendar.oncall_groups, function(group, data) {
-	                if (typeof sessionStorage[group] === "undefined") {
-	                    sessionStorage[group] = 'on';
-	                }
-	                if (sessionStorage[group] === "off") {
-	                    p_group_class[group] = "victim-group info-tooltip hide";
-	                } else {
-	                    p_group_class[group] = "victim-group info-tooltip";
-	                }
-	            });
+        $.when(oncalendar.update_day(update_day_data)).then(
+            function(data) {
+                $('div#popup-working').children('span').children('h3').text('Update Complete');
+                var slots = data;
+                var date_bits = update_day_data.cal_date.split('-');
+                var date_object = new Date(date_bits[0], date_bits[1], date_bits[2]).addMonths(-1);
+                var current_victim = {};
+                var p_group_class = {};
+                $.each(oncalendar.oncall_groups, function(group, data) {
+                    if (typeof sessionStorage[group] === "undefined") {
+                        sessionStorage[group] = 'on';
+                    }
+                    if (sessionStorage[group] === "off") {
+                        p_group_class[group] = "victim-group info-tooltip hide";
+                    } else {
+                        p_group_class[group] = "victim-group info-tooltip";
+                    }
+                });
 
-	            $.each(slots, function(slot, slot_data) {
-	                oncalendar.victims[update_day_data.calday].slots[slot][update_day_data.group] = slot_data;
-	            });
-	            $('td#' + update_day_data.cal_date).children('div.calendar-day-victims').empty();
-	            $.each(Object.keys(oncalendar.victims[update_day_data.calday].slots).sort(), function(i, slot) {
-	                slot_groups = oncalendar.victims[update_day_data.calday].slots[slot];
-	                $.each(slot_groups, function(group, victims) {
-	                    if (typeof current_victim[group] === "undefined") {
-	                        current_victim[group] = {
-	                            oncall: null,
-	                            shadow: null,
-								backup: null
-	                        }
-	                    }
-	                    if ((date_object.getDay() === oncalendar.oncall_groups[group].turnover_day && slot === oncalendar.oncall_groups[group].turnover_string) || slot === "00-00") {
-	                        if (victims.oncall !== current_victim[group].oncall) {
-	                            current_victim[group].oncall = victims.oncall;
-	                            current_victim[group].oncall_name = victims.oncall_name;
-	                        }
-	                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-	                            .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-	                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
-	                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-	                                current_victim[group].oncall + '</p>');
-							if (victims.shadow != null) {
-								if (victims.shadow !== current_victim[group].shadow) {
-									current_victim[group].shadow = victims.shadow;
-									current_victim[group].shadow_name = victims.shadow_name;
-								}
-								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-									' - ' + current_victim[group].shadow_name + '" style="color: ' +
-									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-									current_victim[group].shadow + ' (S)</p>');
-							}
-							if (victims.backup != null) {
-								if (victims.backup !== current_victim[group].backup) {
-									current_victim[group].backup = victims.backup;
-									current_victim[group].backup_name = victims.backup_name;
-								}
-								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-									' - ' + current_victim[group].backup_name + '" style="color: ' +
-									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-									current_victim[group].backup + ' (B)</p>');
-							}
-	                    } else {
-							if (victims.oncall !== current_victim[group].oncall) {
-		                        current_victim[group].oncall = victims.oncall;
-		                        current_victim[group].oncall_name = victims.oncall_name;
-		                        $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-		                            .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
-	                                ' - ' + current_victim[group].oncall_name + '" style="color: ' +
-	                                oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-	                                current_victim[group].oncall + '</p>');
-							}
-							if (victims.shadow !== current_victim[group].shadow) {
-								current_victim[group].shadow = victims.shadow;
-								current_victim[group].shadow_name = victims.shadow_name;
-								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-									' - ' + current_victim[group].shadow_name + '" style="color: ' +
-									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-									current_victim[group].shadow + ' (S)</p>');
-							}
-							if (victims.backup !== current_victim[group].backup) {
-								current_victim[group].backup = victims.backup;
-								current_victim[group].backup_name = victims.backup_name;
-								$('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
-									.append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-									' - ' + current_victim[group].backup_name + '" style="color: ' +
-									oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-									current_victim[group].backup + ' (B)</p>');
-							}
-	                    }
-	                });
-	            });
-	            $('p.victim-group.info-tooltip').tooltip({placement: 'top', delay: {show: 500, hide: 100}});
-	            setTimeout(function() {
-		            $.magnificPopup.close();
+                $.each(slots, function(slot, slot_data) {
+                    oncalendar.victims[update_day_data.calday].slots[slot][update_day_data.group] = slot_data;
+                });
+                $('td#' + update_day_data.cal_date).children('div.calendar-day-victims').empty();
+                $.each(Object.keys(oncalendar.victims[update_day_data.calday].slots).sort(), function(i, slot) {
+                    slot_groups = oncalendar.victims[update_day_data.calday].slots[slot];
+                    $.each(slot_groups, function(group, victims) {
+                        if (typeof current_victim[group] === "undefined") {
+                            current_victim[group] = {
+                                oncall: null,
+                                shadow: null,
+                                backup: null
+                            }
+                        }
+                        if ((date_object.getDay() === oncalendar.oncall_groups[group].turnover_day && slot === oncalendar.oncall_groups[group].turnover_string) || slot === "00-00") {
+                            if (victims.oncall !== current_victim[group].oncall) {
+                                current_victim[group].oncall = victims.oncall;
+                                current_victim[group].oncall_name = victims.oncall_name;
+                            }
+                            $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+                                .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+                                    ' - ' + current_victim[group].oncall_name + '" style="color: ' +
+                                    oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+                                    current_victim[group].oncall + '</p>');
+                            if (victims.shadow != null) {
+                                if (victims.shadow !== current_victim[group].shadow) {
+                                    current_victim[group].shadow = victims.shadow;
+                                    current_victim[group].shadow_name = victims.shadow_name;
+                                }
+                                $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+                                    .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+                                    ' - ' + current_victim[group].shadow_name + '" style="color: ' +
+                                    oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+                                    current_victim[group].shadow + ' (S)</p>');
+                            }
+                            if (victims.backup != null) {
+                                if (victims.backup !== current_victim[group].backup) {
+                                    current_victim[group].backup = victims.backup;
+                                    current_victim[group].backup_name = victims.backup_name;
+                                }
+                                $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+                                    .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+                                    ' - ' + current_victim[group].backup_name + '" style="color: ' +
+                                    oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+                                    current_victim[group].backup + ' (B)</p>');
+                            }
+                        } else {
+                            if (victims.oncall !== current_victim[group].oncall) {
+                                current_victim[group].oncall = victims.oncall;
+                                current_victim[group].oncall_name = victims.oncall_name;
+                                $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+                                    .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
+                                    ' - ' + current_victim[group].oncall_name + '" style="color: ' +
+                                    oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+                                    current_victim[group].oncall + '</p>');
+                            }
+                            if (victims.shadow !== current_victim[group].shadow) {
+                                current_victim[group].shadow = victims.shadow;
+                                current_victim[group].shadow_name = victims.shadow_name;
+                                $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+                                    .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+                                    ' - ' + current_victim[group].shadow_name + '" style="color: ' +
+                                    oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+                                    current_victim[group].shadow + ' (S)</p>');
+                            }
+                            if (victims.backup !== current_victim[group].backup) {
+                                current_victim[group].backup = victims.backup;
+                                current_victim[group].backup_name = victims.backup_name;
+                                $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
+                                    .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
+                                    ' - ' + current_victim[group].backup_name + '" style="color: ' +
+                                    oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
+                                    current_victim[group].backup + ' (B)</p>');
+                            }
+                        }
+                    });
+                });
+                $('p.victim-group.info-tooltip').tooltip({placement: 'top', delay: {show: 500, hide: 100}});
+                setTimeout(function() {
+                    $.magnificPopup.close();
                 }, 500);
-				setTimeout(function() {
-					$('div#popup-working').remove();
-				}, 1000);
-	        }
-	    );
-	}
+                setTimeout(function() {
+                    $('div#popup-working').remove();
+                }, 1000);
+            }
+        );
+    }
 
 });
 
