@@ -6,3 +6,4 @@ Flask-WTF>=0.9.3
 python-ldap>=2.4.13
 twilio>=3.6.6
 dateutil>=2.2
+pyfortune>=0.1

@@ -43,6 +43,7 @@ class config(object):
         'SMS_CLIP': 160,
         'SMS_DEFAULT_MSG': 'An alert was triggered, but no message was provided!',
         'SMS_WORDLIST_FILE': '',
+        'SMS_EASTER_EGGS': True,
         'EMAIL_FROM': '',
         'EMAIL_HOST': '',
         'CARRIER_GATEWAYS': [

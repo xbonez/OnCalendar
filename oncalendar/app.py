@@ -18,6 +18,8 @@ from oncalendar.nagios_interface import OnCalendarNagiosLivestatus, OnCalendarNa
 from oncalendar.oc_config import config
 from oncalendar.sms_interface import OnCalendarSMS, OnCalendarSMSError
 
+if config.sms['SMS_EASTER_EGGS']:
+    import pyfortune
 
 
 # -----------------------
@@ -2765,6 +2767,15 @@ throttle <#>: Set throttle threshold"""
 
         return downtime_response
 
+    def chuck(sms):
+        if config.sms['SMS_EASTER_EGGS']:
+            chuck = pyfortune.Chooser.fromlist([config.basic['APP_BASE_DIR'] + '/static/chuck/chucknorris'])
+            chuck_response = chuck.choose()
+            return chuck_response[1]
+        else:
+            chuck_response = help(sms)
+            return chuck_response
+
     commands = {
         'help': help,
         'ping': ping,
@@ -2773,7 +2784,8 @@ throttle <#>: Set throttle threshold"""
         'dt': downtime,
         'downtime': downtime,
         'truncate': truncate,
-        'throttle': throttle
+        'throttle': throttle,
+        'chuck': chuck
     }
 
     parsed_sms = {
@@ -2790,13 +2802,7 @@ throttle <#>: Set throttle threshold"""
             parsed_sms['command'] = sms[0]
         else:
             ocapp.logger.debug("Invalid command: {0}".format(sms[0]))
-            sms_response = """<keyword> <command> or <command> <keyword>
-    help: This output
-    ack: Ack an alert
-    unack: Unack an alert
-    dt|downtime: Downtime problem until 11AM tomorrow
-    truncate [on|off]: Set SMS truncate preference
-    throttle <#>: Set throttle threshold"""
+            sms_response = help(sms)
             return sms_response
     else:
         # Otherwise the command must be one of the first two words in the message.
@@ -2808,13 +2814,7 @@ throttle <#>: Set throttle threshold"""
             parsed_sms['command'] = sms.pop(1)
         else:
             ocapp.logger.debug("No valid commands found - {0}".format(' '.join(sms)))
-            sms_response = """<keyword> <command> or <command> <keyword>
-help: This output
-ack: Ack an alert
-unack: Unack an alert
-dt|downtime: Downtime problem until 11AM tomorrow
-truncate [on|off]: Set SMS truncate preference
-throttle <#>: Set throttle threshold"""
+            sms_response = help(sms)
             return sms_response
 
         if parsed_sms['command'] in ['ack', 'unack', 'dt', 'downtime']:
