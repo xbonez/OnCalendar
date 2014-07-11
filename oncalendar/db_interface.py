@@ -1572,29 +1572,42 @@ class OnCalendarDB(object):
         """
 
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
-        victim_stub_query = """SELECT id, username, firstname, lastname,
-        phone, email, sms_email FROM victims
-        WHERE username like '{0}%'""".format(stub)
+        victim_stub_query = """SELECT v.id, v.username, v.firstname,
+        v.lastname, v.phone, v.email, v.sms_email,
+        m.groupid AS gid, m.active as gactive, g.name FROM victims v
+        LEFT OUTER JOIN groupmap AS m ON v.id=m.victimid
+        LEFT OUTER JOIN groups AS g ON g.id=m.groupid
+        WHERE v.active=1 AND v.username like '{0}%'""".format(stub)
+
 
         try:
             cursor.execute(victim_stub_query)
         except mysql.Error as error:
             raise OnCalendarDBError(error.args[0], error.args[1])
 
-        suggested_victims = {'suggestions': []}
+        victims = {}
         for row in cursor.fetchall():
-            victim_data = {
-                'id': row['id'],
-                'firstname': row['firstname'],
-                'lastname': row['lastname'],
-                'phone': row['phone'],
-                'email': row['email'],
-                'sms_email': row['sms_email']
-            }
+            if row['id']in victims:
+                victims[row['id']]['groups'][row['name']] = row['gactive']
+            else:
+                victims[row['id']] = {
+                    'id': row['id'],
+                    'username': row['username'],
+                    'firstname': row['firstname'],
+                    'lastname': row['lastname'],
+                    'phone': row['phone'],
+                    'email': row['email'],
+                    'sms_email': row['sms_email'],
+                    'groups': {row['name']: row['gactive']}
+                }
+
+
+        suggested_victims = {'suggestions': []}
+        for victim_id in victims:
             suggested_victims['suggestions'].append(
                 {
-                    'value': row['username'],
-                    'data': victim_data
+                    'value': victims[victim_id]['username'],
+                    'data': victims[victim_id]
                 }
             )
 

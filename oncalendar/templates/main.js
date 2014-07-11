@@ -104,6 +104,9 @@ $(document).ready(function() {
                 $('button#add-victim-sms-email-label').text(oncalendar.gateway_map[suggestion.data.sms_email]).append('<span class="elegant_icons arrow_carrot-down">');
                 $('input#add-victim-sms-email').attr('value', suggestion.data.sms_email);
             }
+            $.each(suggestion.data.groups, function(group, status) {
+                $('tr#victim-table-divider').children('td').append('<input type="hidden" class="victim-group" id="victim-group-' + group + '" data-group="' + group + '" value="' + status + '">');
+            });
         }
     });
 
@@ -519,7 +522,8 @@ $('#group-info-box-info').on('click', 'button#edit-members', function() {
 
     victims_table.append('<tr id="victim-table-divider">' +
         '<td colspan="8" style="padding: 0; border-bottom: 1px solid #000;">' +
-        '<input type="hidden" id="target-groupid" name="target-groupid" value="' + oncalendar.oncall_groups[target_group].id + '"></td></tr>');
+        '<input type="hidden" id="target-groupid" name="target-groupid" value="' + oncalendar.oncall_groups[target_group].id + '">' +
+        '<input type="hidden" id="target-group" name="target-group" value="' + target_group + '"></td></tr>');
     $.each(oncalendar.oncall_groups[target_group].victims, function(id, victim) {
         victims_table.append('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
         victim_row = $('tr#victim' + id);
@@ -819,18 +823,20 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
 		$('input#add-victim-email').val($(this).val() + '@box.com');
 	}
 }).on('click', 'button#add-new-victim-save-button', function() {
+    var group_name = $('input#target-group').attr('value');
     var victim_data = {
-		victim_id: $('input#victim-id').attr('value'),
+		id: $('input#victim-id').attr('value'),
         username: $('input#add-victim-username').val(),
         firstname: $('input#add-victim-firstname').val(),
         lastname: $('input#add-victim-lastname').val(),
-        phone: $('input#add-victim-phone').val(),
+        phone: String($('input#add-victim-phone').val()),
         email: $('input#add-victim-email').val(),
         sms_email: $('input#add-victim-sms-email').attr('value'),
-        active: 1,
-        app_role: 0,
-        groups: [$('input#target-groupid').attr('value')]
+        active: '1',
+        app_role: '0',
+        groups: {}
     };
+    victim_data.groups[group_name] = '1';
 
     // Sanity check the phone number
     if (victim_data.phone !== undefined) {
@@ -843,14 +849,16 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     if (victim_data.phone.length !== 11) {
         $('input#add-victim-phone').val(victim_data.phone).addClass('missing-input');
     } else {
-        // Brand new victim
-		if (victim_data.victim_id > 0) {
-			victim_changes = {};
-			victim_changes.victims = [];
-			victim_changes.groupid = $('input#target-groupid').attr('value');
-			victim_changes.victims.push({victimid: victim_data.victim_id, remove: 0, active: 1})
-			$.when(oncalendar.update_victim_status(victim_changes)).then(function(data) {
-				var id = victim_data.victim_id;
+		if (victim_data.victim_id !== "0") {
+            delete victim_data.active;
+            delete victim_data.app_role;
+            $.each($('tr#victim-table-divider').children('td').children('input.victim-group'), function() {
+                var victim_group = $(this).attr('data-group');
+                var victim_group_status = $(this).attr('value');
+                victim_data.groups[victim_group] = victim_group_status;
+            });
+			$.when(oncalendar.update_victim_info(victim_data.id, victim_data)).then(function(data) {
+				var id = victim_data.id;
 				$('input#victim-id').attr('value', '0');
 				$('input#add-victim-username').val('').removeClass('missing-input');
 				$('input#add-victim-firstname').val('').removeClass('missing-input');
@@ -869,19 +877,19 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
                     ' data-target="victim' +  id + '-active" data-checked="yes"></button>' +
                     '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="yes"></td>');
                 var victim_sms_email = '';
-                if (oncalendar.gateway_map[data[id].sms_email] !== undefined) {
-                    victim_sms_email = oncalendar.gateway_map[data[id].sms_email];
+                if (oncalendar.gateway_map[data.sms_email] !== undefined) {
+                    victim_sms_email = oncalendar.gateway_map[data.sms_email];
                 }
-                victim_row.append('<td>' + data[id].username + '</td>' +
-                    '<td>' + data[id].firstname + '</td>' +
-                    '<td>' + data[id].lastname + '</td>' +
-                    '<td>' + data[id].phone + '</td>' +
-                    '<td>' + data[id].email + '</td>' +
+                victim_row.append('<td>' + data.username + '</td>' +
+                    '<td>' + data.firstname + '</td>' +
+                    '<td>' + data.lastname + '</td>' +
+                    '<td>' + data.phone + '</td>' +
+                    '<td>' + data.email + '</td>' +
                     '<td>' + victim_sms_email + '</td><td></td>'
                 );
 			});
         } else {
-            // Adding existing victim
+            delete(victim_data.id);
 	        $.when(oncalendar.add_new_victim(victim_data)).then(function(data) {
 				if (typeof data.api_error !== "undefined") {
 					$('#edit-group-victims-popup').append('<div class="alert-box">User name/data conflict, please try again</div>');
