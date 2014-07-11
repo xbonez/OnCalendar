@@ -278,7 +278,7 @@ var populate_group_info = function(target_group) {
     $('div#group-info-box-head').empty().append('<h2>' + target_group + '</h2>');
 
     // Group admin and App admin can edit the group info and members
-    if ((current_user.app_role === 2) || (current_user.app_role === 1 && $.inArray(target_group, current_user.groups) != -1)) {
+    if ((current_user.app_role === 2) || (current_user.app_role === 1 && $.inArray(target_group, Object.keys(current_user.groups)) != -1)) {
         var group_members_head = $('th#group-members-head');
         if (group_members_head.has('button#edit-members').length != 0) {
             group_members_head.children('button#edit-members').remove();
