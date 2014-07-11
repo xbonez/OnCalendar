@@ -2608,7 +2608,7 @@ throttle <#>: Set throttle threshold"""
             else:
                 nagios_masters = nagios.nagios_masters
 
-            if len(sms['extra']) == 0:
+            if sms['extra'] and len(sms['extra']) == 0:
                 sms['extra'] = "Acknowledged via SMS by {0}".format(username)
 
             if sms_record['type'] == "Host":
@@ -2711,7 +2711,7 @@ throttle <#>: Set throttle threshold"""
             else:
                 nagios_masters = nagios.nagios_masters
 
-            if len(sms['extra']) == 0:
+            if sms['extra'] and len(sms['extra']) == 0:
                 sms['extra'] = "Host downtimed via SMS byb {0}".format(username)
 
             if sms_record['type'] == "Host":
