@@ -824,6 +824,14 @@ $('#edit-group-victims-popup').on('click', 'button.delete-group-victim-button', 
     if ($('input#add-victim-email').val().length < 9) {
         $('input#add-victim-email').val($(this).val() + '@box.com');
     }
+}).on('change', 'input#add-victim-username', function() {
+    $('input#victim-id').attr('value', '0');
+    $('input#add-victim-firstname').val('').removeClass('missing-input');
+    $('input#add-victim-lastname').val('').removeClass('missing-input');
+    $('input#add-victim-phone').val('').removeClass('missing-input');
+    $('input#add-victim-email').val('');
+    $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
+    $('input#add-victim-sms-email').attr('value', '');
 }).on('click', 'button#add-new-victim-save-button', function() {
     var group_name = $('input#target-group').attr('value');
     var victim_data = {
