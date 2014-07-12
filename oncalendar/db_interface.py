@@ -730,13 +730,13 @@ class OnCalendarDB(object):
             victim = None
             shadow = None
             backup = None
-            if 'oncall' in update_day_data[day] and update_day_data[day]['oncall'] != "--":
+            if 'oncall' in update_day_data[day]:
                 victim = update_day_data[day]['oncall']
 
-            if 'shadow' in update_day_data[day] and update_day_data[day]['shadow'] != "--":
+            if 'shadow' in update_day_data[day]:
                 shadow = update_day_data[day]['shadow']
 
-            if 'backup' in update_day_data[day] and update_day_data[day]['backup'] != "--":
+            if 'backup' in update_day_data[day]:
                 backup = update_day_data[day]['backup']
 
             if victim is None and shadow is None and backup is None:
@@ -745,34 +745,51 @@ class OnCalendarDB(object):
             year, month, date = day.split('-')
 
             slot_check = {}
-            slot_check_query = """SELECT * FROM calendar WHERE calday=(SELECT id FROM caldays
-            WHERE year='{0}' AND month='{1}' AND day='{2}') AND groupid={3}""".format(year, month, date, group_info[group_name]['id'])
+            slot_check_query = """SELECT c.hour, c.min, v1.username AS victim,
+v2.username as shadow, v3.username as backup FROM calendar c
+LEFT OUTER JOIN victims AS v1 ON c.victimid=v1.id
+LEFT OUTER JOIN victims AS v2 ON c.shadowid=v2.id
+LEFT OUTER JOIN victims AS v3 ON c.backupid=v3.id
+WHERE c.calday=(SELECT id FROM caldays WHERE year='{0}'
+AND month='{1}' AND day='{2}') AND c.groupid={3}"""
+
             try:
-                cursor.execute(slot_check_query)
+                self.logger.debug(slot_check_query.format(year, month, date, group_info[group_name]['id']))
+                cursor.execute(slot_check_query.format(year, month, date, group_info[group_name]['id']))
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
             for row in cursor.fetchall():
                 slot_key = "{0}-{1}".format(row['hour'], row['min'])
-                slot_check[slot_key] = {'victimid': row['victimid'], 'shadowid': row['shadowid'], 'backupid': row['backupid']}
+                slot_check[slot_key] = {'victim': row['victim'], 'shadow': row['shadow'], 'backup': row['backup']}
 
             for slot in day_slots:
                 update_slot_key = "{0}-{1}".format(slot[0], slot[1])
+                update_month_query = False
                 if update_slot_key in slot_check:
-                    update_month_query = "UPDATE calendar SET "
-                    if victim is not None:
-                        update_month_query += "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
+                    # update_month_query = "UPDATE calendar SET "
+                    if victim is not None and victim != "--" and victim != slot_check[update_slot_key]['victim']:
+                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
                         if shadow is not None:
-                            update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                            if shadow == "--" and slot_check[update_slot_key]['shadow']:
+                                update_month_query += ", shadowid=NULL"
+                            elif shadow != "--" and shadow != slot_check[update_slot_key]['shadow']:
+                                update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
+                        if backup is not None and backup != "--" and backup != slot_check[update_slot_key]['backup']:
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
                     elif shadow is not None:
-                        update_month_query += " shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                        if shadow == "--" and slot_check[update_slot_key]['shadow']:
+                            update_month_query = "shadowid=NULL"
+                        elif shadow != "--" and shadow != slot_check[update_slot_key]['shadow']:
+                            update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
+                        if backup is not None and backup != "--" and backup != slot_check[update_slot_key]['backup']:
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif backup is not None:
-                        update_month_query += " backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    update_month_query += """ WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+                    elif backup is not None and backup != "--" and backup != slot_check[update_slot_key]['backup']:
+                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
+
+                    if update_month_query:
+                        update_month_query = "UPDATE calendar SET " + update_month_query
+                        update_month_query += """ WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
                     AND month='{1}' AND day='{2}') AND hour='{3}' AND min='{4}' AND groupid={5}""".format(
                         year,
                         month,
@@ -782,7 +799,7 @@ class OnCalendarDB(object):
                         group_info[group_name]['id']
                     )
                 else:
-                    update_month_query = "INSERT INTO calendar SET calday=(SELECT id FROM caldays\
+                    update_month_query_start = "INSERT INTO calendar SET calday=(SELECT id FROM caldays\
                     WHERE year='{0}' AND month='{1}' AND day='{2}'), hour='{3}', min='{4}', \
                     groupid='{5}', ".format(
                         year,
@@ -792,54 +809,65 @@ class OnCalendarDB(object):
                         slot[1],
                         group_info[group_name]['id'],
                     )
-                    if victim is not None:
-                        update_month_query += "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
-                        if shadow is not None:
+                    if victim is not None and victim != "--":
+                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
+                        if shadow is not None and shadow != "--":
                             update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                        if backup is not None and backup != "--":
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif shadow is not None:
-                        update_month_query += "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                    elif shadow is not None and shadow != "--":
+                        update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
+                        if backup is not None and backup != "--":
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif backup is not None:
-                        update_month_query += "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                try:
-                    cursor.execute(update_month_query)
-                except mysql.Error as error:
-                    raise OnCalendarDBError(error.args[0], error.args[1])
+                    elif backup is not None and backup != "--":
+                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
+
+                    if update_month_query:
+                        update_month_query = update_month_query_start + update_month_query
+                if update_month_query:
+                    try:
+                        cursor.execute(update_month_query)
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1])
 
             next_date = dt.date(int(year), int(month), int(date)) + increment_day
-
             post_slot_check = {}
-            slot_check_query = """SELECT * FROM calendar WHERE calday=(SELECT id FROM caldays
-            WHERE year='{0}' AND month='{1}' AND day='{2}') AND groupid={3}""".format(next_date.year, next_date.month, next_date.day, group_info[group_name]['id'])
+
             try:
-                cursor.execute(slot_check_query)
+                cursor.execute(slot_check_query.format(next_date.year, next_date.month, next_date.day, group_info[group_name]['id']))
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
             for row in cursor.fetchall():
                 post_slot_key = "{0}-{1}".format(row['hour'], row['min'])
-                post_slot_check[post_slot_key] = {'victimid': row['victimid'], 'shadowid': row['shadowid'], 'backupid': row['backupid']}
+                post_slot_check[post_slot_key] = {'victim': row['victim'], 'shadow': row['shadow'], 'backup': row['backup']}
 
             for slot in post_slots:
                 update_slot_key = "{0}-{1}".format(slot[0], slot[1])
                 if update_slot_key in post_slot_check:
-                    update_month_query = "UPDATE calendar SET "
-                    if victim is not None:
-                        update_month_query += "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
+                    update_month_query = False
+                    if victim is not None and victim != "--" and victim != post_slot_check[update_slot_key]['victim']:
+                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
                         if shadow is not None:
-                            update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                            if shadow == "--" and post_slot_check[update_slot_key]['shadow']:
+                                update_month_query += ", shadowid=NULL"
+                            elif shadow != "--" and shadow != post_slot_check[update_slot_key]['shadow']:
+                                update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
+                        if backup is not None and backup != "--" and backup != post_slot_check[update_slot_key]['backup']:
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
                     elif shadow is not None:
-                        update_month_query += "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                        if shadow == "--" and post_slot_check[update_slot_key]['shadow']:
+                            update_month_query = "shadowid=NULL"
+                        elif shadow != "--" and shadow != post_slot_check[update_slot_key]['shadow']:
+                            update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
+                        if backup is not None and backup != "--" and backup != post_slot_check[update_slot_key]['backup']:
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif backup is not None:
-                        update_month_query += "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    update_month_query += """ WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
+                    elif backup is not None and backup != "--" and backup != post_slot_check[update_slot_key]['backup']:
+                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
+
+                    if update_month_query:
+                        update_month_query = "UPDATE calendar SET " + update_month_query
+                        update_month_query += """ WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
                             AND month='{1}' AND day='{2}') AND hour='{3}' AND min='{4}' AND groupid={5}""".format(
                         next_date.year,
                         next_date.month,
@@ -849,7 +877,7 @@ class OnCalendarDB(object):
                         group_info[group_name]['id']
                     )
                 else:
-                    update_month_query = "INSERT INTO calendar SET calday=(SELECT id FROM caldays\
+                    update_month_query_start = "INSERT INTO calendar SET calday=(SELECT id FROM caldays\
                             WHERE year='{0}' AND month='{1}' AND day='{2}'), hour='{3}', min='{4}', \
                             groupid='{5}', ".format(
                         next_date.year,
@@ -859,23 +887,28 @@ class OnCalendarDB(object):
                         slot[1],
                         group_info[group_name]['id'],
                         )
-                    if victim is not None:
-                        update_month_query += "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
-                        if shadow is not None:
+                    if victim is not None and victim != "--":
+                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
+                        if shadow is not None and shadow != "--":
                             update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                        if backup is not None and backup != "--":
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif shadow is not None:
-                        update_month_query += "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None:
+                    elif shadow is not None and shadow != "--":
+                        update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
+                        if backup is not None and backup != "--":
                             update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}'".format(backup)
-                    elif backup is not None:
-                        update_month_query += "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
+                    elif backup is not None and backup != "--":
+                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
 
-                try:
-                    cursor.execute(update_month_query)
-                except mysql.Error as error:
-                    raise OnCalendarDBError(error.args[0], error.args[1])
+                    if update_month_query:
+                        update_month_query = update_month_query_start + update_month_query
+
+                if update_month_query:
+                    self.logger.debug(update_month_query)
+                    try:
+                        cursor.execute(update_month_query)
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1])
 
         try:
             self.update_edits(updater, group_name, reason)
@@ -917,17 +950,23 @@ class OnCalendarDB(object):
             slot_hour = int(slot_bits[0])
             slot_min = int(slot_bits[1])
             update_day_query = "UPDATE calendar SET"
-            if 'oncall' in update_slots[slot]:
+            if 'oncall' in update_slots[slot] and update_slots[slot]['oncall'] != "--":
                 update_day_query += " victimid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['oncall'] + "')"
                 if 'shadow' in update_slots[slot]:
-                    update_day_query += ", shadowid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['shadow'] + "')"
-                if 'backup' in update_slots[slot]:
+                    if update_slots[slot]['shadow'] == "--":
+                        update_day_query += ", shadowid=NULL"
+                    else:
+                        update_day_query += ", shadowid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['shadow'] + "')"
+                if 'backup' in update_slots[slot] and update_slots[slot]['backup'] != "--":
                     update_day_query += ", backupid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['backup'] + "')"
             elif 'shadow' in update_slots[slot]:
-                update_day_query += " shadowid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['shadow'] + "')"
-                if 'backup' in update_slots[slot]:
+                if update_slots[slot]['shadow'] == "--":
+                    update_day_query += " shadowid=NULL"
+                else:
+                    update_day_query += " shadowid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['shadow'] + "')"
+                if 'backup' in update_slots[slot] and update_slots[slot]['backup'] != "--":
                     update_day_query += ", backupid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['backup'] + "')"
-            elif 'backup' in update_slots[slot]:
+            elif 'backup' in update_slots[slot] and update_slot[slot]['backup'] != "--":
                 update_day_query += " backupid=(SELECT id FROM victims WHERE username='" + update_slots[slot]['backup'] + "')"
             else:
                 continue
@@ -1753,6 +1792,12 @@ class OnCalendarDB(object):
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking shadow for {0})'.format(row['name']))
                 else:
                     schedule_status[row['name']]['shadow'] = {'updated': False}
+            else:
+                if current_victims[row['name']]['shadowid'] is not None:
+                    try:
+                        rotate_cursor.execute("UPDATE groups SET shadowid=NULL WHERE id='{0}'".format(row['groupid']))
+                    except mysql.Error as error:
+                        raise OnCalendarDBError(error.args[0], error.args[1] + ' (setting shadowid to empty for {0})'.format(row['name']))
 
             if row['backupid'] is not None:
                 if row['backupid'] != current_victims[row['name']]['backupid']:
