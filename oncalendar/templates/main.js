@@ -1121,6 +1121,7 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
                     }
                 });
 
+                console.log(slots);
                 $.each(slots, function(slot, slot_data) {
                     oncalendar.victims[update_day_data.calday].slots[slot][update_day_data.group] = slot_data;
                 });
@@ -1142,7 +1143,7 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
                             }
                             $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
                                 .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-                                    ' - ' + current_victim[group].oncall_name + '" style="color: ' +
+                                    ' oncall - ' + current_victim[group].oncall_name + '" style="color: ' +
                                     oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
                                     current_victim[group].oncall + '</p>');
                             if (victims.shadow != null) {
@@ -1152,7 +1153,7 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
                                 }
                                 $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
                                     .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-                                    ' - ' + current_victim[group].shadow_name + '" style="color: ' +
+                                    ' shadow - ' + current_victim[group].shadow_name + '" style="color: ' +
                                     oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
                                     current_victim[group].shadow + ' (S)</p>');
                             }
@@ -1163,7 +1164,7 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
                                 }
                                 $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
                                     .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-                                    ' - ' + current_victim[group].backup_name + '" style="color: ' +
+                                    ' backup - ' + current_victim[group].backup_name + '" style="color: ' +
                                     oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
                                     current_victim[group].backup + ' (B)</p>');
                             }
@@ -1173,27 +1174,27 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
                                 current_victim[group].oncall_name = victims.oncall_name;
                                 $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
                                     .append('<p class="' + p_group_class[group] +'" data-group="' + group + '" title="' + group +
-                                    ' - ' + current_victim[group].oncall_name + '" style="color: ' +
+                                    ' oncall - ' + current_victim[group].oncall_name + '" style="color: ' +
                                     oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-                                    current_victim[group].oncall + '</p>');
+                                    (current_victim[group].oncall == null ? '--' : current_victim[group].oncall) + '</p>');
                             }
                             if (victims.shadow !== current_victim[group].shadow) {
                                 current_victim[group].shadow = victims.shadow;
                                 current_victim[group].shadow_name = victims.shadow_name;
                                 $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
                                     .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-                                    ' - ' + current_victim[group].shadow_name + '" style="color: ' +
+                                    ' shadow - ' + current_victim[group].shadow_name + '" style="color: ' +
                                     oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-                                    current_victim[group].shadow + ' (S)</p>');
+                                    (current_victim[group].shadow == null ? '--' : current_victim[group].shadow) + ' (S)</p>');
                             }
                             if (victims.backup !== current_victim[group].backup) {
                                 current_victim[group].backup = victims.backup;
                                 current_victim[group].backup_name = victims.backup_name;
                                 $('td#' + update_day_data.cal_date).children('div.calendar-day-victims')
                                     .append('<p class="' + p_group_class[group] + '" data-group="' + group + '" title="' + group +
-                                    ' - ' + current_victim[group].backup_name + '" style="color: ' +
+                                    ' backup - ' + current_victim[group].backup_name + '" style="color: ' +
                                     oncalendar.group_color_map[group] + ';">' + slot.replace('-', ':') + ' ' +
-                                    current_victim[group].backup + ' (B)</p>');
+                                    (current_victim[group].backup == null ? '--' : current_victim[group].backup) + ' (B)</p>');
                             }
                         }
                     });
