@@ -189,11 +189,11 @@ def check_calendar_gaps_8hour():
         gap_check = ocdb.check_8hour_gaps()
         ocsms = OnCalendarSMS(config)
 
-        for group in gap_check.keys():
+        for group in gap_check:
             ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}".format(group))
             ocsms.send_sms(
-                gap_check[group]['oncall'],
-                "Your oncall schedule has gaps within the next 8 hours!",
+                gap_check[group],
+                "Oncall schedule for group {0} has gaps within the next 8 hours!".format(group),
                 False
             )
 
@@ -223,9 +223,9 @@ def check_calendar_gaps_48hour():
         for group in gap_check:
             ocapp.aps_logger.error("Schedule gap in the next 48 hours detected for group {0}".format(group))
             ocsms.send_email(
-                gap_check[group]['email'],
+                gap_check[group],
                 "Your oncall schedule has gaps within the next 48 hours,\nplease login to OnCalendar and correct those.",
-                "Oncall schedule gaps detected",
+                "Oncall schedule gaps detected for group {0}".format(group),
                 'plain'
             )
 
