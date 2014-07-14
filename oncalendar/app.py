@@ -2178,7 +2178,7 @@ def api_send_sms(victim_type, group):
                     config.sms['TWILIO_USE_CALLBACK']
                 )
             except OnCalendarSMSError as error:
-                if target['sms_email'] is not None:
+                if target['sms_email'] is not None and len(target['sms_email']) > 0:
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
@@ -2258,7 +2258,7 @@ def api_send_sms(victim_type, group):
                 )
                 sms_status = 'SMS handoff to Twilio successful'
             except OnCalendarSMSError, error:
-                if target['sms_email'] is not None:
+                if target['sms_email'] is not None and len(target['sms_email'] > 0):
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
