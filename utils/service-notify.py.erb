@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+
+import argparse
+import json
+import os
+import socket
+import sys
+from urllib import urlencode
+import urllib2
+
+
+class NagiosSvcNotifyError(Exception):
+    pass
+
+
+def notify(args):
+    """
+    Connect to the OnCalendar API and pass the notification.
+
+    Args:
+        (object): The parsed command-line arguments
+    """
+
+    status_string = "{0}_status".format(args.path)
+    status_message = "{0}_error".format(args.path)
+
+    post_data = {
+        'type': 'service',
+        'notification_type': args.notification_type,
+        'service_status': args.service_status,
+        'service_description': args.service_description,
+        'hostname': args.hostname,
+        'host_address': args.host_address,
+        'duration': args.duration,
+        'notification_number': args.notification_number,
+        'event_time': args.event_time,
+        'info': args.info,
+        'notes_url': args.notes_url,
+        'comments': args.comments,
+        'format': args.format,
+        'nagios_master': os.uname()[1]
+    }
+
+    oc_url = 'https://<%= @oncalendar_server %>/api/notification/{0}/{1}/{2}'.format(
+        args.path,
+        args.level,
+        args.group,
+    )
+
+    try:
+        oc_notify_response = urllib2.urlopen(oc_url, urlencode(post_data))
+    except (urllib2.URLError, urllib2.HTTPError) as reason:
+        raise NagiosSvcNotifyError(
+            "Unable to send Nagios notification {0}".format(reason)
+        )
+
+    notification_status = json.load(oc_notify_response)
+    if notification_status[status_string] == 'ERROR':
+        print notification_status[status_message]
+        return 2
+    else:
+        return 0
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-t', '--type',
+        action='store',
+        dest='notification_type',
+        required=True,
+        help='The notification type ($NOTIFICATIONTYPE$)'
+    )
+    parser.add_argument(
+        '-s', '--state',
+        action='store',
+        dest='service_status',
+        required=True,
+        help='Service state ($SERVICESSTATE$)'
+    )
+    parser.add_argument(
+        '-S', '--service',
+        action='store',
+        dest='service_description',
+        required=True,
+        help='Service description ($SERVICEDESC$)'
+    )
+    parser.add_argument(
+        '-H', '--hostname',
+        action='store',
+        dest='hostname',
+        required=True,
+        help='Host name ($HOSTNAME$)'
+    )
+    parser.add_argument(
+        '-a', '--address',
+        action='store',
+        dest='host_address',
+        required=True,
+        help='Host address ($HOSTADDRESS$)'
+    )
+    parser.add_argument(
+        '-d', '--duration',
+        action='store',
+        dest='duration',
+        required=True,
+        help='Event duration ($SERVICEDURATION$)'
+    )
+    parser.add_argument(
+        '-n', '--number',
+        action='store',
+        dest='notification_number',
+        required=True,
+        help='Notification number ($SERVICENOTIFICATIONNUMBER$)'
+    )
+    parser.add_argument(
+        '-T', '--time',
+        action='store',
+        dest='event_time',
+        required=True,
+        help='Event time ($LONGDATETIME$)'
+    )
+    parser.add_argument(
+        '-i', '--info',
+        action='store',
+        dest='info',
+        required=True,
+        help='Alert info ($SERVICEOUTPUT$)'
+    )
+    parser.add_argument(
+        '-u', '--notes-url',
+        action='store',
+        dest='notes_url',
+        help='Notes URL ($SERVICENOTESURL$)'
+    )
+    parser.add_argument(
+        '-c', '--comments',
+        action='store',
+        dest='comments',
+        help='Notification comments ($NOTIFICATIONCOMMENT$)'
+    )
+    parser.add_argument(
+        '-C', '--contact',
+        action='store',
+        dest='group',
+        required=True,
+        help='Oncall group to notifiy ($CONTACTADDRESS1)'
+    )
+    parser.add_argument(
+        '-l', '--level',
+        action='store',
+        dest='level',
+        help='Notification level, e.g. oncall, backup or group'
+    )
+    parser.add_argument(
+        '-N', '--notification-path',
+        action='store',
+        dest='path',
+        help='Notification path - email or SMS (default is email)'
+    )
+    parser.add_argument(
+        '-f', '--format',
+        action='store',
+        dest='format',
+        help='Email format - html or plain (default is plain)'
+    )
+
+    args = parser.parse_args()
+
+    try:
+        notify_result = notify(args)
+    except (NagiosSvcNotifyError) as error:
+        print error
+        notify_result = 255
+
+
+    return notify_result
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
