@@ -1,5 +1,14 @@
 class OnCalendarAPIError(Exception):
-    pass
+    """
+    Exception class for errors returned by API requests. Will
+    return a success (200) code, but the client should parse the
+    response to determine success or error status
+
+    """
+    def __init__(self, payload):
+        Exception.__init__(self)
+        self.status_code = 200
+        self.payload = payload
 
 
 class OnCalendarAuthError(Exception):

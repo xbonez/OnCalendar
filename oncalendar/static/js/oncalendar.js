@@ -1331,7 +1331,7 @@ var oncalendar = {
                 cal.group_info_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 cal.group_info_object.reject(error);
             });
 
@@ -1362,7 +1362,7 @@ var oncalendar = {
                 cal.get_last_edit_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 cal.get_last_edit_object.reject(error);
             });
 
@@ -1389,7 +1389,7 @@ var oncalendar = {
                 cal.get_victims_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 cal.get_victims_object.reject(error);
             });
 
@@ -1416,7 +1416,7 @@ var oncalendar = {
                 cal.get_victim_info_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 cal.get_victim_info_object.reject(error);
             });
 
@@ -1490,7 +1490,11 @@ var oncalendar = {
 
         chain
             .done(function(data) {
-                add_victim_object.resolve(data);
+                if ($.inArray('api_error_status', Object.keys(data))) {
+                    add_victim_object.reject(data.api_error_message);
+                } else {
+                    add_victim_object.resolve(data);
+                }
             })
             .fail(function(data) {
                 var error = data.responseJSON.error_message;
@@ -1514,7 +1518,11 @@ var oncalendar = {
 
         chain
             .done(function(data) {
-                delete_victim_object.resolve(data);
+                if ($.inArray('api_error_status', Object.keys(data))) {
+                    delete_victim_object.reject(data.api_error_message);
+                } else {
+                    delete_victim_object.resolve(data);
+                }
             })
             .fail(function(data) {
                 var error = data.responseJSON.error_message;
@@ -1542,7 +1550,7 @@ var oncalendar = {
                 update_group_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 update_group_object.reject(error);
             });
 
@@ -1615,7 +1623,7 @@ var oncalendar = {
                 update_month_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 update_month_object.reject(error);
             });
 
@@ -1640,7 +1648,7 @@ var oncalendar = {
                 update_day_object.resolve(data);
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
+                var error = data.responseJSON.error_message;
                 update_day_object.reject(error);
             });
 
@@ -1666,11 +1674,16 @@ var oncalendar = {
 
         chain
             .done(function(data) {
-                send_oncall_sms_object.resolve(data);
+                if (data.sms_status === "ERROR") {
+                    send_oncall_sms_object.reject(data.sms_error);
+                } else {
+                    send_oncall_sms_object.resolve(data);
+                }
+
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
-                send_oncall_sms_object.reject(error.sms_error);
+                var error = data.responseJSON.error_message;
+                send_oncall_sms_object.reject(error);
             });
 
         return send_oncall_sms_object.promise();
@@ -1695,11 +1708,15 @@ var oncalendar = {
 
         chain
             .done(function(data) {
-                send_panic_sms_object.resolve(data);
+                if (data.sms_status === "ERROR") {
+                    send_panic_sms_object.reject(data.sms_error);
+                } else {
+                    send_panic_sms_object.resolve(data);
+                }
             })
             .fail(function(data) {
-                var error = $.parseJSON(data.responseText);
-                send_panic_sms_object.reject(error.sms_error);
+                var error = data.responseJSON.error_message;
+                send_panic_sms_object.reject(error);
             });
 
         return send_panic_sms_object.promise();

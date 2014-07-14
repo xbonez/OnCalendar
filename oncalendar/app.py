@@ -441,6 +441,17 @@ def handle_bad_request(error):
     return jsonify(error.payload), error.status_code
 
 
+@ocapp.errorhandler(OnCalendarAPIError)
+def handle_api_error(error):
+    """
+    Handler for API error messages, HTTP code 200, clients
+    are responsible for parsing the returned data to determine
+    success or error
+    """
+
+    return jsonify(error.payload)
+
+
 @ocapp.errorhandler(OnCalendarAppError)
 def handle_app_error(error):
     """
@@ -802,12 +813,12 @@ def api_calendar_update_month():
         (str): Success status as JSON
 
     Raises:
-        OnCalendarAppError
+        OnCalendarAppError, OnCalendarBadRequest
     """
 
     month_data = request.get_json()
     if not month_data:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'error_code': ocapi_err.NOPOSTDATA,
                 'error_message': 'No data received'
@@ -990,12 +1001,12 @@ def api_calendar_update_day():
         (dict): The updated schedule for the day.
 
     Raises:
-        OnCalendarAppError
+        OnCalendarAppError, OnCalendarBadRequest
     """
 
     update_day_data = request.get_json()
     if not update_day_data:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'error_code': error.args[0],
                 'error_message': error.args[1]
@@ -1520,11 +1531,11 @@ def api_update_group():
         (str): dict of the updated group info as JSON.
 
     Raises:
-        OnCalendarAppError
+        OnCalendarAppError, OnCalendarBadRequest
     """
 
     if not request.json:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'error_code': ocapi_err.NOPOSTDATA,
                 'error_message': 'No data received'
@@ -1560,7 +1571,7 @@ def api_group_victims():
     """
 
     if not request.json:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'error_code': ocapi_err.NOPOSTDATA,
                 'error_message': 'No data received'
@@ -1596,7 +1607,7 @@ def api_add_victim():
         (str): dict of the victim's information as JSON.
 
     Raises:
-        OnCalendarAppError
+        OnCalendarAppError, OnCalendarBadRequest
     """
 
     if not request.json:
@@ -1614,8 +1625,8 @@ def api_add_victim():
         new_victim = ocdb.add_victim(victim_data)
     except OnCalendarAPIError as error:
         return jsonify({
-            'api_error': error.args[0],
-            'error_message': error.args[1]
+            'api_error_status': error.args[0],
+            'api_error_message': error.args[1]
         })
     except OnCalendarDBError as error:
         raise OnCalendarBadRequest(
@@ -1646,11 +1657,18 @@ def api_delete_victim(victim_id):
     try:
         ocdb = OnCalendarDB(config.database)
         victim_count = ocdb.delete_victim(victim_id)
-    except (OnCalendarDBError, OnCalendarAPIError) as error:
+    except OnCalendarDBError as error:
         raise OnCalendarAppError(
             payload = {
                 'error_code': error.args[0],
                 'error_message': error.args[1]
+            }
+        )
+    except OnCalendarAPIError as error:
+        raise OnCalendarAPIError(
+            payload = {
+                'api_error_status': error.args[0],
+                'api_error_message': error.args[0]
             }
         )
 
@@ -1961,6 +1979,9 @@ def api_send_sms(victim_type, group):
 
     Returns:
         (str): Success or failure status as JSON
+
+    Raises:
+        OnCalendarBadRequest, OnCalendarAppError, OnCalendarAPIError
     """
 
     sms_status = 'UNKNOWN'
@@ -2164,14 +2185,14 @@ def api_send_sms(victim_type, group):
                         sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
                     except OnCalendarSMSError as error:
                         ocsms.send_failsafe(sms_message)
-                        raise OnCalendarAppError(
+                        raise OnCalendarAPIError(
                             payload = {
                                 'sms_status': 'ERROR',
                                 'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
                             }
                         )
                 else:
-                    raise OnCalendarAppError(
+                    raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
                             'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
@@ -2244,14 +2265,14 @@ def api_send_sms(victim_type, group):
                         sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
                     except OnCalendarSMSError, error:
                         ocsms.send_failsafe(sms_message)
-                        raise OnCalendarAppError(
+                        raise OnCalendarAPIError(
                             payload = {
                                 'sms_status': 'ERROR',
                                 'sms_error': 'Alerting failed ({0})- sending to failsafe address(es)'.format(error)
                             }
                         )
                 else:
-                    raise OnCalendarAppError(
+                    raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
                             'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
@@ -2281,6 +2302,9 @@ def api_send_email(victim_type, group):
 
     Returns:
         (str): Success or failure status as JSON
+
+    Raises:
+        OnCalendarBadRequest, OnCalendarAppError, OnCalendarAPIError
     """
 
     message_format = None
@@ -2303,7 +2327,7 @@ def api_send_email(victim_type, group):
         )
 
     if not request.form:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(ocapi_err.NOPOSTDATA, 'No data received')}
         )
 
@@ -2387,7 +2411,7 @@ def api_send_email(victim_type, group):
                 }
             )
     else:
-        raise OnCalendarAppError(
+        raise OnCalendarBadRequest(
             payload = {
                 'email_status': 'ERROR',
                 'email_error': "{0}: {1}".format(ocapi_err.NOPARAM, 'Request must specify either host or service type')
@@ -2435,8 +2459,10 @@ def api_send_email(victim_type, group):
         else:
             ocsms.send_email(target['email'], email_message, email_subject, message_format)
     except OnCalendarSMSError, error:
-        raise OnCalendarAppError(
-            payload = {'email_status': 'ERROR', 'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
+        raise OnCalendarAPIError(
+            payload = {
+                'email_status': 'ERROR',
+                'email_error': "{0}: {1}".format(error.args[0], error.args[1])}
         )
 
     return jsonify({'email_status': 'Notification email sent to {0}'.format(target['email'])})
