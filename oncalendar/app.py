@@ -127,41 +127,77 @@ def check_current_victims():
             if oncall_check_status[group]['oncall']['updated']:
                 ocapp.aps_logger.debug('-- Primary has changed, now {0}'.format(oncall_check_status[group]['oncall']['new']))
                 ocapp.aps_logger.info("{0} primary oncall updated".format(group))
-                ocsms.send_sms(
-                    oncall_check_status[group]['oncall']['new_phone'],
-                    rotate_on_message.format('primary', group),
-                    False
-                )
-                if oncall_check_status[group]['oncall']['prev_phone'] is not None:
+                try:
                     ocsms.send_sms(
-                        oncall_check_status[group]['oncall']['prev_phone'],
-                        rotate_off_message.format('primary', group),
+                        oncall_check_status[group]['oncall']['new_phone'],
+                        rotate_on_message.format('primary', group),
                         False
                     )
+                except OnCalendarSMSError as error:
+                    ocapp.aps_logger.error('Unable to send notification for {0} incoming primary: {1}'.format(
+                        group,
+                        error
+                    ))
+                try:
+                    if oncall_check_status[group]['oncall']['prev_phone'] is not None:
+                        ocsms.send_sms(
+                            oncall_check_status[group]['oncall']['prev_phone'],
+                            rotate_off_message.format('primary', group),
+                            False
+                        )
+                except OnCalendarSMSError as error:
+                    ocapp.aps_logger.error('Unable to send notification for {0} outgoing primary: {1}'.format(
+                        group,
+                        error
+                    ))
             if 'shadow' in oncall_check_status[group] and oncall_check_status[group]['shadow']['updated']:
                 ocapp.aps_logger.info("{0} shadow oncall updated".format(group))
-                ocsms.send_sms(
-                    oncall_check_status[group]['shadow']['new_phone'],
-                    rotate_on_message.format('shadow', group)
-                )
-                if oncall_check_status[group]['shadow']['prev_phone'] is not None:
+                try:
                     ocsms.send_sms(
                         oncall_check_status[group]['shadow']['new_phone'],
-                        rotate_off_message.format('shadow', group),
-                        False
+                        rotate_on_message.format('shadow', group)
                     )
+                except OnCalendarSMSError as error:
+                    ocapp.aps_logger.error('Unable to send notification for {0} incoming shadow: {1}'.format(
+                        group,
+                        error
+                    ))
+                if oncall_check_status[group]['shadow']['prev_phone'] is not None:
+                    try:
+                        ocsms.send_sms(
+                            oncall_check_status[group]['shadow']['new_phone'],
+                            rotate_off_message.format('shadow', group),
+                            False
+                        )
+                    except OnCalendarSMSError as error:
+                        ocapp.aps_logger.error('Unable to send notification for {0} outgoing shadow: {1}'.format(
+                            group,
+                            error
+                        ))
             if 'backup' in oncall_check_status[group] and oncall_check_status[group]['backup']['updated']:
                 ocapp.aps_logger.info("{0} backup oncall updated".format(group))
-                ocsms.send_sms(
-                    oncall_check_status[group]['backup']['new_phone'],
-                    rotate_on_message.format('backup', group)
-                )
-                if oncall_check_status[group]['backup']['prev_phone'] is not None:
+                try:
                     ocsms.send_sms(
-                        oncall_check_status[group]['backup']['prev_phone'],
-                        rotate_off_message.format('backup', group),
-                        False
+                        oncall_check_status[group]['backup']['new_phone'],
+                        rotate_on_message.format('backup', group)
                     )
+                except OnCalendarSMSError as error:
+                    ocapp.aps_logger.error('Unable to send notification for {0} incoming backup: {1}'.format(
+                        group,
+                        error
+                    ))
+                if oncall_check_status[group]['backup']['prev_phone'] is not None:
+                    try:
+                        ocsms.send_sms(
+                            oncall_check_status[group]['backup']['prev_phone'],
+                            rotate_off_message.format('backup', group),
+                            False
+                        )
+                    except OnCalendarSMSError as error:
+                        ocapp.aps_logger.error('Unable to send notification for {0} outgoing backup: {1}'.format(
+                            group,
+                            error
+                        ))
         if ocapp.job_failures['check_current_victims'] > 0:
             ocapp.job_failures['check_current_victims'] = 0
 
