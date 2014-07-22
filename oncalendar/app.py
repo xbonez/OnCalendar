@@ -131,7 +131,8 @@ def check_current_victims():
                     ocsms.send_sms(
                         oncall_check_status[group]['oncall']['new_phone'],
                         rotate_on_message.format('primary', group),
-                        False
+                        False,
+                        callback=config.sms['TWILIO_USE_CALLBACK']
                     )
                 except OnCalendarSMSError as error:
                     ocapp.aps_logger.error('Unable to send notification for {0} incoming primary: {1}'.format(
@@ -143,7 +144,8 @@ def check_current_victims():
                         ocsms.send_sms(
                             oncall_check_status[group]['oncall']['prev_phone'],
                             rotate_off_message.format('primary', group),
-                            False
+                            False,
+                            callback=config.sms['TWILIO_USE_CALLBACK']
                         )
                 except OnCalendarSMSError as error:
                     ocapp.aps_logger.error('Unable to send notification for {0} outgoing primary: {1}'.format(
@@ -155,7 +157,8 @@ def check_current_victims():
                 try:
                     ocsms.send_sms(
                         oncall_check_status[group]['shadow']['new_phone'],
-                        rotate_on_message.format('shadow', group)
+                        rotate_on_message.format('shadow', group),
+                        False
                     )
                 except OnCalendarSMSError as error:
                     ocapp.aps_logger.error('Unable to send notification for {0} incoming shadow: {1}'.format(
@@ -167,7 +170,8 @@ def check_current_victims():
                         ocsms.send_sms(
                             oncall_check_status[group]['shadow']['new_phone'],
                             rotate_off_message.format('shadow', group),
-                            False
+                            False,
+                            callback=config.sms['TWILIO_USE_CALLBACK']
                         )
                     except OnCalendarSMSError as error:
                         ocapp.aps_logger.error('Unable to send notification for {0} outgoing shadow: {1}'.format(
@@ -179,7 +183,9 @@ def check_current_victims():
                 try:
                     ocsms.send_sms(
                         oncall_check_status[group]['backup']['new_phone'],
-                        rotate_on_message.format('backup', group)
+                        rotate_on_message.format('backup', group),
+                        False,
+                        callback=config.sms['TWILIO_USE_CALLBACK']
                     )
                 except OnCalendarSMSError as error:
                     ocapp.aps_logger.error('Unable to send notification for {0} incoming backup: {1}'.format(
@@ -191,7 +197,8 @@ def check_current_victims():
                         ocsms.send_sms(
                             oncall_check_status[group]['backup']['prev_phone'],
                             rotate_off_message.format('backup', group),
-                            False
+                            False,
+                            callback=config.sms['TWILIO_USE_CALLBACK']
                         )
                     except OnCalendarSMSError as error:
                         ocapp.aps_logger.error('Unable to send notification for {0} outgoing backup: {1}'.format(
@@ -230,7 +237,8 @@ def check_calendar_gaps_8hour():
             ocsms.send_sms(
                 gap_check[group],
                 "Oncall schedule for group {0} has gaps within the next 8 hours!".format(group),
-                False
+                False,
+                callback=config.sms['TWILIO_USE_CALLBACK']
             )
 
         if ocapp.job_failures['check_calendar_gaps_8hour'] > 0:
@@ -334,7 +342,8 @@ def get_incoming_sms():
                 ocsms.send_sms(
                     from_number,
                     "You are not authorized to talk to me.",
-                    config.sms['TWILIO_USE_CALLBACK']
+                    False,
+                    callback=config.sms['TWILIO_USE_CALLBACK']
                 )
                 continue
 
@@ -353,7 +362,8 @@ def get_incoming_sms():
                 ocsms.send_sms(
                     from_number,
                     sms_response,
-                    config.sms['TWILIO_USE_CALLBACK']
+                    False,
+                    callback=config.sms['TWILIO_USE_CALLBACK']
                 )
             except OnCalendarSMSError as error:
                 ocapp.aps_logger.error("Response to {0} failed! {1}".format(
@@ -2118,7 +2128,8 @@ def api_send_sms(victim_type, group):
                     ocsms.send_sms(
                         target['phone'],
                         sms_message,
-                        config.sms['TWILIO_USE_CALLBACK']
+                        target['truncate'],
+                        callback=config.sms['TWILIO_USE_CALLBACK']
                     )
                     panic_status['successful'] += 1
                 except OnCalendarSMSError:
@@ -2154,7 +2165,7 @@ def api_send_sms(victim_type, group):
                                     'sms_error': "{0}: {1}".format(error.args[0], error.args[1])
                                 }
                             )
-                        ocsms.send_sms(target['phone'], throttle_message, False)
+                        ocsms.send_sms(target['phone'], throttle_message, target['truncate'], callback=config.sms['TWILIO_USE_CALLBACK'])
                         panic_status['throttled'] += 1
                     else:
                         try:
@@ -2163,6 +2174,7 @@ def api_send_sms(victim_type, group):
                                 target['id'],
                                 target['phone'],
                                 sms_message,
+                                target['truncate'],
                                 notification_data['notification_type'],
                                 notification_data['type'],
                                 notification_data['hostname'],
@@ -2211,7 +2223,8 @@ def api_send_sms(victim_type, group):
                 ocsms.send_sms(
                     target['phone'],
                     sms_message,
-                    config.sms['TWILIO_USE_CALLBACK']
+                    target['truncate'],
+                    callback=config.sms['TWILIO_USE_CALLBACK']
                 )
             except OnCalendarSMSError as error:
                 if target['sms_email'] is not None and len(target['sms_email']) > 0:
@@ -2239,7 +2252,8 @@ def api_send_sms(victim_type, group):
                 ocsms.send_sms(
                     shadow['phone'],
                     sms_message,
-                    config.sms['TWILIO_USE_CALLBACK']
+                    target['truncate'],
+                    callback=config.sms['TWILIO_USE_CALLBACK']
                 )
         else:
             if target['throttle_time_remaining'] > 0:
@@ -2270,9 +2284,9 @@ def api_send_sms(victim_type, group):
                         }
                     )
 
-                ocsms.send_sms(target['phone'], throttle_message, False)
+                ocsms.send_sms(target['phone'], throttle_message, target['truncate'], callback=config.sms['TWILIO_USE_CALLBACK'])
                 if victim_type == 'oncall' and shadow is not None:
-                    ocsms.send_sms(shadow['phone'], throttle_message, False)
+                    ocsms.send_sms(shadow['phone'], throttle_message, target['truncate'], callback=config.sms['TWILIO_USE_CALLBACK'])
 
                 return json.dumps({
                     'sms_status': 'Throttle limit for {0} has been reached, throttling for {1} more seconds'.format(
@@ -2286,6 +2300,7 @@ def api_send_sms(victim_type, group):
                     target['id'],
                     target['phone'],
                     sms_message,
+                    target['truncate'],
                     notification_data['notification_type'],
                     notification_data['type'],
                     notification_data['hostname'],
@@ -2321,6 +2336,7 @@ def api_send_sms(victim_type, group):
                     shadow['id'],
                     shadow['phone'],
                     sms_message,
+                    target['truncate'],
                     notification_data['notification_type'],
                     notification_data['type'],
                     notification_data['hostname'],

@@ -32,7 +32,11 @@ class OnCalendarSMS(object):
         self.logger = getLogger(__name__)
 
 
-    def send_sms(self, phone_number, body, callback=False):
+    def send_sms(self, phone_number, body, clip, callback=False):
+
+        if clip:
+            body = body[:self.smsconfig['SMS_CLIP']]
+
         if self.testing:
             self.logger.debug("SMS message to {0}:, body: {1}".format(
                 phone_number,
@@ -62,7 +66,7 @@ class OnCalendarSMS(object):
             return msg.sid
 
 
-    def send_sms_alert(self, groupid, victimid, phone_number, body, alert_type='UNKNOWN', type='', host='', service='NA', nagios_master=None):
+    def send_sms_alert(self, groupid, victimid, phone_number, body, clip, alert_type='UNKNOWN', type='', host='', service='NA', nagios_master=None):
         if self.testing:
             self.logger.debug("send_sms_alert: groupid {0}, victimid {1}, alert_type {2}, type {3}, host {4}, service {5}, nagios_master {6}".format(
                 groupid,
@@ -83,10 +87,10 @@ class OnCalendarSMS(object):
                 raise OnCalendarSMSError([error.args[0], error.args[1]])
 
             response_key = "[{0}]\n".format(sms_hash)
-            body = response_key + body[:self.smsconfig['SMS_CLIP'] - len(response_key)]
+            body = response_key + body
 
             try:
-                sms_sid = self.send_sms(phone_number, body, False)
+                sms_sid = self.send_sms(phone_number, body, clip, callback=self.smsconfig['TWILIO_USE_CALLBACK'])
                 ocdb.set_sms_sid(sms_id, sms_sid)
             except OnCalendarDBError, error:
                 raise OnCalendarSMSError([error.args[0], error.args[1]])
