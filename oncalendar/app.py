@@ -2231,7 +2231,7 @@ def api_send_sms(victim_type, group):
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
-                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
+                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error.msg)
                     except OnCalendarSMSError as error:
                         ocsms.send_failsafe(sms_message)
                         raise OnCalendarAPIError(
@@ -2244,7 +2244,7 @@ def api_send_sms(victim_type, group):
                     raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
-                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
+                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error.msg)
                         }
                     )
 
@@ -2308,13 +2308,13 @@ def api_send_sms(victim_type, group):
                     notification_data['nagios_master']
                 )
                 sms_status = 'SMS handoff to Twilio successful'
-            except OnCalendarSMSError, error:
+            except OnCalendarSMSError as error:
                 if target['sms_email'] is not None and len(target['sms_email']) > 0:
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
-                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error)
-                    except OnCalendarSMSError, error:
+                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error.msg)
+                    except OnCalendarSMSError as error:
                         ocsms.send_failsafe(sms_message)
                         raise OnCalendarAPIError(
                             payload = {
@@ -2326,7 +2326,7 @@ def api_send_sms(victim_type, group):
                     raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
-                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error)
+                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address configured!'.format(error.msg)
                         }
                     )
 
