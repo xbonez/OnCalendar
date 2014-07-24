@@ -2231,7 +2231,7 @@ def api_send_sms(victim_type, group):
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
-                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error.msg)
+                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error.args[1])
                     except OnCalendarSMSError as error:
                         ocsms.send_failsafe(sms_message)
                         raise OnCalendarAPIError(
@@ -2244,7 +2244,7 @@ def api_send_sms(victim_type, group):
                     raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
-                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error.msg)
+                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address confgured!'.format(error.args[1])
                         }
                     )
 
@@ -2313,7 +2313,7 @@ def api_send_sms(victim_type, group):
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
-                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error.msg)
+                        sms_status = 'Twilio handoff failed ({0}), sending via SMS email address'.format(error.args[1])
                     except OnCalendarSMSError as error:
                         ocsms.send_failsafe(sms_message)
                         raise OnCalendarAPIError(
@@ -2326,7 +2326,7 @@ def api_send_sms(victim_type, group):
                     raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
-                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address configured!'.format(error.msg)
+                            'sms_error': 'Twilio handoff failed ({0}), user has no backup SMS email address configured!'.format(error.args[1])
                         }
                     )
 
