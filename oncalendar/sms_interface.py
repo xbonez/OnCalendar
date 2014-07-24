@@ -48,20 +48,20 @@ class OnCalendarSMS(object):
         else:
             try:
                 if callback:
-                    msg = self.client.sms.messages.create(
+                    msg = self.client.messages.create(
                         to=phone_number,
                         from_=self.smsconfig['TWILIO_NUMBER'],
                         body=body,
                         status_callback=self.smsconfig['TWILIO_CALLBACK_URL']
                     )
                 else:
-                    msg = self.client.sms.messages.create(
+                    msg = self.client.messages.create(
                         to=phone_number,
                         from_=self.smsconfig['TWILIO_NUMBER'],
                         body=body
                     )
             except TwilioRestException as error:
-                raise OnCalendarSMSError([error.args[0]], error.args[1])
+                raise OnCalendarSMSError(error.status, error.msg)
 
             return msg.sid
 
@@ -84,7 +84,7 @@ class OnCalendarSMS(object):
                 sms_hash = self.wordlist[sms_id % len(self.wordlist)]
                 ocdb.set_sms_hash(sms_id, sms_hash)
             except OnCalendarDBError, error:
-                raise OnCalendarSMSError([error.args[0], error.args[1]])
+                raise OnCalendarSMSError(error.args[0], error.args[1])
 
             response_key = "[{0}]\n".format(sms_hash)
             body = response_key + body
@@ -93,9 +93,9 @@ class OnCalendarSMS(object):
                 sms_sid = self.send_sms(phone_number, body, clip, callback=self.smsconfig['TWILIO_USE_CALLBACK'])
                 ocdb.set_sms_sid(sms_id, sms_sid)
             except OnCalendarDBError, error:
-                raise OnCalendarSMSError([error.args[0], error.args[1]])
+                raise OnCalendarSMSError(error.args[0], error.args[1])
             except TwilioRestException as error:
-                raise OnCalendarSMSError([error.args[0]], error.args[1])
+                raise OnCalendarSMSError(error.status, error.msg)
 
 
     def send_email(self, address, body, subject='', format='html', sender=None):
@@ -136,9 +136,9 @@ class OnCalendarSMS(object):
 
     def get_incoming(self):
         try:
-            messages = self.client.sms.messages.list(to=self.smsconfig['TWILIO_NUMBER'])
+            messages = self.client.messages.list(to=self.smsconfig['TWILIO_NUMBER'])
         except TwilioRestException as error:
-            raise OnCalendarSMSError([error.args[0]], error.args[1])
+            raise OnCalendarSMSError(error.status, error.msg)
 
         return messages
 

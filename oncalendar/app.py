@@ -2083,7 +2083,9 @@ def api_send_sms(victim_type, group):
                 ' '.join([sender['firstname'], sender['lastname']]),
                 request.form['body']
             )
+            ocapp.logger.debug('Notification (SMS): {0}'.format(sms_message))
         except OnCalendarDBError as error:
+            ocapp.logger.error('Notification (SMS): "{0}: {1}"'.format(error.args[0], error.args[1]))
             raise OnCalendarAppError(
                 payload = {
                     'sms_status': 'ERROR',
@@ -2132,7 +2134,11 @@ def api_send_sms(victim_type, group):
                         callback=config.sms['TWILIO_USE_CALLBACK']
                     )
                     panic_status['successful'] += 1
-                except OnCalendarSMSError:
+                except OnCalendarSMSError as error:
+                    ocapp.logger.error('Notification (SMS): Group {0}: Twilio gateway error "{1}", attempting fallback paging'.format(
+                        group,
+                        error.args[1]
+                    ))
                     if target['sms_email'] is not None and len(target['sms_email']) > 0:
                         fallback_address = target['phone'][1:] + '@' + target['sms_email']
                         try:
@@ -2187,7 +2193,7 @@ def api_send_sms(victim_type, group):
                                 fallback_address = target['phone'][1:] + '@' + target['sms_email']
                                 try:
                                     ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
-                                except OnCalendarSMSError, error:
+                                except OnCalendarSMSError as error:
                                     panic_status['sms_errors'] += 1
                             else:
                                 panic_status['sms_errors'] += 1
@@ -2228,6 +2234,10 @@ def api_send_sms(victim_type, group):
                 )
             except OnCalendarSMSError as error:
                 if target['sms_email'] is not None and len(target['sms_email']) > 0:
+                    ocapp.logger.error('Notification (SMS): Group {0}: Twilio gateway error "{1}", attempting fallback paging'.format(
+                        group,
+                        error.args[1]
+                    ))
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
@@ -2241,6 +2251,11 @@ def api_send_sms(victim_type, group):
                             }
                         )
                 else:
+                    ocapp.logger.error('Notification (SMS): Group {0}: Twilio gateway error "{1}", {2} has no fallback address'.format(
+                        group,
+                        error.args[1],
+                        target['username']
+                    ))
                     raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
@@ -2310,6 +2325,10 @@ def api_send_sms(victim_type, group):
                 sms_status = 'SMS handoff to Twilio successful'
             except OnCalendarSMSError as error:
                 if target['sms_email'] is not None and len(target['sms_email']) > 0:
+                    ocapp.logger.error('Notification (SMS): Group {0}: Twilio gateway error "{1}", attempting fallback paging'.format(
+                        group,
+                        error.args[1]
+                    ))
                     fallback_address = target['phone'][1:] + '@' + target['sms_email']
                     try:
                         ocsms.send_email_alert(fallback_address, sms_message, target['truncate'])
@@ -2323,6 +2342,11 @@ def api_send_sms(victim_type, group):
                             }
                         )
                 else:
+                    ocapp.logger.error('Notification (SMS): Group {0}: Twilio gateway error "{1}", {2} has no fallback address'.format(
+                        group,
+                        error.args[1],
+                        target['username']
+                    ))
                     raise OnCalendarAPIError(
                         payload = {
                             'sms_status': 'ERROR',
@@ -2344,6 +2368,7 @@ def api_send_sms(victim_type, group):
                     notification_data['nagios_master']
                 )
 
+    ocapp.logger.info('Notification (SMS): Group {0} {1}: {2}'.format(group, victim_type, sms_status))
     return jsonify({'sms_status': sms_status})
 
 
