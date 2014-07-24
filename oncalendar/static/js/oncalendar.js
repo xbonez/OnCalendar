@@ -1490,7 +1490,7 @@ var oncalendar = {
 
         chain
             .done(function(data) {
-                if ($.inArray('api_error_status', Object.keys(data))) {
+                if ($.inArray('api_error_status', Object.keys(data)) != -1) {
                     add_victim_object.reject(data.api_error_message);
                 } else {
                     add_victim_object.resolve(data);
@@ -1518,7 +1518,7 @@ var oncalendar = {
 
         chain
             .done(function(data) {
-                if ($.inArray('api_error_status', Object.keys(data))) {
+                if ($.inArray('api_error_status', Object.keys(data)) != -1) {
                     delete_victim_object.reject(data.api_error_message);
                 } else {
                     delete_victim_object.resolve(data);
