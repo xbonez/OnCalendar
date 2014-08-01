@@ -752,7 +752,7 @@ $('#add-group-popup').on('click', 'button#cancel-add-group-button', function() {
             turnover_min: $('input#new-group-turnover-min').attr('value'),
             email: $('input#new-group-email').val(),
             shadow: $('input#new-group-shadow').attr('value'),
-            backup: $('input#new-group-shadow').attr('value')
+            backup: $('input#new-group-backup').attr('value')
         };
         if (email_gateway_config) {
             new_group_data.failsafe = $('input#new-group-failsafe').attr('value');
