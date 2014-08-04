@@ -1015,6 +1015,121 @@ AND month='{1}' AND day='{2}') AND c.groupid={3}"""
         return slots
 
 
+    def get_oncall_report(self, year, month, group_name=False):
+        """
+        Get information on who was oncall and for how many hours for
+        each week of the given month
+
+        Args:
+            group_name (str): The group to report on.
+
+            month (int): The month of the report.
+
+            year (int): The year of the report.
+
+        Returns:
+            (dict): The report for the group.
+
+        Raises:
+            (OnCalendarDBError): Passes the mysql error code and message.
+        """
+        year = int(year)
+        month = int(month)
+        start_day = dt.date(year, month, 1)
+        start_dow, month_days = calendar.monthrange(year, month)
+        last_day = dt.date(year, month, month_days)
+
+        # Report weeks start on Monday, so we need to find the first Monday of the month
+        if start_dow != 0:
+            offset = 7 - start_dow
+            start_day = start_day + dt.timedelta(days=offset)
+
+        week_end = start_day + dt.timedelta(days=6)
+        report_weeks = [(
+            {'month': start_day.month, 'day': start_day.day},
+            {'month': week_end.month, 'day': week_end.day}
+        )]
+
+        in_month = True
+        while in_month:
+            start_day = week_end + dt.timedelta(days=1)
+            week_end = start_day + dt.timedelta(days=6)
+            report_weeks.append((
+                {'month': start_day.month, 'day': start_day.day},
+                {'month': week_end.month, 'day': week_end.day}
+            ))
+            if week_end >= last_day:
+                in_month = False
+        self.logger.debug(report_weeks)
+
+        if group_name:
+            group_list = self.get_group_info(group_name=group_name)
+        else:
+            group_list = self.get_group_info()
+
+        victims_report = {}
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        week_caldays_query = 'SELECT id FROM caldays WHERE year=' + str(year) + ' AND month={0} AND day BETWEEN {1} AND {2}'
+        victims_report_query = """SELECT c.groupid, g.name, c.victimid,
+        COUNT(c.victimid) AS slots
+        FROM calendar c
+        LEFT OUTER JOIN groups AS g ON g.id=c.groupid
+        WHERE c.calday IN ({0})"""
+        if (group_name):
+            victims_report_query += """ AND c.groupid=(SELECT id FROM groups WHERE name='{0}')
+            GROUP BY c.victimid, c.groupid ORDER BY c.groupid""".format(group_name)
+        else:
+            victims_report_query += ' GROUP BY c.victimid, c.groupid ORDER BY c.groupid'
+
+        for week in report_weeks:
+            week_index = report_weeks.index(week)
+            victims_report[week_index] = {'week_start': str(week[0]['month']) + '/' + str(week[0]['day'])}
+            victims_report[week_index]['groups'] = {}
+            week_caldays = []
+            try:
+                if week[0]['month'] != week[1]['month']:
+                    cursor.execute(week_caldays_query.format(week[0]['month'], week[0]['day'], last_day.day))
+                    for row in cursor.fetchall():
+                        week_caldays.append(str(row['id']))
+                    cursor.execute(week_caldays_query.format(week[1]['month'], 1, week[1]['day']))
+                    for row in cursor.fetchall():
+                        week_caldays.append(str(row['id']))
+                else:
+                    cursor.execute(week_caldays_query.format(week[0]['month'], week[0]['day'], week[1]['day']))
+                    for row in cursor.fetchall():
+                        week_caldays.append(str(row['id']))
+            except mysql.Error as error:
+                raise OnCalendarDBError(error.args[0], error.args[1])
+
+            self.logger.debug(week_caldays)
+
+            try:
+                self.logger.debug(victims_report_query.format(','.join(week_caldays)))
+                cursor.execute(victims_report_query.format(','.join(week_caldays)))
+                for row in cursor.fetchall():
+                    if row['name'] in victims_report[week_index]['groups']:
+                        victims_report[week_index]['groups'][row['name']][row['victimid']] = row
+                    else:
+                        victims_report[week_index]['groups'][row['name']] = {}
+                        victims_report[week_index]['groups'][row['name']][row['victimid']] = row
+                    victims_report[week_index]['groups'][row['name']][row['victimid']]['name'] = group_list[row['name']]['victims'][row['victimid']]['firstname'] + ' ' + group_list[row['name']]['victims'][row['victimid']]['lastname']
+                for group in group_list:
+                    cursor.execute("SELECT victimid FROM calendar WHERE groupid='{0}' AND hour='{1}' AND min='{2}' and calday='{3}'".format(
+                        group_list[group]['id'],
+                        group_list[group]['turnover_hour'],
+                        group_list[group]['turnover_min'],
+                        week_caldays[group_list[group]['turnover_day'] - 1]
+                    ))
+                    row = cursor.fetchone()
+                    if row is not None:
+                        victims_report[week_index]['groups'][group]['scheduled_victim'] = group_list[group]['victims'][row['victimid']]['firstname'] + ' ' + group_list[group]['victims'][row['victimid']]['lastname']
+            except mysql.Error as error:
+                raise OnCalendarDBError(error.args[0], error.args[1])
+
+        self.logger.debug(victims_report)
+        return victims_report
+
+
     def get_group_info(self, group_id=False, group_name=False):
         """
         Get information on all groups, or a single group if

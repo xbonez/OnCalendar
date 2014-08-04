@@ -1107,6 +1107,40 @@ def api_get_edit_history(group=None):
     return jsonify(edit_history)
 
 
+@ocapp.route('/api/report/oncall/<year>/<month>')
+@ocapp.route('/api/report/oncall/<year>/<month>/<group_name>')
+def api_oncall_report(year, month, group_name=False):
+    """
+    API interface to retrieve a report for all oncall users in the given month
+
+    Args:
+        year (int): The year of the report
+
+        month (int): The month of the report
+
+    Returns:
+        (str): The report as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+    try:
+        ocdb = OnCalendarDB(config.database)
+        if group_name:
+            victims_report = ocdb.get_oncall_report(year, month, group_name)
+        else:
+            victims_report = ocdb.get_oncall_report(year, month)
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
+        )
+
+    return jsonify(victims_report)
+
+
 @ocapp.route('/api/edits/<group>/last')
 def api_get_last_edit(group):
     """
