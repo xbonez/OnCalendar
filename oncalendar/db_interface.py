@@ -1984,9 +1984,9 @@ AND month='{1}' AND day='{2}') AND c.groupid={3}"""
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
 
         try:
-            cursor.execute("SELECT g.id, g.name, v.username FROM groups g, victims v WHERE g.active=1 AND g.autorotate=1 AND g.victimid=v.id")
+            cursor.execute("SELECT g.id, g.name, v.username, v.phone FROM groups g, victims v WHERE g.active=1 AND g.autorotate=1 AND g.victimid=v.id")
             for row in cursor.fetchall():
-                active_groups[row['id']] = {'name': row['name'], 'victim': row['username'] }
+                active_groups[row['id']] = {'name': row['name'], 'victim': row['username'], 'phone': row['phone'] }
         except mysql.Error as error:
             raise OnCalendarDBError(error.args[0], error.args[1])
 
@@ -2100,7 +2100,7 @@ AND month='{1}' AND day='{2}') AND c.groupid={3}"""
                         ))
                         rows = cursor.fetchall()
                         if len(rows) == 0 and active_groups[groupid]['name'] not in gap_check:
-                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['victim']
+                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['phone']
 
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
