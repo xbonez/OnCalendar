@@ -191,7 +191,8 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' +
+                                    (current_victim[group].oncall == null ? '--' : current_victim[group].oncall);
                                 if (cal.oncall_groups[group].shadow && victims.shadow != null) {
                                     if (victims.shadow !== current_victim[group].shadow) {
                                         current_victim[group].shadow = victims.shadow;
@@ -313,7 +314,8 @@ var oncalendar = {
                             day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
                             day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                             day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                            day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                            day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' +
+                                (current_victim[group].oncall == null ? '--' : current_victim[group].oncall);
                             if (cal.oncall_groups[group].shadow && victims.shadow != null) {
                                 if (victims.shadow !== current_victim[group].shadow) {
                                     current_victim[group].shadow = victims.shadow;
@@ -422,7 +424,8 @@ var oncalendar = {
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('data-group', group);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('title', group + ' oncall - ' + current_victim[group].oncall_name);
                                 day_cell.firstChild.lastChild.lastChild.setAttribute('style', 'color: ' + cal.group_color_map[group] + ';');
-                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' + current_victim[group].oncall;
+                                day_cell.firstChild.lastChild.lastChild.innerText = slot.replace('-', ':') + ' ' +
+                                    (current_victim[group].oncall == null ? '--' : current_victim[group].oncall);
                                 if (cal.oncall_groups[group].shadow && victims.shadow != null) {
                                     if (victims.shadow !== current_victim[group].shadow) {
                                         current_victim[group].shadow = victims.shadow;
@@ -555,7 +558,7 @@ var oncalendar = {
                 shadow_string = '--';
                 backup_string = '--';
                 if (typeof day_victims[calday] !== "undefined") {
-                    if (typeof day_victims[calday].oncall !== "undefined") {
+                    if (typeof day_victims[calday].oncall !== "undefined" && day_victims[calday].oncall !== null) {
                         victim_string = day_victims[calday].oncall;
                     }
                     if (cal.oncall_groups[group].shadow == 1 && typeof day_victims[calday].shadow !== "undefined"
@@ -577,6 +580,7 @@ var oncalendar = {
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
                 day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
+                    '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" value="' + victim_string + '">' +
                     '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                     '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label">' + victim_string +
                     '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
@@ -589,6 +593,11 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('type', 'hidden');
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                    shadow_fragment.appendChild(document.createElement('input'));
+                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
                     shadow_fragment.lastChild.setAttribute('value', shadow_string);
                     shadow_fragment.appendChild(document.createElement('div'));
                     shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
@@ -606,6 +615,11 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('type', 'hidden');
                     backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                    backup_fragment.lastChild.setAttribute('value', backup_string);
+                    backup_fragment.appendChild(document.createElement('input'));
+                    backup_fragment.lastChild.setAttribute('type', 'hidden');
+                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
                     backup_fragment.lastChild.setAttribute('value', backup_string);
                     backup_fragment.appendChild(document.createElement('div'));
                     backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
@@ -627,7 +641,7 @@ var oncalendar = {
             shadow_string = '--';
             backup_string = '--';
             if (typeof day_victims[calday] !== "undefined") {
-                if (typeof day_victims[calday].oncall !== "undefined") {
+                if (typeof day_victims[calday].oncall !== "undefined" && day_victims[calday].oncall !== null) {
                     victim_string = day_victims[calday].oncall;
                 }
                 if (cal.oncall_groups[group].shadow == 1 && typeof day_victims[calday].shadow !== "undefined"
@@ -658,6 +672,7 @@ var oncalendar = {
             day_cell.firstChild.appendChild(document.createElement('div'));
             day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
             day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
+                '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" value="' + victim_string + '">' +
                 '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                 '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label">' + victim_string +
                 '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
@@ -670,6 +685,11 @@ var oncalendar = {
                 shadow_fragment.lastChild.setAttribute('type', 'hidden');
                 shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                 shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                shadow_fragment.appendChild(document.createElement('input'));
+                shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
                 shadow_fragment.lastChild.setAttribute('value', shadow_string);
                 shadow_fragment.appendChild(document.createElement('div'));
                 shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
@@ -687,6 +707,11 @@ var oncalendar = {
                 backup_fragment.lastChild.setAttribute('type', 'hidden');
                 backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                 backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                backup_fragment.lastChild.setAttribute('value', backup_string);
+                backup_fragment.appendChild(document.createElement('input'));
+                backup_fragment.lastChild.setAttribute('type', 'hidden');
+                backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
                 backup_fragment.lastChild.setAttribute('value', backup_string);
                 backup_fragment.appendChild(document.createElement('div'));
                 backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
@@ -708,7 +733,7 @@ var oncalendar = {
                 victim_string = '--';
                 shadow_string = '--';
                 backup_string = '--';
-                if (typeof day_victims[calday] !== "undefined") {
+                if (typeof day_victims[calday] !== "undefined" && day_victims[calday].oncall !== null) {
                     if (typeof day_victims[calday].oncall !== "undefined") {
                         victim_string = day_victims[calday].oncall;
                     }
@@ -731,6 +756,7 @@ var oncalendar = {
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
                 day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
+                    '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" value="' + victim_string + '">' +
                     '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                     '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label">' + victim_string +
                     '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
@@ -743,6 +769,11 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('type', 'hidden');
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                    shadow_fragment.appendChild(document.createElement('input'));
+                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
                     shadow_fragment.lastChild.setAttribute('value', shadow_string);
                     shadow_fragment.appendChild(document.createElement('div'));
                     shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
@@ -760,6 +791,11 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('type', 'hidden');
                     backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                    backup_fragment.lastChild.setAttribute('value', backup_string);
+                    backup_fragment.appendChild(document.createElement('input'));
+                    backup_fragment.lastChild.setAttribute('type', 'hidden');
+                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
                     backup_fragment.lastChild.setAttribute('value', backup_string);
                     backup_fragment.appendChild(document.createElement('div'));
                     backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
