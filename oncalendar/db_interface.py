@@ -805,7 +805,8 @@ class OnCalendarDB(object):
         SET {0}=(SELECT id FROM victims WHERE username='{1}')
         WHERE calday='{2}' AND groupid='{3}' AND hour='{4}' AND min='{5}'"""
 
-        filter_tag = " WHERE {0}=(SELECT id FROM victims WHERE username='{1}')"
+        filter_tag = " AND {0}=(SELECT id FROM victims WHERE username='{1}')"
+        null_filter = " AND {0} IS NULL"
 
         for day in sorted(update_day_data.keys()):
             victims = {
@@ -858,14 +859,14 @@ class OnCalendarDB(object):
                                     group_info[group_name]['id'],
                                     group_info[group_name]['turnover_hour'],
                                     '30'
-                                ))
+                                ) + null_filter.format(victim_type + 'id'))
                                 cursor.execute(day_update_query.format(
                                     victim_type + 'id',
                                     victims[victim_type],
                                     calday,
                                     group_info[group_name]['id'],
                                     group_info[group_name]['turnover_hour'] + 1
-                                ))
+                                ) + null_filter.format(victim_type + 'id'))
                             else:
                                 cursor.execute(day_update_query.format(
                                     victim_type + 'id',
@@ -873,14 +874,14 @@ class OnCalendarDB(object):
                                     calday,
                                     group_info[group_name]['id'],
                                     group_info[group_name]['turnover_hour']
-                                ))
+                                ) + null_filter.format(victim_type + 'id'))
                             cursor.execute(post_day_update_query.format(
                                 victim_type + 'id',
                                 victims[victim_type],
                                 calday + 1,
                                 group_info[group_name]['id'],
                                 group_info[group_name]['turnover_hour']
-                            ))
+                            ) + null_filter.format(victim_type + 'id'))
                             if group_info[group_name]['turnover_min'] == 30:
                                 cursor.execute(last_slot_query.format(
                                     victim_type + 'id',
@@ -889,7 +890,7 @@ class OnCalendarDB(object):
                                     group_info[group_name]['id'],
                                     group_info[group_name]['turnover_hour'],
                                     '0'
-                                ))
+                                ) + null_filter.format(victim_type + 'id'))
                         else:
                             if group_info[group_name]['turnover_min'] == 30:
                                 cursor.execute(first_slot_query.format(

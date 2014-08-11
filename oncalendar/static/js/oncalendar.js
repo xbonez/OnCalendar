@@ -865,7 +865,7 @@ var oncalendar = {
                 } else if (current_day.getDay() === cal.oncall_groups[group].turnover_day) {
                     oncall_week++;
                     if (typeof day_victims[calday] !== "undefined") {
-                        if (typeof day_victims[calday].oncall !== "undefined") {
+                        if (typeof day_victims[calday].oncall !== "undefined" && day_victims[calday].oncall !== null) {
                             victim_string = day_victims[calday].oncall;
                         }
                         if (cal.oncall_groups[group].shadow == 1 && typeof day_victims[calday].shadow !== "undefined"
@@ -887,7 +887,8 @@ var oncalendar = {
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
                     day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                            '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                        '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                             '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                             '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
@@ -900,6 +901,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         shadow_fragment.appendChild(document.createElement('div'));
                         shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
@@ -919,6 +926,10 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '=prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week' + oncall_week);
                         backup_fragment.appendChild(document.createElement('div'));
                         backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
                             '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
@@ -938,7 +949,8 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
                     if (cal.oncall_groups[group].shadow == 1) {
                         shadow_fragment = document.createDocumentFragment();
                         shadow_fragment.appendChild(document.createElement('br'));
@@ -947,6 +959,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                     }
@@ -958,6 +976,12 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
                         day_cell.firstChild.lastChild.appendChild(backup_fragment);
                     }
@@ -984,7 +1008,7 @@ var oncalendar = {
                 shadow_string = '--';
                 backup_string = '--';
                 if (typeof day_victims[calday] !== "undefined") {
-                    if (typeof day_victims[calday].oncall !== "undefined") {
+                    if (typeof day_victims[calday].oncall !== "undefined" && day_victims[calday].oncall !== null) {
                         victim_string = day_victims[calday].oncall;
                     }
                     if (cal.oncall_groups[group].shadow == 1 && typeof day_victims[calday].shadow !== "undefined"
@@ -1006,7 +1030,7 @@ var oncalendar = {
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
                 day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                    '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
+                    '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +                    '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                     '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
                     '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                     '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
@@ -1019,6 +1043,12 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                    shadow_fragment.appendChild(document.createElement('input'));
+                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                    shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
                     shadow_fragment.lastChild.setAttribute('value', shadow_string);
                     shadow_fragment.appendChild(document.createElement('div'));
                     shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
@@ -1037,6 +1067,12 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                    backup_fragment.lastChild.setAttribute('value', backup_string);
+                    backup_fragment.appendChild(document.createElement('input'));
+                    backup_fragment.lastChild.setAttribute('type', 'hidden');
+                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                    backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
                     backup_fragment.lastChild.setAttribute('value', backup_string);
                     backup_fragment.appendChild(document.createElement('div'));
                     backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
@@ -1057,7 +1093,8 @@ var oncalendar = {
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                    '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
                 if (cal.oncall_groups[group].shadow == 1) {
                     shadow_fragment = document.createDocumentFragment();
                     shadow_fragment.appendChild(document.createElement('br'));
@@ -1066,6 +1103,12 @@ var oncalendar = {
                     shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                     shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                    shadow_fragment.appendChild(document.createElement('input'));
+                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                    shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
                     shadow_fragment.lastChild.setAttribute('value', shadow_string);
                     day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                 }
@@ -1078,8 +1121,17 @@ var oncalendar = {
                     backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                     backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
                     backup_fragment.lastChild.setAttribute('value', backup_string);
+                    backup_fragment.appendChild(document.createElement('input'));
+                    backup_fragment.lastChild.setAttribute('type', 'hidden');
+                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                    backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                    backup_fragment.lastChild.setAttribute('value', backup_string);
                     day_cell.firstChild.lastChild.appendChild(backup_fragment);
                 }
+            }
+            if (current_date_string == today_string) {
+                day_cell.firstChild.classList.add('today');
             }
             week_row.firstChild.appendChild(day_cell);
             current_day.add(1).days();
@@ -1094,7 +1146,7 @@ var oncalendar = {
                     shadow_string = '--';
                     backup_string = '--';
                     if (typeof day_victims[calday] !== "undefined") {
-                        if (typeof day_victims[calday].oncall !== "undefined") {
+                        if (typeof day_victims[calday].oncall !== "undefined" && day_victims[calday].oncall !== null) {
                             victim_string = day_victims[calday].oncall;
                         }
                         if (cal.oncall_groups[group].shadow == 1 && typeof day_victims[calday].shadow !== "undefined"
@@ -1117,7 +1169,7 @@ var oncalendar = {
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
                     day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                        '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +                        '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                         '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
                         '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                         '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
@@ -1130,6 +1182,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         shadow_fragment.appendChild(document.createElement('div'));
                         shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
@@ -1148,6 +1206,11 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
                         backup_fragment.appendChild(document.createElement('div'));
                         backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
@@ -1168,7 +1231,8 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">';
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="--">';
                     if (cal.oncall_groups[group].shadow == 1) {
                         shadow_fragment = document.createDocumentFragment();
                         shadow_fragment.appendChild(document.createElement('br'));
@@ -1177,6 +1241,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                     }
@@ -1188,6 +1258,12 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
                         day_cell.firstChild.lastChild.appendChild(backup_fragment);
                     }
@@ -1211,7 +1287,7 @@ var oncalendar = {
                 shadow_string = '--';
                 backup_string = '--';
                 if (typeof day_victims[calday] !== "undefined") {
-                    if (typeof day_victims[calday].oncall !== "undefined") {
+                    if (typeof day_victims[calday].oncall !== "undefined" && day_victims[calday].oncall !== null) {
                         victim_string = day_victims[calday].oncall;
                     }
                     if (cal.oncall_groups[group].shadow == 1 && typeof day_victims[calday].shadow !== "undefined"
@@ -1237,7 +1313,8 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
                     if (cal.oncall_groups[group].shadow == 1) {
                         shadow_fragment = document.createDocumentFragment();
                         shadow_fragment.appendChild(document.createElement('br'));
@@ -1246,6 +1323,12 @@ var oncalendar = {
                         shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
                         shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
                         shadow_fragment.lastChild.setAttribute('value', shadow_string);
                         day_cell.firstChild.lastChild.appendChild(shadow_fragment);
                     }
@@ -1257,6 +1340,12 @@ var oncalendar = {
                         backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
                         backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
                         backup_fragment.lastChild.setAttribute('value', backup_string);
                         day_cell.firstChild.lastChild.appendChild(backup_fragment);
                     }
