@@ -133,7 +133,7 @@ var oncalendar = {
     display_calendar: function() {
         var cal = this;
         var current_day = new Date(cal.view_start);
-        var today = cal.now;
+        var today = Date.today();
         var today_string = today.toString('yyyy-M-d');
         var current_week = 0,
             calday,
@@ -259,9 +259,11 @@ var oncalendar = {
                             }
                         });
                     });
-                    day_cell.firstChild.appendChild(document.createElement('span'));
-                    day_cell.firstChild.lastChild.setAttribute('class', 'edit-day-menu hide');
-                    day_cell.firstChild.lastChild.setAttribute('data-calday', calday);
+                    if (current_day >= today) {
+                        day_cell.firstChild.appendChild(document.createElement('span'));
+                        day_cell.firstChild.lastChild.setAttribute('class', 'edit-day-menu hide');
+                        day_cell.firstChild.lastChild.setAttribute('data-calday', calday);
+                    }
                 }
                 week_row.firstChild.appendChild(day_cell);
                 current_day.add(1).days();
@@ -382,9 +384,11 @@ var oncalendar = {
                         }
                     });
                 });
-                day_cell.firstChild.appendChild(document.createElement('span'));
-                day_cell.firstChild.lastChild.setAttribute('class', 'edit-day-menu hide');
-                day_cell.firstChild.lastChild.setAttribute('data-calday', calday);
+                if (current_day >= today) {
+                    day_cell.firstChild.appendChild(document.createElement('span'));
+                    day_cell.firstChild.lastChild.setAttribute('class', 'edit-day-menu hide');
+                    day_cell.firstChild.lastChild.setAttribute('data-calday', calday);
+                }
             }
             week_row.firstChild.appendChild(day_cell);
             current_day = current_day.add(1).days();
@@ -492,9 +496,11 @@ var oncalendar = {
                             }
                         });
                     });
-                    day_cell.firstChild.appendChild(document.createElement('span'));
-                    day_cell.firstChild.lastChild.setAttribute('class', 'edit-day-menu hide');
-                    day_cell.firstChild.lastChild.setAttribute('data-calday', calday);
+                    if (current_day >= today) {
+                        day_cell.firstChild.appendChild(document.createElement('span'));
+                        day_cell.firstChild.lastChild.setAttribute('class', 'edit-day-menu hide');
+                        day_cell.firstChild.lastChild.setAttribute('data-calday', calday);
+                    }
                 }
                 week_row.firstChild.appendChild(day_cell);
                 current_day = current_day.add(1).days();
@@ -513,7 +519,7 @@ var oncalendar = {
     display_calendar_edit: function(group) {
         var cal = this;
         var current_day = new Date(cal.view_start);
-        var today = cal.now;
+        var today = Date.today();
         var today_string = today.toString('yyyy-M-d');
         var day_victims = {};
         var victim_options = '<li class="oncall-option" data-victim="--"><span>--</span></li>';
