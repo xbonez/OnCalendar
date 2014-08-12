@@ -2142,7 +2142,7 @@ def api_send_sms(victim_type, group):
         try:
             group_info = ocdb.get_group_info(group_name=group)
             groupid = group_info[group]['id']
-            victim_ids = group_info[group]['victims'].keys()
+            victim_ids = [i for i in group_info[group]['victims'].keys() if group_info[group]['victims'][i]['group_active'] == 1]
         except OnCalendarDBError as error:
             raise OnCalendarAppError(
                 payload = {
