@@ -215,6 +215,10 @@ table.admin-table.dataTable {
     text-decoration: line-through;
 }
 
+.swap-period {
+    border: 1px solid red;
+}
+
 .transparent {
     opacity: 0;
 }
@@ -608,9 +612,9 @@ div#edit-day-popup {
         border-bottom: 1px solid $calendar_day_bg;
     }
     table#edit-day-slots-table {
-        width: 100%;
+        width: 97.5%;
         td {
-            padding: 0;
+            padding: 0 0 0 5px;
         }
         tr.oncall-row:nth-child(odd),
         tr.shadow-row:nth-child(even),
