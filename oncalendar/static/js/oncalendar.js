@@ -1414,6 +1414,11 @@ var oncalendar = {
         $.when(cal.build_calendar(cal.next_month_year, cal.next_month)).then(
             function() {
                 oncalendar.display_calendar();
+                window.history.pushState(
+                    '',
+                    cal.current_year + '-' + cal.real_month,
+                    '/calendar/' + cal.current_year + '/' + cal.real_month
+                );
                 $('table#calendar-table').removeClass('hide');
             }
         );
@@ -1425,28 +1430,61 @@ var oncalendar = {
         $.when(cal.build_calendar(cal.previous_month_year, cal.previous_month)).then(
             function() {
                 oncalendar.display_calendar();
+                window.history.pushState(
+                    '',
+                    cal.current_year + '-' + cal.real_month,
+                    '/calendar/' + cal.current_year + '/' + cal.real_month
+                );
                 $('table#calendar-table').removeClass('hide');
             }
         )
     },
-    go_to_next_edit_month: function() {
+    go_to_next_edit_month: function(edit_view) {
         var cal = this;
         $('table#calendar-table').addClass('hide');
         $('table#calendar-table tbody').empty();
         $.when(cal.build_calendar(cal.next_month_year, cal.next_month, cal.filter_group)).then(
             function() {
-                oncalendar.display_calendar_edit(cal.filter_group);
+                if (edit_view === "day") {
+                    oncalendar.display_calendar_edit(cal.filter_group);
+                    window.history.pushState(
+                        '',
+                        cal.current_year + '-' + cal.real_month,
+                        '/edit/month/' + cal.filter_group + '/' + cal.current_year + '/' + cal.real_month
+                    );
+                } else if (edit_view === "week") {
+                    oncalendar.display_calendar_weekly_edit(cal.filter_group);
+                    window.history.pushState(
+                        '',
+                        cal.current_year + '-' + cal.real_month,
+                        '/edit/weekly/' + cal.filter_group + '/' + cal.current_year + '/' + cal.real_month
+                    );
+                }
                 $('table#calendar-table').removeClass('hide');
             }
         );
     },
-    go_to_prev_edit_month: function() {
+    go_to_prev_edit_month: function(edit_view) {
         var cal = this;
         $('table#calendar-table').addClass('hide');
         $('table#calendar-table tbody').empty();
         $.when(cal.build_calendar(cal.previous_month_year, cal.previous_month, cal.filter_group)).then(
             function() {
-                cal.display_calendar_edit(cal.filter_group);
+                if (edit_view === "day") {
+                    oncalendar.display_calendar_edit(cal.filter_group);
+                    window.history.pushState(
+                        '',
+                        cal.current_year + '-' + cal.real_month,
+                        '/edit/month/' + cal.filter_group + '/' + cal.current_year + '/' + cal.real_month
+                    );
+                } else if (edit_view === "week") {
+                    oncalendar.display_calendar_weekly_edit(cal.filter_group);
+                    window.history.pushState(
+                        '',
+                        cal.current_year + '-' + cal.real_month,
+                        '/edit/weekly/' + cal.filter_group + '/' + cal.current_year + '/' + cal.real_month
+                    );
+                }
                 $('table#calendar-table').removeClass('hide');
             }
         );

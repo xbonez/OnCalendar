@@ -10,10 +10,10 @@ document.addEventListener('group_info_loaded', function() {
 });
 
 $('#prev-month-button').click(function() {
-    oncalendar.go_to_prev_edit_month();
+    oncalendar.go_to_prev_edit_month('day');
 });
 $('#next-month-button').click(function() {
-    oncalendar.go_to_next_edit_month();
+    oncalendar.go_to_next_edit_month('day');
 });
 
 $('#calendar-header')
