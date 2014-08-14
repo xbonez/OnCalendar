@@ -291,16 +291,6 @@ var populate_group_info = function(target_group) {
         $('div#group-info-box-head').children('button#edit-group-info').remove();
     }
 
-    // App admin and group members can edit the schedule
-    if (current_user.app_role === 2 || $.inArray(target_group, Object.keys(current_user.groups)) != -1) {
-        $('span#edit-month-link-container')
-            .html('<button id="edit-month-button" data-target="' + target_group + '">Edit Month By Day</button>');
-        $('span#edit-by-week-link-container')
-            .html('<button id="edit-by-week-button" data-target="' + target_group + '">Edit Month By Week</button>');
-    } else {
-        $('span#edit-month-link-container').empty();
-        $('span#edit-by-week-link-container').empty();
-    }
     $('td#group-turnover-day').text(oc.day_strings[oncalendar.oncall_groups[target_group].turnover_day]);
     $('td#group-default-turnover-time').text(oncalendar.oncall_groups[target_group].turnover_hour + ':' + oncalendar.oncall_groups[target_group].turnover_min);
     $('td#group-email-address').text(oncalendar.oncall_groups[target_group].email);
@@ -329,6 +319,12 @@ var populate_group_info = function(target_group) {
         }
     });
     $('td#group-members').text(oncalendar.oncall_groups[target_group].active_victims.join(', '));
+
+    // Edit schedule buttons
+    $('span#edit-month-link-container')
+        .html('<button id="edit-month-button" data-target="' + target_group + '">Edit Month By Day</button>');
+    $('span#edit-by-week-link-container')
+        .html('<button id="edit-by-week-button" data-target="' + target_group + '">Edit Month By Week</button>');
 
     // Last entry in the schedule edit log
     $('td#group-edit-log').empty();
@@ -491,187 +487,212 @@ $('#group-info-box-head').on('click', 'button#edit-group-info', function() {
 
 // Handlers for buttons in the group info box
 // Edit group members button
-$('#group-info-box-info').on('click', 'button#edit-members', function() {
-    target_group = $(this).attr('data-target');
-    $('span#edit-group-victims-title-name').text(target_group);
-    victims = oncalendar.oncall_groups[target_group].victims;
-    victims_table = $('table#group-victims-list-table');
+$('#group-info-box-info')
+    .on('click', 'button#edit-members', function() {
+        target_group = $(this).attr('data-target');
+        $('span#edit-group-victims-title-name').text(target_group);
+        victims = oncalendar.oncall_groups[target_group].victims;
+        victims_table = $('table#group-victims-list-table');
 
-    $.magnificPopup.open({
-        items: {
-            src: '#edit-group-victims-popup',
-            type: 'inline'
-        },
-        preloader: false,
-        removalDelay: 300,
-        mainClass: 'popup-animate',
-        callbacks: {
-            close: function() {
-                $('span#edit-group-victims-title-name').text('');
-                $('tr.victim-row').remove();
-                $('tr#edit-victims-form-buttons').remove();
-                $('tr#victim-table-divider').remove();
-                $('input#add-victim-username').val('').removeClass('missing-input');
-                $('input#add-victim-firstname').val('').removeClass('missing-input');
-                $('input#add-victim-lastname').val('').removeClass('missing-input');
-                $('input#add-victim-phone').val('').removeClass('missing-input');
-                $('input#add-victim-email').val('');
-                $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
-                $('input#add-victim-sms-email').attr('value', '');
-            }
-        }
-    });
-
-    victims_table.append('<tr id="victim-table-divider">' +
-        '<td colspan="8" style="padding: 0; border-bottom: 1px solid #000;">' +
-        '<input type="hidden" id="target-groupid" name="target-groupid" value="' + oncalendar.oncall_groups[target_group].id + '">' +
-        '<input type="hidden" id="target-group" name="target-group" value="' + target_group + '"></td></tr>');
-    $.each(oncalendar.oncall_groups[target_group].victims, function(id, victim) {
-        victims_table.append('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
-        victim_row = $('tr#victim' + id);
-        victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
-            'data-target="victim' + id + '-active"></button>' +
-            '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
-            '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-empty"' +
-            ' data-target="victim' +  id + '-active" data-checked="no"></button>' +
-            '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="no"></td>');
-        if (victim.group_active) {
-            $('#victim' + id + '-active-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
-            $('input#victim' + id + '-active').attr('value', 'yes');
-        }
-        var victim_sms_email = '';
-        if (oncalendar.gateway_map[victim.sms_email] !== undefined) {
-            victim_sms_email = oncalendar.gateway_map[victim.sms_email];
-        }
-        victim_row.append('<td>' + victim.username + '</td>' +
-                '<td>' + victim.firstname + '</td>' +
-                '<td>' + victim.lastname + '</td>' +
-                '<td>' + victim.phone + '</td>' +
-                '<td>' + victim.email + '</td>' +
-                '<td>' + victim_sms_email + '</td><td></td>'
-        );
-    });
-
-    victims_table.append('<tr id="edit-victims-form-buttons">' +
-        '<td><button id="edit-group-victims-cancel">Cancel</button></td>' +
-        '<td><button id="edit-group-victims-save">Save Changes</button></td></tr>' +
-        '<td colspan="5"></td>');
-}) // Edit month by day button
-    .on('click', 'button#edit-month-button', function() {
-    var edit_group = $(this).attr('data-target');
-    if (oncalendar.oncall_groups[edit_group].active_victims.length === 0) {
-        $('#group-info-box').prepend('<div class="alert-box">Please add users to the group before attempting to create a schedule.</div>');
-    } else {
-        window.location.href='/edit/month/' + edit_group + '/' + oncalendar.current_year + '/' + oncalendar.real_month;
-    }
-}) // Edit month by week button
-    .on('click', 'button#edit-by-week-button', function() {
-    var edit_group = $(this).attr('data-target');
-    if (oncalendar.oncall_groups[edit_group].active_victims.length === 0) {
-        $('#group-info-box').prepend('<div class="alert-box">Please add users to the group before attempting to create a schedule.</div>');
-    } else {
-        window.location.href='/edit/weekly/' + edit_group + '/' + oncalendar.current_year + '/' + oncalendar.real_month;
-    }
-}) // Hide this group button
-    .on('click', 'button#toggle-group-button', function() {
-    var target_group = $(this).attr('data-target');
-    var state = $(this).attr('data-state');
-    if (state === "on") {
-        $.each($('p.victim-group'), function(i, element) {
-            if ($(element).attr('data-group') === target_group) {
-                $(element).addClass('hide');
+        $.magnificPopup.open({
+            items: {
+                src: '#edit-group-victims-popup',
+                type: 'inline'
+            },
+            preloader: false,
+            removalDelay: 300,
+            mainClass: 'popup-animate',
+            callbacks: {
+                close: function() {
+                    $('span#edit-group-victims-title-name').text('');
+                    $('tr.victim-row').remove();
+                    $('tr#edit-victims-form-buttons').remove();
+                    $('tr#victim-table-divider').remove();
+                    $('input#add-victim-username').val('').removeClass('missing-input');
+                    $('input#add-victim-firstname').val('').removeClass('missing-input');
+                    $('input#add-victim-lastname').val('').removeClass('missing-input');
+                    $('input#add-victim-phone').val('').removeClass('missing-input');
+                    $('input#add-victim-email').val('');
+                    $('button#add-victim-sms-email-label').text('--').append('<span class="elegant_icons arrow_carrot-down">');
+                    $('input#add-victim-sms-email').attr('value', '');
+                }
             }
         });
-        $(this).text('Show This Group').attr('data-state', 'off');
-        sessionStorage[target_group] = 'off';
-    } else {
+
+        victims_table.append('<tr id="victim-table-divider">' +
+            '<td colspan="8" style="padding: 0; border-bottom: 1px solid #000;">' +
+            '<input type="hidden" id="target-groupid" name="target-groupid" value="' + oncalendar.oncall_groups[target_group].id + '">' +
+            '<input type="hidden" id="target-group" name="target-group" value="' + target_group + '"></td></tr>');
+        $.each(oncalendar.oncall_groups[target_group].victims, function(id, victim) {
+            victims_table.append('<tr id="victim' + id + '" class="victim-row" data-victim-id="' + id + '"></tr>');
+            victim_row = $('tr#victim' + id);
+            victim_row.append('<td><button class="delete-group-victim-button button elegant_icons icon_minus_alt2" ' +
+                'data-target="victim' + id + '-active"></button>' +
+                '<input type="hidden" id="target-victim' + id + '" name="target-victim' + id + '" value="no"></td>' +
+                '<td><button id="victim' + id + '-active-checkbox" class="group-victim-active-status oc-checkbox elegant_icons icon_box-empty"' +
+                ' data-target="victim' +  id + '-active" data-checked="no"></button>' +
+                '<input type="hidden" id="victim' + id + '-active" name="victim' + id + '-active" value="no"></td>');
+            if (victim.group_active) {
+                $('#victim' + id + '-active-checkbox').removeClass('icon_box-empty').addClass('icon_box-checked').attr('data-checked', 'yes');
+                $('input#victim' + id + '-active').attr('value', 'yes');
+            }
+            var victim_sms_email = '';
+            if (oncalendar.gateway_map[victim.sms_email] !== undefined) {
+                victim_sms_email = oncalendar.gateway_map[victim.sms_email];
+            }
+            victim_row.append('<td>' + victim.username + '</td>' +
+                    '<td>' + victim.firstname + '</td>' +
+                    '<td>' + victim.lastname + '</td>' +
+                    '<td>' + victim.phone + '</td>' +
+                    '<td>' + victim.email + '</td>' +
+                    '<td>' + victim_sms_email + '</td><td></td>'
+            );
+        });
+
+        victims_table.append('<tr id="edit-victims-form-buttons">' +
+            '<td><button id="edit-group-victims-cancel">Cancel</button></td>' +
+            '<td><button id="edit-group-victims-save">Save Changes</button></td></tr>' +
+            '<td colspan="5"></td>');
+    }) // Edit month by day button
+    .on('click', 'button#edit-month-button', function() {
+        var click_time = new Date();
+        var edit_group = $(this).attr('data-target');
+        if (current_user.id == 0) {
+            window.location.href = '/login?next=/edit/month/' + edit_group + '/' + oncalendar.current_year + '/' + oncalendar.real_month + '';
+        }
+        if (current_user.app_role === 2 || $.inArray(edit_group, Object.keys(current_user.groups)) != -1) {
+            if ((oncalendar.current_year < click_time.getFullYear()) || (oncalendar.current_year == click_time.getFullYear() && oncalendar.current_month < click_time.getMonth())) {
+                $('#group-info-box').prepend('<div class="alert-box">Sorry, editing the past is not permitted</div>');
+            } else {
+                if (oncalendar.oncall_groups[edit_group].active_victims.length === 0) {
+                    $('#group-info-box').prepend('<div class="alert-box">Please add users to the group before attempting to create a schedule.</div>');
+                } else {
+                    window.location.href = '/edit/month/' + edit_group + '/' + oncalendar.current_year + '/' + oncalendar.real_month;
+                }
+            }
+        } else {
+            $('#group-info-box').prepend('<div class="alert-box">Group schedules may only be edited by members of the group.</div>');
+        }
+    }) // Edit month by week button
+    .on('click', 'button#edit-by-week-button', function() {
+        var click_time = new Date();
+        var edit_group = $(this).attr('data-target');
+        if (current_user.id == 0) {
+            window.location.href = '/login?next=/edit/weekly/' + edit_group + '/' + oncalendar.current_year + '/' + oncalendar.real_month + '';
+        }
+        if (current_user.app_role === 2 || $.inArray(edit_group, Object.keys(current_user.groups)) != -1) {
+            if ((oncalendar.current_year < click_time.getFullYear()) || (oncalendar.current_year == click_time.getFullYear() && oncalendar.current_month < click_time.getMonth())) {
+                $('#group-info-box').prepend('<div class="alert-box">Sorry, editing the past is not permitted</div>');
+            } else {
+                if (oncalendar.oncall_groups[edit_group].active_victims.length === 0) {
+                    $('#group-info-box').prepend('<div class="alert-box">Please add users to the group before attempting to create a schedule.</div>');
+                } else {
+                    window.location.href='/edit/weekly/' + edit_group + '/' + oncalendar.current_year + '/' + oncalendar.real_month;
+                }
+            }
+        } else {
+            $('#group-info-box').prepend('<div class="alert-box">Group schedules may only be edited by members of the group.</div>');
+        }
+    }) // Hide this group button
+    .on('click', 'button#toggle-group-button', function() {
+        var target_group = $(this).attr('data-target');
+        var state = $(this).attr('data-state');
+        if (state === "on") {
+            $.each($('p.victim-group'), function(i, element) {
+                if ($(element).attr('data-group') === target_group) {
+                    $(element).addClass('hide');
+                }
+            });
+            $(this).text('Show This Group').attr('data-state', 'off');
+            sessionStorage[target_group] = 'off';
+        } else {
+            $.each($('p.victim-group'), function(i, element) {
+                if ($(element).attr('data-group') === target_group) {
+                    $(element).removeClass('hide');
+                }
+            });
+            $(this).text('Hide This Group').attr('data-state', 'on');
+            sessionStorage[target_group] = 'on';
+        }
+    }) // Hide other groups button
+    .on('click', 'button#hide-others-button', function() {
+        var target_group = $(this).attr('data-target');
+        $('button#toggle-group-button').text('Hide This Group').attr('data-state', 'on');
         $.each($('p.victim-group'), function(i, element) {
             if ($(element).attr('data-group') === target_group) {
                 $(element).removeClass('hide');
+                sessionStorage[target_group] = 'on';
+            } else {
+                $(element).addClass('hide');
+                sessionStorage[$(element).attr('data-group')] = 'off';
             }
         });
-        $(this).text('Hide This Group').attr('data-state', 'on');
-        sessionStorage[target_group] = 'on';
-    }
-}) // Hide other groups button
-    .on('click', 'button#hide-others-button', function() {
-    var target_group = $(this).attr('data-target');
-    $('button#toggle-group-button').text('Hide This Group').attr('data-state', 'on');
-    $.each($('p.victim-group'), function(i, element) {
-        if ($(element).attr('data-group') === target_group) {
-            $(element).removeClass('hide');
-            sessionStorage[target_group] = 'on';
-        } else {
-            $(element).addClass('hide');
-            sessionStorage[$(element).attr('data-group')] = 'off';
-        }
-    });
-}) // Show all groups button
+    }) // Show all groups button
     .on('click', 'button#show-all-victims-button', function() {
-    $('p.victim-group').removeClass('hide');
-    $.each(Object.keys(oncalendar.oncall_groups), function(i, group) {
-        sessionStorage[group] = 'on';
-    });
-}) // Page the oncall button
+        $('p.victim-group').removeClass('hide');
+        $.each(Object.keys(oncalendar.oncall_groups), function(i, group) {
+            sessionStorage[group] = 'on';
+        });
+    }) // Page the oncall button
     .on('click', 'button#page-oncall-button', function() {
-    target_group = $(this).attr('data-target');
-    $('input#oncall-page-originator').attr('value', current_user.username);
-    $('input#oncall-page-group').attr('value', target_group);
-    $('span#page-primary-groupname').text(target_group);
+        target_group = $(this).attr('data-target');
+        $('input#oncall-page-originator').attr('value', current_user.username);
+        $('input#oncall-page-group').attr('value', target_group);
+        $('span#page-primary-groupname').text(target_group);
 
-    $.magnificPopup.open({
-        items: {
-            src: '#send-oncall-page-popup',
-            type: 'inline'
-        },
-        preloader: false,
-        removalDelay: 300,
-        mainClass: 'popup-animate',
-        callbacks: {
-            open: function() {
-                setTimeout(function() {
-                    $('textarea#page-primary-body').focus();
-                }, 100);
+        $.magnificPopup.open({
+            items: {
+                src: '#send-oncall-page-popup',
+                type: 'inline'
             },
-            close: function() {
-                $('input#oncall-page-originator').attr('value', '');
-                $('input#oncall-page-group').attr('value', '');
-                $('span#page-primary-groupname').empty();
-                $('textarea#page-primary-body').val('').removeClass('missing-input');
+            preloader: false,
+            removalDelay: 300,
+            mainClass: 'popup-animate',
+            callbacks: {
+                open: function() {
+                    setTimeout(function() {
+                        $('textarea#page-primary-body').focus();
+                    }, 100);
+                },
+                close: function() {
+                    $('input#oncall-page-originator').attr('value', '');
+                    $('input#oncall-page-group').attr('value', '');
+                    $('span#page-primary-groupname').empty();
+                    $('textarea#page-primary-body').val('').removeClass('missing-input');
+                }
             }
-        }
-    });
+        });
 
-}) // Panic page the group button
+    }) // Panic page the group button
     .on('click', 'button#panic-page-group-button', function() {
-    target_group = $(this).attr('data-target');
-    $('input#panic-page-originator').attr('value', current_user.username);
-    $('input#panic-page-group').attr('value', target_group);
-    $('span#panic-page-groupname').text(target_group);
+        target_group = $(this).attr('data-target');
+        $('input#panic-page-originator').attr('value', current_user.username);
+        $('input#panic-page-group').attr('value', target_group);
+        $('span#panic-page-groupname').text(target_group);
 
-    $.magnificPopup.open({
-        items: {
-            src: '#send-panic-page-popup',
-            type: 'inline'
-        },
-        preloader: false,
-        removalDelay: 300,
-        mainClass: 'popup-animate',
-        callbacks: {
-            open: function() {
-                setTimeout(function() {
-                    $('textarea#panic-page-body').focus();
-                }, 100);
+        $.magnificPopup.open({
+            items: {
+                src: '#send-panic-page-popup',
+                type: 'inline'
             },
-            close: function() {
-                $('input#panic-page-originator').attr('value', '');
-                $('input#panic-page-group').attr('value', '');
-                $('span#panic-page-groupname').empty();
-                $('textarea#panic-page-body').val('').removeClass('missing-input');
+            preloader: false,
+            removalDelay: 300,
+            mainClass: 'popup-animate',
+            callbacks: {
+                open: function() {
+                    setTimeout(function() {
+                        $('textarea#panic-page-body').focus();
+                    }, 100);
+                },
+                close: function() {
+                    $('input#panic-page-originator').attr('value', '');
+                    $('input#panic-page-group').attr('value', '');
+                    $('span#panic-page-groupname').empty();
+                    $('textarea#panic-page-body').val('').removeClass('missing-input');
+                }
             }
-        }
+        });
     });
-});
 
 // Handlers for the send oncall page dialog box
 $('#send-oncall-page-popup').on('click', 'button#cancel-oncall-page-button', function() {
