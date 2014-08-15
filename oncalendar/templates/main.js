@@ -1117,6 +1117,10 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
         oncalendar.swap_type = oncalendar.swap_start_row.attr('data-type');
     } else {
         if ((new_victim === oncalendar.swap_start) && (oncalendar.swap_type == active_row.attr('data-type'))) {
+            if (typeof oncalendar.swap_end_row !== "undefined") {
+                oncalendar.swap_end_row.removeClass('swap-period');
+                oncalendar.swap_end_row.children('td.start-end').empty();
+            }
             oncalendar.swap_end_row = $(this).parents('ul').parents('span').parents('td').parents('tr');
             oncalendar.swap_end_row.addClass('swap-period');
             oncalendar.swap_end_row.children('td.start-end').text('Swap End');
@@ -1127,6 +1131,10 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
         } else {
             oncalendar.swap_start_row.removeClass('swap-period');
             oncalendar.swap_start_row.children('td.start-end').empty();
+            if (typeof oncalendar.swap_end_row !== "undefined") {
+                oncalendar.swap_end_row.removeClass('swap-period');
+                oncalendar.swap_end_row.children('td.start-end').empty();
+            }
             oncalendar.swap_start_row = active_row;
             oncalendar.swap_start_row.addClass('swap-period');
             oncalendar.swap_start_row.children('td.start-end').text('Swap Start');
