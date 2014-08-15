@@ -52,37 +52,6 @@ $.when(oncalendar.get_group_info()).then(function(data) {
 var sms_gateways = {{ sms_gateway_options }};
 oncalendar.gateway_map = {};
 
-for (i = 0; i <= 23; i++) {
-    if (i < 10) {
-        i = '0' + i;
-    }
-    $('table#edit-day-slots-table')
-        .append('<tr id="slot-' + i + '-00-oncall" class="oncall-row"><td>' + i + ':00</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
-            '<span data-toggle="dropdown">' +
-            '<button id="slot-' + i + '-00-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-00">--</button></span>' +
-            '<ul id="slot-' + i + '-00-victim-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
-        .append('<tr id="slot' + i + '-00-shadow" class="shadow-row hide"><td></td><td>Shadow:</td><td><span class="edit-slot-menu dropdown">' +
-            '<span data-toggle="dropdown">' +
-            '<button id="slot-' + i + '-00-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-00">--</button></span>' +
-            '<ul id="slot-' + i + '-00-shadow-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
-        .append('<tr id="slot' + i + '-00-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
-            '<span data-toggle="dropdown">' +
-            '<button id="slot-' + i + '-00-backup-button" class="edit-day-backup-button" data-slot="' + i + '-00">--</button></span>' +
-            '<ul id="slot-' + i + '-00-backup-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td></tr>')
-        .append('<tr id="slot-' + i + '-30-oncall" class="oncall-row"><td>' + i + ':30</td><td>Oncall:</td><td><span class="edit-slot-menu dropdown">' +
-            '<span data-toggle="dropdown">' +
-            '<button id="slot-' + i + '-30-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-30">--</button></span>' +
-            '<ul id="slot-' + i + '-30-victim-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
-        .append('<tr id="slot' + i + '-30-shadow" class="shadow-row hide"><td></td><td>Shadow:</td><td><span class="edit-slot-menu dropdown">' +
-            '<span data-toggle="dropdown">' +
-            '<button id="slot-' + i + '-30-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-30">--</button></span>' +
-            '<ul id="slot-' + i + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
-        .append('<tr id="slot' + i + '-30-backup" class="backup-row hide"><td></td><td>Backup:</td><td><span class="edit-slot-menu dropdown">' +
-            '<span data-toggle="dropdown">' +
-            '<button id="slot-' + i + '-30-backup-button" class="edit-day-backup-button" data-slot="' + i + '-30">--</button></span>' +
-            '<ul id="slot-' + i + '-30-backup-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td></tr>')
-}
-
 $(document).ready(function() {
     // Autocomplete suggestions for adding victims to a group
     $('input#add-victim-username').autocomplete({
@@ -205,6 +174,77 @@ document.addEventListener('group_info_loaded', function() {
 
 // Edit the schedule for a specific day
 var edit_calday = function(target_group, calday, cal_date) {
+    var edit_time = new Date();
+    var date_bits = cal_date.split('-');
+
+    if ((date_bits[1] === edit_time.toString('M')) && (date_bits[2] === edit_time.toString('d'))) {
+        var start_slot = parseInt(edit_time.toString('H')),
+            start_min = parseInt(edit_time.toString('m'));
+    } else {
+        var start_slot = 0,
+            start_min = 0;
+    }
+
+    if (start_min >= 30) {
+        var h = start_slot;
+        if (h < 10) {
+            h = '0' + h;
+        }
+        $('table#edit-day-slots-table')
+            .append('<tr id="slot-' + h + '-30-oncall" class="oncall-row" data-type="oncall"><td>' + h + ':30</td><td>Oncall:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + h + '-30-oncall-button" class="edit-day-oncall-button" data-slot="' + h + '-30">--</button></span>' +
+                '<ul id="slot-' + h + '-30-victim-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + h + '-30-shadow" class="shadow-row hide" data-type="shadow"><td></td><td>Shadow:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + h + '-30-shadow-button" class="edit-day-shadow-button" data-slot="' + h + '-30">--</button></span>' +
+                '<ul id="slot-' + h + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + h + '-30-backup" class="backup-row hide" data-type="backup"><td></td><td>Backup:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + h + '-30-backup-button" class="edit-day-backup-button" data-slot="' + h + '-30">--</button></span>' +
+                '<ul id="slot-' + h + '-30-backup-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>');
+        start_slot += 1;
+    }
+
+    for (i = start_slot; i <= 23; i++) {
+        if (i < 10) {
+            i = '0' + i;
+        }
+        $('table#edit-day-slots-table')
+            .append('<tr id="slot-' + i + '-00-oncall" class="oncall-row" data-type="oncall"><td>' + i + ':00</td><td>Oncall:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + i + '-00-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-00">--</button></span>' +
+                '<ul id="slot-' + i + '-00-victim-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + i + '-00-shadow" class="shadow-row hide" data-type="shadow"><td></td><td>Shadow:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + i + '-00-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-00">--</button></span>' +
+                '<ul id="slot-' + i + '-00-shadow-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + i + '-00-backup" class="backup-row hide" data-type="backup"><td></td><td>Backup:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + i + '-00-backup-button" class="edit-day-backup-button" data-slot="' + i + '-00">--</button></span>' +
+                '<ul id="slot-' + i + '-00-backup-options" class="slot-menu dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + i + '-30-oncall" class="oncall-row" data-type="oncall"><td>' + i + ':30</td><td>Oncall:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + i + '-30-oncall-button" class="edit-day-oncall-button" data-slot="' + i + '-30">--</button></span>' +
+                '<ul id="slot-' + i + '-30-victim-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + i + '-30-shadow" class="shadow-row hide" data-type="shadow"><td></td><td>Shadow:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + i + '-30-shadow-button" class="edit-day-shadow-button" data-slot="' + i + '-30">--</button></span>' +
+                '<ul id="slot-' + i + '-30-shadow-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+            .append('<tr id="slot-' + i + '-30-backup" class="backup-row hide" data-type="backup"><td></td><td>Backup:</td>' +
+                '<td class="menu-column"><span class="edit-slot-menu dropdown">' +
+                '<span data-toggle="dropdown">' +
+                '<button id="slot-' + i + '-30-backup-button" class="edit-day-backup-button" data-slot="' + i + '-30">--</button></span>' +
+                '<ul id="slot-' + i + '-30-backup-options" class="slot-menu slot-options dropdown-menu" role="menu"></ul></span></td><td class="start-end"></td></tr>')
+    }
 
     $('#edit-day-group').text(' - ' + target_group);
 
@@ -248,6 +288,9 @@ var edit_calday = function(target_group, calday, cal_date) {
         .append('<span class="elegant_icons arrow_carrot-down">');
     });
 
+    oncalendar.swap_start = 0;
+    oncalendar.swap_end = 0;
+
     // Open the dialog box
     $.magnificPopup.open({
         items: {
@@ -259,11 +302,9 @@ var edit_calday = function(target_group, calday, cal_date) {
         mainClass: 'popup-animate',
         callbacks: {
             close: function() {
-                $('ul.slot-menu').empty();
                 $('#edit-day-group').empty();
+                $('table#edit-day-slots-table').empty();
                 $('textarea#edit-day-note').val('').removeClass('missing-input');
-                $('tr.shadow-row').addClass('hide');
-                $('tr.backup-row').addClass('hide');
                 $('button.edit-day-oncall-button').text('').removeAttr('data-target', '');
                 $('button.edit-day-shadow-button').text('').removeAttr('data-target', '');
                 $('button#edit-day-save-button').removeAttr('data-calday', '').removeAttr('data-group', '');
@@ -1084,7 +1125,44 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 // Handlers for the edit day dialog box
 $('div#edit-day-popup').on('click', 'li.slot-item', function() {
     var new_victim = $(this).attr('data-target');
-    $(this).parents('ul').siblings('span').children('button').text(new_victim).attr('data-target', new_victim);
+    var active_row = $(this).parents('ul').parents('span').parents('td').parents('tr');
+    $(this).parents('ul').siblings('span').children('button')
+        .text(new_victim)
+        .attr('data-target', new_victim)
+        .append('<span class="elegant_icons arrow_carrot-down">');
+    if (!oncalendar.swap_start) {
+        oncalendar.swap_start_row = active_row;
+        oncalendar.swap_start_row.addClass('swap-period');
+        oncalendar.swap_start_row.children('td.start-end').text('Swap Start');
+        oncalendar.swap_start = new_victim;
+        oncalendar.swap_type = oncalendar.swap_start_row.attr('data-type');
+    } else {
+        if ((new_victim === oncalendar.swap_start) && (oncalendar.swap_type == active_row.attr('data-type'))) {
+            if (typeof oncalendar.swap_end_row !== "undefined") {
+                oncalendar.swap_end_row.removeClass('swap-period');
+                oncalendar.swap_end_row.children('td.start-end').empty();
+            }
+            oncalendar.swap_end_row = $(this).parents('ul').parents('span').parents('td').parents('tr');
+            oncalendar.swap_end_row.addClass('swap-period');
+            oncalendar.swap_end_row.children('td.start-end').text('Swap End');
+            oncalendar.swap_start_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row')
+                .children('td.menu-column').children('span').children('span').children('button')
+                .text(new_victim).attr('data-target', new_victim)
+                .append('<span class="elegant_icons arrow_carrot-down">');
+        } else {
+            oncalendar.swap_start_row.removeClass('swap-period');
+            oncalendar.swap_start_row.children('td.start-end').empty();
+            if (typeof oncalendar.swap_end_row !== "undefined") {
+                oncalendar.swap_end_row.removeClass('swap-period');
+                oncalendar.swap_end_row.children('td.start-end').empty();
+            }
+            oncalendar.swap_start_row = active_row;
+            oncalendar.swap_start_row.addClass('swap-period');
+            oncalendar.swap_start_row.children('td.start-end').text('Swap Start');
+            oncalendar.swap_start = new_victim;
+            oncalendar.swap_type = oncalendar.swap_start_row.attr('data-type');
+        }
+    }
 }).on('click', 'button#edit-day-cancel-button', function() {
     $.magnificPopup.close();
 }).on('click', 'button#edit-day-save-button', function() {
