@@ -596,11 +596,11 @@ var oncalendar = {
                     day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                     if (cal.oncall_groups[group].shadow == 1) {
                         day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string + ' (S)';
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string + ' (B)';
                     }
                 } else {
                     day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
@@ -702,11 +702,11 @@ var oncalendar = {
                 day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                 if (cal.oncall_groups[group].shadow == 1) {
                     day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                    day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                    day_cell.firstChild.lastChild.lastChild.innerText = shadow_string + '(S)';
                 }
                 if (cal.oncall_groups[group].backup == 1) {
                     day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                    day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                    day_cell.firstChild.lastChild.lastChild.innerText = backup_string + ' (B)';
                 }
             } else {
                 day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
@@ -802,11 +802,11 @@ var oncalendar = {
                     day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                     if (cal.oncall_groups[group].shadow == 1) {
                         day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string + ' (S)';
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string + ' (B)';
                     }
                 } else {
                     day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
@@ -952,11 +952,11 @@ var oncalendar = {
                         day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                         if (cal.oncall_groups[group].shadow == 1) {
                             day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                            day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                            day_cell.firstChild.lastChild.lastChild.innerText = shadow_string + ' (S)';
                         }
                         if (cal.oncall_groups[group].backup == 1) {
                             day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                            day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                            day_cell.firstChild.lastChild.lastChild.innerText = backup_string + ' (B)';
                         }
                     } else {
                         day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
@@ -1111,11 +1111,11 @@ var oncalendar = {
                     day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                     if (cal.oncall_groups[group].shadow == 1) {
                         day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string + ' (S)';
                     }
                     if (cal.oncall_groups[group].backup == 1) {
                         day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string + ' (B)';
                     }
                 } else {
                     past_schedule = false;
@@ -1267,11 +1267,11 @@ var oncalendar = {
                         day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                         if (cal.oncall_groups[group].shadow == 1) {
                             day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                            day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                            day_cell.firstChild.lastChild.lastChild.innerText = shadow_string + ' (S)';
                         }
                         if (cal.oncall_groups[group].backup == 1) {
                             day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
-                            day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                            day_cell.firstChild.lastChild.lastChild.innerText = backup_string + ' (B)';
                         }
                     } else {
                         past_schedule = false;
