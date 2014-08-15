@@ -136,6 +136,7 @@ class OnCalendarSMS(object):
 
     def get_incoming(self):
         try:
+            self.client.timeout = 15
             messages = self.client.messages.list(to=self.smsconfig['TWILIO_NUMBER'])
         except TwilioRestException as error:
             raise OnCalendarSMSError(error.status, error.msg)
