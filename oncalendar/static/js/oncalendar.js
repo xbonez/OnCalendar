@@ -591,7 +591,7 @@ var oncalendar = {
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                if (current_day < today) {
+                if (current_day < today || (current_date_string == today_string && Date.now().hours() > (cal.oncall_groups[group].turnover_hour + 1))) {
                     day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
                     day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                     if (cal.oncall_groups[group].shadow == 1) {
@@ -696,7 +696,8 @@ var oncalendar = {
             day_cell.firstChild.firstChild.innerText = current_day.toString('d');
             day_cell.firstChild.appendChild(document.createElement('div'));
             day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-            if (current_day < today) {
+            console.log(current_date_string, today_string, Date.now().hours());
+            if (current_day < today || (current_date_string == today_string && Date.now().hours() > (cal.oncall_groups[group].turnover_hour + 1))) {
                 day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
                 day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                 if (cal.oncall_groups[group].shadow == 1) {
@@ -708,9 +709,6 @@ var oncalendar = {
                     day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
                 }
             } else {
-                if (current_date_string === today_string) {
-                    day_cell.firstChild.classList.add('today');
-                }
                 day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" value="' + victim_string + '">' +
                     '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" value="' + victim_string + '">' +
                     '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
@@ -763,6 +761,9 @@ var oncalendar = {
                     day_cell.firstChild.lastChild.appendChild(backup_fragment);
                 }
             }
+            if (current_date_string === today_string) {
+                day_cell.firstChild.classList.add('today');
+            }
             week_row.firstChild.appendChild(day_cell);
             current_day.add(1).days();
         }
@@ -796,7 +797,7 @@ var oncalendar = {
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                if (current_day < today) {
+                if (current_day < today || (current_date_string == today_string && Date.now().hours() > (cal.oncall_groups[group].turnover_hour + 1))) {
                     day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
                     day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
                     if (cal.oncall_groups[group].shadow == 1) {
