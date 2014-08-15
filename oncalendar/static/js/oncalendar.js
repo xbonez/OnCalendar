@@ -537,6 +537,10 @@ var oncalendar = {
             backup_string;
         var calendar_table_fragment = document.createDocumentFragment();
 
+        if (cal.current_month == today.getMonth()) {
+            $('#prev-month-button').addClass('hide');
+        }
+
         $.each(Object.keys(cal.victims.map).sort(), function(i, date) {
             var calday = cal.victims.map[date];
             if (typeof cal.victims[calday].slots[cal.oncall_groups[group].turnover_string] !== "undefined") {
@@ -866,7 +870,8 @@ var oncalendar = {
     display_calendar_weekly_edit: function(group) {
         var cal = this;
         var current_day = new Date(cal.view_start);
-        var today_string = cal.now.toString('yyyy-M-d');
+        var today = Date.today();
+        var today_string = today.toString('yyyy-M-d');
         var day_victims = {};
         var victim_options = '<li class="oncall-option" data-victim="--"><span>--</span></li>';
         var shadow_options = '<li class="shadow-option" data-victim="--"><span>--</span></li>';
@@ -881,7 +886,11 @@ var oncalendar = {
             shadow_string = '--';
             backup_string = '--';
         var calendar_table_fragment = document.createDocumentFragment();
+        var past_schedule;
 
+        if (cal.current_month == today.getMonth()) {
+            $('#prev-month-button').addClass('hide');
+        }
 
         $.each(Object.keys(cal.victims.map).sort(), function(i, date) {
             var calday = cal.victims.map[date];
@@ -936,58 +945,72 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                        '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
+                    if (current_day < today) {
+                        past_schedule = true;
+                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                        day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                            day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                            day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                        }
+                    } else {
+                        day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                            '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                            '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
                             '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
                             '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
-                    day_cell.firstChild.lastChild.lastChild.lastChild.lastChild.innerHTML = victim_options;
-                    if (cal.oncall_groups[group].shadow == 1) {
-                        shadow_fragment = document.createDocumentFragment();
-                        shadow_fragment.appendChild(document.createElement('br'));
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('div'));
-                        shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
-                            '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
-                            '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                            '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
-                        shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
-                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                    }
-                    if (cal.oncall_groups[group].backup == 1) {
-                        backup_fragment = document.createDocumentFragment();
-                        backup_fragment.appendChild(document.createElement('br'));
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '=prev-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week' + oncall_week);
-                        backup_fragment.appendChild(document.createElement('div'));
-                        backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
-                            '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
-                            '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                            '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
-                        backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
-                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        day_cell.firstChild.lastChild.lastChild.lastChild.lastChild.innerHTML = victim_options;
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            shadow_fragment = document.createDocumentFragment();
+                            shadow_fragment.appendChild(document.createElement('br'));
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('div'));
+                            shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
+                                '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
+                                '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
+                                '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
+                                '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
+                            shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
+                            day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            backup_fragment = document.createDocumentFragment();
+                            backup_fragment.appendChild(document.createElement('br'));
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '=prev-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'prev-backup-week' + oncall_week);
+                            backup_fragment.appendChild(document.createElement('div'));
+                            backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
+                                '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
+                                '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
+                                '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
+                                '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
+                            backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
+                            day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        }
                     }
                 } else {
                     day_cell = document.createDocumentFragment();
@@ -999,41 +1022,43 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
-                    if (cal.oncall_groups[group].shadow == 1) {
-                        shadow_fragment = document.createDocumentFragment();
-                        shadow_fragment.appendChild(document.createElement('br'));
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                    }
-                    if (cal.oncall_groups[group].backup == 1) {
-                        backup_fragment = document.createDocumentFragment();
-                        backup_fragment.appendChild(document.createElement('br'));
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                    if (! past_schedule) {
+                        day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                            '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            shadow_fragment = document.createDocumentFragment();
+                            shadow_fragment.appendChild(document.createElement('br'));
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            backup_fragment = document.createDocumentFragment();
+                            backup_fragment.appendChild(document.createElement('br'));
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        }
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
@@ -1079,59 +1104,74 @@ var oncalendar = {
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                    '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +                    '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
-                    '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
-                    '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                    '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
-                day_cell.firstChild.lastChild.lastChild.lastChild.lastChild.innerHTML = victim_options;
-                if (cal.oncall_groups[group].shadow == 1) {
-                    shadow_fragment = document.createDocumentFragment();
-                    shadow_fragment.appendChild(document.createElement('br'));
-                    shadow_fragment.appendChild(document.createElement('input'));
-                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                    shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                    shadow_fragment.appendChild(document.createElement('input'));
-                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                    shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
-                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                    shadow_fragment.appendChild(document.createElement('div'));
-                    shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
-                        '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
-                        '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
+                if (current_day < today) {
+                    past_schedule = true;
+                    day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                    day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
+                    if (cal.oncall_groups[group].shadow == 1) {
+                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                        day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                    }
+                    if (cal.oncall_groups[group].backup == 1) {
+                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                        day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                    }
+                } else {
+                    past_schedule = false;
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' + '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
+                        '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
                         '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                        '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
-                    shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
-                    day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                }
-                if (cal.oncall_groups[group].backup == 1) {
-                    backup_fragment = document.createDocumentFragment();
-                    backup_fragment.appendChild(document.createElement('br'));
-                    backup_fragment.appendChild(document.createElement('input'));
-                    backup_fragment.lastChild.setAttribute('type', 'hidden');
-                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                    backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                    backup_fragment.lastChild.setAttribute('value', backup_string);
-                    backup_fragment.appendChild(document.createElement('input'));
-                    backup_fragment.lastChild.setAttribute('type', 'hidden');
-                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
-                    backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
-                    backup_fragment.lastChild.setAttribute('value', backup_string);
-                    backup_fragment.appendChild(document.createElement('div'));
-                    backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
-                        '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
-                        '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
-                        '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                        '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
-                    backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
-                    day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
+                    day_cell.firstChild.lastChild.lastChild.lastChild.lastChild.innerHTML = victim_options;
+                    if (cal.oncall_groups[group].shadow == 1) {
+                        shadow_fragment = document.createDocumentFragment();
+                        shadow_fragment.appendChild(document.createElement('br'));
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('div'));
+                        shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
+                            '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
+                            '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
+                            '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
+                            '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
+                        shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
+                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                    }
+                    if (cal.oncall_groups[group].backup == 1) {
+                        backup_fragment = document.createDocumentFragment();
+                        backup_fragment.appendChild(document.createElement('br'));
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('div'));
+                        backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
+                            '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
+                            '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
+                            '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
+                            '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
+                        backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
+                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                    }
                 }
             } else {
                 day_cell = document.createDocumentFragment();
@@ -1143,41 +1183,43 @@ var oncalendar = {
                 day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                 day_cell.firstChild.appendChild(document.createElement('div'));
                 day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                    '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
-                if (cal.oncall_groups[group].shadow == 1) {
-                    shadow_fragment = document.createDocumentFragment();
-                    shadow_fragment.appendChild(document.createElement('br'));
-                    shadow_fragment.appendChild(document.createElement('input'));
-                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                    shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                    shadow_fragment.appendChild(document.createElement('input'));
-                    shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                    shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                    shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                    shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
-                    shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                    day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                }
-                if (cal.oncall_groups[group].backup == 1) {
-                    backup_fragment = document.createDocumentFragment();
-                    backup_fragment.appendChild(document.createElement('br'));
-                    backup_fragment.appendChild(document.createElement('input'));
-                    backup_fragment.lastChild.setAttribute('type', 'hidden');
-                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                    backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                    backup_fragment.lastChild.setAttribute('value', backup_string);
-                    backup_fragment.appendChild(document.createElement('input'));
-                    backup_fragment.lastChild.setAttribute('type', 'hidden');
-                    backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                    backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
-                    backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
-                    backup_fragment.lastChild.setAttribute('value', backup_string);
-                    day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                if (! past_schedule) {
+                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                    if (cal.oncall_groups[group].shadow == 1) {
+                        shadow_fragment = document.createDocumentFragment();
+                        shadow_fragment.appendChild(document.createElement('br'));
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        shadow_fragment.appendChild(document.createElement('input'));
+                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
+                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                    }
+                    if (cal.oncall_groups[group].backup == 1) {
+                        backup_fragment = document.createDocumentFragment();
+                        backup_fragment.appendChild(document.createElement('br'));
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        backup_fragment.appendChild(document.createElement('input'));
+                        backup_fragment.lastChild.setAttribute('type', 'hidden');
+                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                        backup_fragment.lastChild.setAttribute('value', backup_string);
+                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                    }
                 }
             }
             if (current_date_string == today_string) {
@@ -1218,58 +1260,73 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' +                        '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
-                        '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
-                        '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                        '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
-                    day_cell.firstChild.lastChild.lastChild.lastChild.lastChild.innerHTML = victim_options;
-                    if (cal.oncall_groups[group].shadow == 1) {
-                        shadow_fragment = document.createDocumentFragment();
-                        shadow_fragment.appendChild(document.createElement('br'));
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('div'));
-                        shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
-                            '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
+                    if (current_day < today) {
+                        past_schedule = true;
+                        day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                        day_cell.firstChild.lastChild.lastChild.innerText = victim_string;
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                            day_cell.firstChild.lastChild.lastChild.innerText = shadow_string;
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            day_cell.firstChild.lastChild.appendChild(document.createElement('p'));
+                            day_cell.firstChild.lastChild.lastChild.innerText = backup_string;
+                        }
+                    } else {
+                        past_schedule = false;
+                        day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                            '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">' + '<div><span>Oncall: </span><span id="' + current_date_string + '-oncall-menu" class="dropdown">' +
+                            '<span data-toggle="dropdown"><button id="' + current_date_string + '-oncall-label" data-oncall-week="' + oncall_week + '">' + victim_string +
                             '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                            '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
-                        shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
-                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                    }
-                    if (cal.oncall_groups[group].backup == 1) {
-                        backup_fragment = document.createDocumentFragment();
-                        backup_fragment.appendChild(document.createElement('br'));
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        backup_fragment.appendChild(document.createElement('div'));
-                        backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
-                            '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
-                            '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
-                            '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
-                            '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
-                        backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
-                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                            '<ul id="' + current_date_string + '-oncall-options" class="dropdown-menu" role="menu" data-day-id="' + current_date_string + '"></div></div>';
+                        day_cell.firstChild.lastChild.lastChild.lastChild.lastChild.innerHTML = victim_options;
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            shadow_fragment = document.createDocumentFragment();
+                            shadow_fragment.appendChild(document.createElement('br'));
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('div'));
+                            shadow_fragment.lastChild.innerHTML = '<span>Shadow: </span>' +
+                                '<span id="' + current_date_string + '-shadow-menu" class="dropdown"><span data-toggle="dropdown">' +
+                                '<button id="' + current_date_string + '-shadow-label" data-shadow-week="' + oncall_week + '">' + shadow_string +
+                                '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
+                                '<ul id="' + current_date_string + '-shadow-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
+                            shadow_fragment.lastChild.lastChild.lastChild.innerHTML = shadow_options;
+                            day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            backup_fragment = document.createDocumentFragment();
+                            backup_fragment.appendChild(document.createElement('br'));
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            backup_fragment.appendChild(document.createElement('div'));
+                            backup_fragment.lastChild.innerHTML = '<span>Backup: </span>' +
+                                '<span id="' + current_date_string + '-backup-menu" class="dropdown"><span data-toggle="dropdown">' +
+                                '<button id="' + current_date_string + '-backup-label" data-backup-week="' + oncall_week + '">' + backup_string +
+                                '<span class="elegant_icons arrow_carrot-down"></span></button></span>' +
+                                '<ul id="' + current_date_string + '-backup-options" class="dropdown-menu role="menu" data-day-id="' + current_date_string + '"></span></ul>';
+                            backup_fragment.lastChild.lastChild.lastChild.innerHTML = backup_options;
+                            day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        }
                     }
                 } else {
                     day_cell = document.createDocumentFragment();
@@ -1281,41 +1338,43 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">' +
-                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="--">';
-                    if (cal.oncall_groups[group].shadow == 1) {
-                        shadow_fragment = document.createDocumentFragment();
-                        shadow_fragment.appendChild(document.createElement('br'));
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                    }
-                    if (cal.oncall_groups[group].backup == 1) {
-                        backup_fragment = document.createDocumentFragment();
-                        backup_fragment.appendChild(document.createElement('br'));
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                    if (!past_schedule) {
+                        day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="--">' +
+                            '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="--">';
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            shadow_fragment = document.createDocumentFragment();
+                            shadow_fragment.appendChild(document.createElement('br'));
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            backup_fragment = document.createDocumentFragment();
+                            backup_fragment.appendChild(document.createElement('br'));
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        }
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
@@ -1363,41 +1422,43 @@ var oncalendar = {
                     day_cell.firstChild.firstChild.innerText = current_day.toString('d');
                     day_cell.firstChild.appendChild(document.createElement('div'));
                     day_cell.firstChild.lastChild.setAttribute('class', 'calendar-day-victims');
-                    day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
-                        '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
-                    if (cal.oncall_groups[group].shadow == 1) {
-                        shadow_fragment = document.createDocumentFragment();
-                        shadow_fragment.appendChild(document.createElement('br'));
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        shadow_fragment.appendChild(document.createElement('input'));
-                        shadow_fragment.lastChild.setAttribute('type', 'hidden');
-                        shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
-                        shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
-                        shadow_fragment.lastChild.setAttribute('value', shadow_string);
-                        day_cell.firstChild.lastChild.appendChild(shadow_fragment);
-                    }
-                    if (cal.oncall_groups[group].backup == 1) {
-                        backup_fragment = document.createDocumentFragment();
-                        backup_fragment.appendChild(document.createElement('br'));
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        backup_fragment.appendChild(document.createElement('input'));
-                        backup_fragment.lastChild.setAttribute('type', 'hidden');
-                        backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
-                        backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
-                        backup_fragment.lastChild.setAttribute('value', backup_string);
-                        day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                    if (!past_schedule) {
+                        day_cell.firstChild.lastChild.innerHTML = '<input type="hidden" id="' + current_date_string + '-oncall" name="' + current_date_string + '-oncall" class="victim-week-' + oncall_week + '" value="' + victim_string + '">' +
+                            '<input type="hidden" id="' + current_date_string + '-prev-oncall" name="' + current_date_string + '-prev-oncall" class="prev-victim-week-' + oncall_week + '" value="' + victim_string + '">';
+                        if (cal.oncall_groups[group].shadow == 1) {
+                            shadow_fragment = document.createDocumentFragment();
+                            shadow_fragment.appendChild(document.createElement('br'));
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            shadow_fragment.appendChild(document.createElement('input'));
+                            shadow_fragment.lastChild.setAttribute('type', 'hidden');
+                            shadow_fragment.lastChild.setAttribute('id', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('name', current_date_string + '-prev-shadow');
+                            shadow_fragment.lastChild.setAttribute('class', 'prev-shadow-week-' + oncall_week);
+                            shadow_fragment.lastChild.setAttribute('value', shadow_string);
+                            day_cell.firstChild.lastChild.appendChild(shadow_fragment);
+                        }
+                        if (cal.oncall_groups[group].backup == 1) {
+                            backup_fragment = document.createDocumentFragment();
+                            backup_fragment.appendChild(document.createElement('br'));
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            backup_fragment.appendChild(document.createElement('input'));
+                            backup_fragment.lastChild.setAttribute('type', 'hidden');
+                            backup_fragment.lastChild.setAttribute('id', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('name', current_date_string + '-prev-backup');
+                            backup_fragment.lastChild.setAttribute('class', 'prev-backup-week-' + oncall_week);
+                            backup_fragment.lastChild.setAttribute('value', backup_string);
+                            day_cell.firstChild.lastChild.appendChild(backup_fragment);
+                        }
                     }
                 }
                 week_row.firstChild.appendChild(day_cell);
