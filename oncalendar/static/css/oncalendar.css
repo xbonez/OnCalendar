@@ -553,6 +553,11 @@ button.mfp-close {
 }
 
 /* line 104, ../scss/_popup.scss */
+div.mfp-content.extra-wide {
+  width: 100%;
+}
+
+/* line 108, ../scss/_popup.scss */
 .mfp-wrap {
   top: 0;
   left: 0;
@@ -566,7 +571,7 @@ button.mfp-close {
   backface-visibility: hidden;
 }
 
-/* line 117, ../scss/_popup.scss */
+/* line 121, ../scss/_popup.scss */
 .popup-animate.mfp-bg {
   opacity: 0;
   -webkit-transition: all 0.15s ease-out;
@@ -574,23 +579,23 @@ button.mfp-close {
   transition: all 0.15s ease-out;
 }
 
-/* line 124, ../scss/_popup.scss */
+/* line 128, ../scss/_popup.scss */
 .popup-animate.mfp-bg.mfp-ready {
   opacity: 1;
 }
 
-/* line 128, ../scss/_popup.scss */
+/* line 132, ../scss/_popup.scss */
 .popup-animate.mfp-bg.mfp-removing {
   opacity: 0;
 }
 
-/* line 132, ../scss/_popup.scss */
+/* line 136, ../scss/_popup.scss */
 .popup-form-data {
   padding: 0;
   margin: 0 0 10px 15px;
 }
 
-/* line 137, ../scss/_popup.scss */
+/* line 141, ../scss/_popup.scss */
 .popup-form-data p {
   font-size: 0.8em;
 }
@@ -1308,134 +1313,141 @@ div#edit-month-note-box textarea#edit-month-note {
 }
 
 /* line 532, ../scss/oncalendar.scss */
-div#group-info-box {
+div#group-options-bar {
   background-color: white;
   margin-top: 5px;
-  padding-bottom: 10px;
+  padding: 5px 0;
   border-top: 1px solid rgba(64, 64, 64, 0.75);
   border-bottom: 1px solid rgba(64, 64, 64, 0.75);
-}
-/* line 538, ../scss/oncalendar.scss */
-div#group-info-box div#group-info-box-buttons {
   font-size: 0.8em;
-  margin: 20px 0 0 50px;
 }
-/* line 543, ../scss/oncalendar.scss */
-div#group-info-box button.page-primary-button,
-div#group-info-box button.panic-page-button {
+/* line 539, ../scss/oncalendar.scss */
+div#group-options-bar span#group-oncall-container {
+  margin-left: 50px;
+}
+/* line 541, ../scss/oncalendar.scss */
+div#group-options-bar span#group-oncall-container button {
   font-size: 0.75em;
 }
-/* line 546, ../scss/oncalendar.scss */
-div#group-info-box th#group-edit-log-head {
-  height: 25px;
-}
 
-/* line 551, ../scss/oncalendar.scss */
-div#group-info-box-head h2 {
-  margin: 0;
-  margin-left: 35px;
+/* line 547, ../scss/oncalendar.scss */
+div#group-info-box-popup {
+  width: 90%;
+}
+/* line 549, ../scss/oncalendar.scss */
+div#group-info-box-popup div#group-info-box-head h2 {
+  margin: 0 0 15px 35px;
   padding-top: 10px;
   display: inline-block;
 }
-
-/* line 558, ../scss/oncalendar.scss */
-span#edit-group-info {
-  font-size: 0.8em;
+/* line 555, ../scss/oncalendar.scss */
+div#group-info-box-popup button.page-primary-button,
+div#group-info-box-popup button.panic-page-button {
+  font-size: 0.75em;
 }
-
-/* line 562, ../scss/oncalendar.scss */
-table#edit-group-info-table {
-  margin-bottom: 25px;
-}
-
-/* line 567, ../scss/oncalendar.scss */
-div#edit-group-victims-popup div#group-victims-list-form {
-  position: relative;
-}
-/* line 569, ../scss/oncalendar.scss */
-div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table {
-  position: relative;
-}
-/* line 571, ../scss/oncalendar.scss */
-div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table div#victim-username-textbox {
-  position: relative;
-}
-
-/* line 581, ../scss/oncalendar.scss */
-div#edit-account-info-popup table th {
-  padding: 8px 8px 0 8px;
-}
-/* line 584, ../scss/oncalendar.scss */
-div#edit-account-info-popup table td {
-  padding: 0 8px;
-}
-
-/* line 590, ../scss/oncalendar.scss */
-table#group-info-data {
+/* line 559, ../scss/oncalendar.scss */
+div#group-info-box-popup div#group-info-box-info table#group-info-data {
   width: 90%;
   margin: 0;
   margin-left: 35px;
   font-size: 0.8em;
   text-align: left;
+  border-spacing: 5px;
+}
+/* line 566, ../scss/oncalendar.scss */
+div#group-info-box-popup div#group-info-box-info table#group-info-data th#group-edit-log-head {
+  height: 25px;
 }
 
-/* line 598, ../scss/oncalendar.scss */
+/* line 573, ../scss/oncalendar.scss */
+span#edit-group-info {
+  font-size: 0.8em;
+}
+
+/* line 577, ../scss/oncalendar.scss */
+table#edit-group-info-table {
+  margin-bottom: 25px;
+}
+
+/* line 582, ../scss/oncalendar.scss */
+div#edit-group-victims-popup div#group-victims-list-form {
+  position: relative;
+}
+/* line 584, ../scss/oncalendar.scss */
+div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table {
+  position: relative;
+}
+/* line 586, ../scss/oncalendar.scss */
+div#edit-group-victims-popup div#group-victims-list-form table#group-victims-list-table div#victim-username-textbox {
+  position: relative;
+}
+
+/* line 596, ../scss/oncalendar.scss */
+div#edit-account-info-popup table th {
+  padding: 8px 8px 0 8px;
+}
+/* line 599, ../scss/oncalendar.scss */
+div#edit-account-info-popup table td {
+  padding: 0 8px;
+}
+
+/* line 605, ../scss/oncalendar.scss */
 div#edit-day-popup {
   max-height: 650px;
 }
-/* line 600, ../scss/oncalendar.scss */
+/* line 607, ../scss/oncalendar.scss */
 div#edit-day-popup h3 {
   height: 25px;
   margin: 0 0 15px;
 }
-/* line 604, ../scss/oncalendar.scss */
+/* line 611, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-form {
   max-height: 500px;
   overflow: auto;
   border-top: 1px solid rgba(42, 70, 97, 0.1);
   border-bottom: 1px solid rgba(42, 70, 97, 0.1);
 }
-/* line 610, ../scss/oncalendar.scss */
+/* line 617, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table {
   width: 100%;
 }
-/* line 612, ../scss/oncalendar.scss */
+/* line 619, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table td {
   padding: 0;
 }
-/* line 617, ../scss/oncalendar.scss */
+/* line 624, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table tr.oncall-row:nth-child(odd),
 div#edit-day-popup table#edit-day-slots-table tr.shadow-row:nth-child(even),
 div#edit-day-popup table#edit-day-slots-table tr.backup-row:nth-child(odd) {
   background-color: rgba(42, 70, 97, 0.1);
 }
-/* line 622, ../scss/oncalendar.scss */
+/* line 629, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-note-box textarea#edit-day-note {
   width: 95%;
   height: 50px;
   margin-top: 10px;
 }
 
-/* line 631, ../scss/oncalendar.scss */
+/* line 638, ../scss/oncalendar.scss */
 div.send-sms-popup textarea.sms-text-entry {
   width: 400px;
   height: 50px;
 }
 
-/* line 637, ../scss/oncalendar.scss */
+/* line 644, ../scss/oncalendar.scss */
 .autocomplete-selected {
   background-color: rgba(40, 70, 97, 0.75);
   color: whitesmoke;
 }
 
-/* line 642, ../scss/oncalendar.scss */
+/* line 649, ../scss/oncalendar.scss */
 .autocomplete-suggestion {
   overflow: hidden;
   margin-bottom: 1px;
   padding-left: 8px;
 }
 
-/* line 648, ../scss/oncalendar.scss */
+/* line 655, ../scss/oncalendar.scss */
 .autocomplete-suggestion:hover {
   cursor: pointer;
   background-color: rgba(40, 70, 97, 0.75);
