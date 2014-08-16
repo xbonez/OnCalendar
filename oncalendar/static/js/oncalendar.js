@@ -144,13 +144,11 @@ var oncalendar = {
         var p_group_class = {};
         var calendar_table_fragment = document.createDocumentFragment();
         $.each(oncalendar.oncall_groups, function(group, data) {
-            if (typeof sessionStorage[group] === "undefined") {
-                sessionStorage[group] = 'on';
-            }
-            if (sessionStorage[group] === "off") {
-                p_group_class[group] = "victim-group info-tooltip hide";
-            } else {
-                p_group_class[group] = "victim-group info-tooltip";
+            p_group_class[group] = "victim-group info-tooltip"
+            if (typeof sessionStorage['display_group'] !== "undefined" && sessionStorage['display_group'] !== null) {
+                if (group !== sessionStorage['display_group']) {
+                    p_group_class[group] = "victim-group info-tooltip hide";
+                }
             }
         });
         console.time('Pre month');

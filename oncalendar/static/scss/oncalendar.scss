@@ -533,30 +533,45 @@ div#edit-month-note-box {
     }
 }
 
-div#group-info-box {
+div#group-options-bar {
     background-color: $dialog_bg;
     margin-top: 5px;
-    padding-bottom: 10px;
+    padding: 5px 0;
     border-top: 1px solid $box_border;
     border-bottom: 1px solid $box_border;
-    div#group-info-box-buttons {
-        font-size: 0.8em;
-        margin: 20px 0 0 50px;
+    font-size: 0.8em;
+    span#group-oncall-container {
+        margin-left: 50px;
+        button {
+            font-size: 0.75em;
+        }
+    }
+}
+
+div#group-info-box-popup {
+    width: 90%;
+    div#group-info-box-head h2 {
+        margin: 0 0 15px 35px;
+        padding-top: 10px;
+        display: inline-block;
     }
     button.page-primary-button,
     button.panic-page-button {
         font-size: 0.75em;
     }
-    th#group-edit-log-head {
-        height: 25px;
+    div#group-info-box-info {
+        table#group-info-data {
+            width: 90%;
+            margin: 0;
+            margin-left: 35px;
+            font-size: 0.8em;
+            text-align: left;
+            border-spacing: 5px;
+            th#group-edit-log-head {
+                height: 25px;
+            }
+        }
     }
-}
-
-div#group-info-box-head h2 {
-    margin: 0;
-    margin-left: 35px;
-    padding-top: 10px;
-    display: inline-block;
 }
 
 span#edit-group-info {
@@ -589,14 +604,6 @@ div#edit-account-info-popup {
             padding: 0 8px;
         }
     }
-}
-
-table#group-info-data {
-    width: 90%;
-    margin: 0;
-    margin-left: 35px;
-    font-size: 0.8em;
-    text-align: left;
 }
 
 div#edit-day-popup {
