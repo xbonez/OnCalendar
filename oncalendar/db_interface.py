@@ -655,6 +655,10 @@ class OnCalendarDB(object):
             raise OnCalendarDBError(error.args[0], error.args[1])
 
         for row in cursor.fetchall():
+            victim = None
+            shadow = None
+            backup = None
+
             daystring = "{0}-{1}-{2}".format(row['year'], row['month'], row['day'])
             slot = "{0:02d}-{1:02d}".format(row['hour'], row['min'])
             if not daystring in cal_month['map']:
@@ -666,14 +670,24 @@ class OnCalendarDB(object):
             if not slot in cal_month[row['calday']]['slots']:
                 cal_month[row['calday']]['slots'][slot] = {}
 
+            if row['victim'] is not None and row['victim'] != "null":
+                victim = row['victim']
+            if row['shadow'] is not None and row['shadow'] != "null":
+                shadow = row['shadow']
+            if row['backup'] is not None and row['backup'] != "null":
+                backup = row['backup']
+
             cal_month[row['calday']]['slots'][slot][row['group_name']] = {
-                'oncall': row['victim'],
-                'oncall_name': ' '.join([row['victim_first'], row['victim_last']]),
-                'shadow': row['shadow'],
+                'oncall': victim,
+                'oncall_name': None,
+                'shadow': shadow,
                 'shadow_name': None,
-                'backup': row['backup'],
+                'backup': backup,
                 'backup_name': None
             }
+
+            if row['victim_first'] is not None and row['victim_last'] is not None:
+                cal_month[row['calday']]['slots'][slot][row['group_name']]['oncall_name'] = ' '.join([row['victim_first'], row['victim_last']])
 
             if row['shadow_first'] is not None and row['shadow_last'] is not None:
                 cal_month[row['calday']]['slots'][slot][row['group_name']]['shadow_name'] = ' '.join([row['shadow_first'], row['shadow_last']])
@@ -682,6 +696,72 @@ class OnCalendarDB(object):
                 cal_month[row['calday']]['slots'][slot][row['group_name']]['backup_name'] = ' '.join([row['backup_first'], row['backup_last']])
 
         return cal_month
+
+
+    def add_day_slots(self, calday, groupid):
+        """
+        Adds empty slots for a group to the specified day
+
+        Args:
+            calday (int): The day index to update
+
+            groupid (int): The id of the group to add slots for
+
+        Raises:
+            OnCalendarDBError
+        """
+
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        day_slots = [[0, 0], [0, 30]]
+        for i in range(1,24):
+            day_slots.append([i, 0])
+            day_slots.append([i, 30])
+
+        try:
+            cursor.execute("""SELECT COUNT(*) AS slots
+                FROM calendar WHERE calday='{0}' AND groupid='{1}'""".format(
+                calday,
+                groupid
+            ))
+            for row in cursor.fetchall():
+                if row['slots'] == 0:
+                    self.logger.debug('calday {0} is empty, populating'.format(calday))
+                    for slot in day_slots:
+                        cursor.execute("""INSERT INTO calendar
+                            (calday, hour, min, groupid)
+                            VALUES ('{0}','{1}','{2}','{3}')""".format(
+                            calday,
+                            slot[0],
+                            slot[1],
+                            groupid
+                        ))
+                    self.oncalendar_db.commit()
+                elif row['slots'] < 48:
+                    self.logger.debug('calday {0} not complete, filling in'.format(calday))
+                    slot_check = []
+                    cursor.execute("""SELECT hour, min FROM calendar
+                        WHERE calday='{0}' AND groupid='{1}'""".format(
+                        calday,
+                        groupid
+                    ))
+                    for row in cursor.fetchall():
+                        slot_check.append('{0}-{1}'.format(
+                            row['hour'],
+                            row['min']
+                        ))
+                    for slot in day_slots:
+                        if str(slot[0]) + '-' + str(slot[1]) not in slot_check:
+                            cursor.execute("""INSERT INTO calendar
+                                (calday, hour, min, groupid)
+                                VALUES('{0}','{1}','{2}','{3}')""".format(
+                                calday,
+                                slot[0],
+                                slot[1],
+                                groupid
+                            ))
+                    self.oncalendar_db.commit()
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
 
 
     def update_calendar_month(self, updater, reason, group_name, update_day_data=False):
@@ -706,207 +786,167 @@ class OnCalendarDB(object):
 
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         group_info = self.get_group_info(False, group_name)
-        day_slots = [[group_info[group_name]['turnover_hour'], group_info[group_name]['turnover_min']]]
-        post_slots = [[0, 0], [0, 30]]
-        if day_slots[0][1] == 0:
-            day_slots.append([group_info[group_name]['turnover_hour'], '30'])
 
-        first_hour = day_slots[0][0]
-        slot_range = 23 - first_hour
-        post_range = first_hour - 1
-        increment_day = dt.timedelta(days=1)
+        calday_query = "SELECT id FROM caldays WHERE year='{0}' AND month='{1}' AND day='{2}'"
 
-        for i in range(slot_range):
-            day_slots.append([first_hour + i + 1, 0])
-            day_slots.append([first_hour + i + 1, 30])
-        for i in range(post_range):
-            post_slots.append([i + 1, 0])
-            post_slots.append([i + 1, 30])
+        first_slot_query = """UPDATE calendar
+        SET {0}=(SELECT id FROM victims WHERE username='{1}')
+        WHERE calday='{2}' AND groupid='{3}' AND hour='{4}' AND min='{5}'"""
 
-        if day_slots[0][1] == 30:
-            post_slots.append([day_slots[0][0], 0])
+        day_update_query = """UPDATE calendar
+        SET {0}=(SELECT id FROM victims WHERE username='{1}')
+        WHERE calday='{2}' AND groupid='{3}' AND hour>='{4}'"""
+
+        post_day_update_query = """UPDATE calendar
+        SET {0}=(SELECT id FROM victims WHERE username='{1}')
+        WHERE calday='{2}' AND groupid='{3}' AND HOUR<'{4}'"""
+
+        last_slot_query = """UPDATE calendar
+        SET {0}=(SELECT id FROM victims WHERE username='{1}')
+        WHERE calday='{2}' AND groupid='{3}' AND hour='{4}' AND min='{5}'"""
+
+        filter_tag = " AND {0}=(SELECT id FROM victims WHERE username='{1}')"
+        null_filter = " AND {0} IS NULL"
 
         for day in sorted(update_day_data.keys()):
-            victim = None
-            shadow = None
-            backup = None
+            victims = {
+                'victim': None,
+                'prev_victim': None,
+                'shadow': None,
+                'prev_shadow': None,
+                'backup': None,
+                'prev_backup': None
+            }
             if 'oncall' in update_day_data[day]:
-                victim = update_day_data[day]['oncall']
+                victims['victim'] = update_day_data[day]['oncall']
+                victims['prev_victim'] = update_day_data[day]['prev_oncall']
 
             if 'shadow' in update_day_data[day]:
-                shadow = update_day_data[day]['shadow']
+                victims['shadow'] = update_day_data[day]['shadow']
+                victims['prev_shadow'] = update_day_data[day]['prev_shadow']
 
             if 'backup' in update_day_data[day]:
-                backup = update_day_data[day]['backup']
+                victims['backup'] = update_day_data[day]['backup']
+                victims['prev_backup'] = update_day_data[day]['prev_backup']
 
-            if victim is None and shadow is None and backup is None:
+            if victims['victim'] is None and victims['shadow'] is None and victims['backup'] is None:
                 continue
 
             year, month, date = day.split('-')
 
-            slot_check = {}
-            slot_check_query = """SELECT c.hour, c.min, v1.username AS victim,
-v2.username as shadow, v3.username as backup FROM calendar c
-LEFT OUTER JOIN victims AS v1 ON c.victimid=v1.id
-LEFT OUTER JOIN victims AS v2 ON c.shadowid=v2.id
-LEFT OUTER JOIN victims AS v3 ON c.backupid=v3.id
-WHERE c.calday=(SELECT id FROM caldays WHERE year='{0}'
-AND month='{1}' AND day='{2}') AND c.groupid={3}"""
-
             try:
-                self.logger.debug(slot_check_query.format(year, month, date, group_info[group_name]['id']))
-                cursor.execute(slot_check_query.format(year, month, date, group_info[group_name]['id']))
+                self.logger.debug(calday_query.format(year, month, date))
+                cursor.execute(calday_query.format(year, month, date))
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
             for row in cursor.fetchall():
-                slot_key = "{0}-{1}".format(row['hour'], row['min'])
-                slot_check[slot_key] = {'victim': row['victim'], 'shadow': row['shadow'], 'backup': row['backup']}
+                calday = row['id']
 
-            for slot in day_slots:
-                update_slot_key = "{0}-{1}".format(slot[0], slot[1])
-                update_month_query = False
-                if update_slot_key in slot_check:
-                    # update_month_query = "UPDATE calendar SET "
-                    if victim is not None and victim != "--" and victim != slot_check[update_slot_key]['victim']:
-                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
-                        if shadow is not None:
-                            if shadow == "--" and slot_check[update_slot_key]['shadow']:
-                                update_month_query += ", shadowid=NULL"
-                            elif shadow != "--" and shadow != slot_check[update_slot_key]['shadow']:
-                                update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--" and backup != slot_check[update_slot_key]['backup']:
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif shadow is not None:
-                        if shadow == "--" and slot_check[update_slot_key]['shadow']:
-                            update_month_query = "shadowid=NULL"
-                        elif shadow != "--" and shadow != slot_check[update_slot_key]['shadow']:
-                            update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--" and backup != slot_check[update_slot_key]['backup']:
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif backup is not None and backup != "--" and backup != slot_check[update_slot_key]['backup']:
-                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
+            self.add_day_slots(calday, group_info[group_name]['id'])
+            self.add_day_slots(calday + 1, group_info[group_name]['id'])
 
-                    if update_month_query:
-                        update_month_query = "UPDATE calendar SET " + update_month_query
-                        update_month_query += """ WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
-                    AND month='{1}' AND day='{2}') AND hour='{3}' AND min='{4}' AND groupid={5}""".format(
-                        year,
-                        month,
-                        date,
-                        slot[0],
-                        slot[1],
-                        group_info[group_name]['id']
-                    )
-                else:
-                    update_month_query_start = "INSERT INTO calendar SET calday=(SELECT id FROM caldays\
-                    WHERE year='{0}' AND month='{1}' AND day='{2}'), hour='{3}', min='{4}', \
-                    groupid='{5}', ".format(
-                        year,
-                        month,
-                        date,
-                        slot[0],
-                        slot[1],
-                        group_info[group_name]['id'],
-                    )
-                    if victim is not None and victim != "--":
-                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
-                        if shadow is not None and shadow != "--":
-                            update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--":
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif shadow is not None and shadow != "--":
-                        update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--":
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif backup is not None and backup != "--":
-                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-
-                    if update_month_query:
-                        update_month_query = update_month_query_start + update_month_query
-                if update_month_query:
+            for victim_type in ['victim', 'shadow', 'backup']:
+                prev_victim_type = 'prev_' + victim_type
+                if victims[victim_type] is not None:
                     try:
-                        cursor.execute(update_month_query)
-                    except mysql.Error as error:
-                        raise OnCalendarDBError(error.args[0], error.args[1])
-
-            next_date = dt.date(int(year), int(month), int(date)) + increment_day
-            post_slot_check = {}
-
-            try:
-                cursor.execute(slot_check_query.format(next_date.year, next_date.month, next_date.day, group_info[group_name]['id']))
-            except mysql.Error as error:
-                raise OnCalendarDBError(error.args[0], error.args[1])
-
-            for row in cursor.fetchall():
-                post_slot_key = "{0}-{1}".format(row['hour'], row['min'])
-                post_slot_check[post_slot_key] = {'victim': row['victim'], 'shadow': row['shadow'], 'backup': row['backup']}
-
-            for slot in post_slots:
-                update_slot_key = "{0}-{1}".format(slot[0], slot[1])
-                if update_slot_key in post_slot_check:
-                    update_month_query = False
-                    if victim is not None and victim != "--" and victim != post_slot_check[update_slot_key]['victim']:
-                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
-                        if shadow is not None:
-                            if shadow == "--" and post_slot_check[update_slot_key]['shadow']:
-                                update_month_query += ", shadowid=NULL"
-                            elif shadow != "--" and shadow != post_slot_check[update_slot_key]['shadow']:
-                                update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--" and backup != post_slot_check[update_slot_key]['backup']:
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif shadow is not None:
-                        if shadow == "--" and post_slot_check[update_slot_key]['shadow']:
-                            update_month_query = "shadowid=NULL"
-                        elif shadow != "--" and shadow != post_slot_check[update_slot_key]['shadow']:
-                            update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--" and backup != post_slot_check[update_slot_key]['backup']:
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif backup is not None and backup != "--" and backup != post_slot_check[update_slot_key]['backup']:
-                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-
-                    if update_month_query:
-                        update_month_query = "UPDATE calendar SET " + update_month_query
-                        update_month_query += """ WHERE calday=(SELECT id FROM caldays WHERE year='{0}'
-                            AND month='{1}' AND day='{2}') AND hour='{3}' AND min='{4}' AND groupid={5}""".format(
-                        next_date.year,
-                        next_date.month,
-                        next_date.day,
-                        slot[0],
-                        slot[1],
-                        group_info[group_name]['id']
-                    )
-                else:
-                    update_month_query_start = "INSERT INTO calendar SET calday=(SELECT id FROM caldays\
-                            WHERE year='{0}' AND month='{1}' AND day='{2}'), hour='{3}', min='{4}', \
-                            groupid='{5}', ".format(
-                        next_date.year,
-                        next_date.month,
-                        next_date.day,
-                        slot[0],
-                        slot[1],
-                        group_info[group_name]['id'],
-                        )
-                    if victim is not None and victim != "--":
-                        update_month_query = "victimid=(SELECT id FROM victims WHERE username='{0}')".format(victim)
-                        if shadow is not None and shadow != "--":
-                            update_month_query += ", shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--":
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-                    elif shadow is not None and shadow != "--":
-                        update_month_query = "shadowid=(SELECT id FROM victims WHERE username='{0}')".format(shadow)
-                        if backup is not None and backup != "--":
-                            update_month_query += ", backupid=(SELECT id FROM victims WHERE username='{0}'".format(backup)
-                    elif backup is not None and backup != "--":
-                        update_month_query = "backupid=(SELECT id FROM victims WHERE username='{0}')".format(backup)
-
-                    if update_month_query:
-                        update_month_query = update_month_query_start + update_month_query
-
-                if update_month_query:
-                    self.logger.debug(update_month_query)
-                    try:
-                        cursor.execute(update_month_query)
+                        if victims[prev_victim_type] == "--":
+                            if group_info[group_name]['turnover_min'] == 30:
+                                cursor.execute(first_slot_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour'],
+                                    '30'
+                                ) + null_filter.format(victim_type + 'id'))
+                                cursor.execute(day_update_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour'] + 1
+                                ) + null_filter.format(victim_type + 'id'))
+                            else:
+                                cursor.execute(day_update_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour']
+                                ) + null_filter.format(victim_type + 'id'))
+                            cursor.execute(post_day_update_query.format(
+                                victim_type + 'id',
+                                victims[victim_type],
+                                calday + 1,
+                                group_info[group_name]['id'],
+                                group_info[group_name]['turnover_hour']
+                            ) + null_filter.format(victim_type + 'id'))
+                            if group_info[group_name]['turnover_min'] == 30:
+                                cursor.execute(last_slot_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday + 1,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour'],
+                                    '0'
+                                ) + null_filter.format(victim_type + 'id'))
+                        else:
+                            if group_info[group_name]['turnover_min'] == 30:
+                                cursor.execute(first_slot_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour'],
+                                    '30'
+                                ) + filter_tag.format(
+                                    victim_type + 'id',
+                                    victims[prev_victim_type]
+                                ))
+                                cursor.execute(day_update_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour'] + 1
+                                ) + filter_tag.format(
+                                    victim_type + 'id',
+                                    victims[prev_victim_type]
+                                ))
+                            else:
+                                cursor.execute(day_update_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour']
+                                ) + filter_tag.format(
+                                    victim_type + 'id',
+                                    victims[prev_victim_type]
+                                ))
+                            cursor.execute(post_day_update_query.format(
+                                victim_type + 'id',
+                                victims[victim_type],
+                                calday + 1,
+                                group_info[group_name]['id'],
+                                group_info[group_name]['turnover_hour']
+                            ) + filter_tag.format(
+                                victim_type + 'id',
+                                victims[prev_victim_type]
+                            ))
+                            if group_info[group_name]['turnover_min'] == 30:
+                                cursor.execute(last_slot_query.format(
+                                    victim_type + 'id',
+                                    victims[victim_type],
+                                    calday + 1,
+                                    group_info[group_name]['id'],
+                                    group_info[group_name]['turnover_hour'],
+                                    '0'
+                                ) + filter_tag.format(
+                                    victim_type + 'id',
+                                    victims[prev_victim_type]
+                                ))
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1])
 

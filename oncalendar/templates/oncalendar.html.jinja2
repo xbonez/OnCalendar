@@ -35,53 +35,17 @@
 
     <div id="calendar-container" class="outer-container">
       <div id="group-legend" class="inline"></div>
-      <div id="group-info-box" class="hide">
-        <div id="group-info-box-head"></div>
-        <div id="group-info-box-info">
-          <table id="group-info-data">
-            <thead>
-              <tr>
-                <th>Turnover Day</th>
-                <th>Turnover Time</th>
-                <th>Email</th>
-                <th>Auto-Rotation</th>
-                <th>Oncall Shadowing</th>
-                <th>Backup Oncall</th>
-                <th>Current Oncall</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td id="group-turnover-day"></td>
-                <td id="group-default-turnover-time"></td>
-                <td id="group-email-address"></td>
-                <td id="group-autorotate"></td>
-                <td id="group-shadow"></td>
-                <td id="group-backup"></td>
-                <td id="group-current-oncall"></td>
-              </tr>
-              <tr>
-                <th id="group-members-head" colspan=7>Members</th>
-              </tr>
-              <tr>
-                <td id="group-members" colspan=7></td>
-              </tr>
-              <tr>
-                <th id="group-edit-log-head" colspan="7">Last Schedule Edit</th>
-              </tr>
-              <tr>
-                <td id="group-edit-log" colspan="7"></td>
-              </tr>
-            </tbody>
-          </table>
-          <div id="group-info-box-buttons">
-            <span><button id="toggle-group-button">Hide This Group</button></span>
-            <span><button id="hide-others-button">Hide Other Groups</button></span>
-            <span><button id="show-all-victims-button">Show All Groups</button></span>
-            <span id="edit-month-link-container"></span>
-            <span id="edit-by-week-link-container"></span>
-          </div>
-        </div>
+      <div id="group-options-bar" class="hide">
+        <span id="group-oncall-container"></span>
+        <span id="show-group-info-container">
+          <button id="show-group-info-button" data-target="">Show Group Info</button>
+        </span>
+        <span id="edit-month-link-container">
+          <button id="edit-month-button" data-target="">Edit Month By Day</button>
+        </span>
+        <span id="edit-by-week-link-container">
+          <button id="edit-by-week-button" data-target="">Edit Month By Week</button>
+        </span>
       </div>
       <div id="calendar-box" class="inner-container">
         <div id="calendar-header">
@@ -104,6 +68,53 @@
             </thead>
           </table>
         </div>
+      </div>
+    </div>
+
+    <div id="group-info-box-popup" class="popup mfp-hide">
+      <div id="group-info-box-head">
+        <h2></h2>
+        <button id="edit-group-info" class="elegant_icons icon_pencil-edit hide" data-target=""></button>
+      </div>
+      <div id="group-info-box-info">
+        <table id="group-info-data">
+          <thead>
+          <tr>
+            <th>Turnover Day</th>
+            <th>Turnover Time</th>
+            <th>Email</th>
+            <th>Auto-Rotation</th>
+            <th>Oncall Shadowing</th>
+            <th>Backup Oncall</th>
+            <th>Current Oncall</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td id="group-turnover-day"></td>
+            <td id="group-default-turnover-time"></td>
+            <td id="group-email-address"></td>
+            <td id="group-autorotate"></td>
+            <td id="group-shadow"></td>
+            <td id="group-backup"></td>
+            <td id="group-current-oncall"></td>
+          </tr>
+          <tr>
+            <th id="group-members-head" colspan=7>Members
+              <button id="edit-members" class="button elegant_icons icon_pencil-edit hide" data-target="" data-groupid="" style="font-weight: normal;"></button>
+            </th>
+          </tr>
+          <tr>
+            <td id="group-members" colspan=7></td>
+          </tr>
+          <tr>
+            <th id="group-edit-log-head" colspan="7" class="hide">Last Schedule Edit</th>
+          </tr>
+          <tr>
+            <td id="group-edit-log" colspan="7" class="hide"></td>
+          </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -313,7 +324,9 @@
     <div id="edit-day-popup" class="popup mfp-hide send_sms_popup">
       <h3>Edit Day <span id="edit-day-group"></span></h3>
       <div id="edit-day-form">
-        <table id="edit-day-slots-table" class="admin-table"></table>
+        <table id="edit-day-slots-table" class="admin-table">
+          <tr><th width="25%"><th width="25%"><th width="25%"><th width="25%"></th></tr>
+        </table>
       </div>
       <div id="edit-day-note-box">
         <textarea id="edit-day-note" name="edit-day-note" maxlength="1024" placeholder="Reason for or description of change"></textarea>
