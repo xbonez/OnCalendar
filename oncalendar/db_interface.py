@@ -1170,6 +1170,71 @@ class OnCalendarDB(object):
         return victims_report
 
 
+    def get_slumber_data(self, year, month, day, report_start, report_end):
+        """
+        Pull the SMS alerting data for the specified day to build the
+        slumber report
+
+        Args:
+            year (str)
+
+            month (str)
+
+            day (str)
+
+        Returns:
+            (dict): The gathered alert information
+
+        Raises:
+            OnCalendarDBError
+        """
+
+        cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
+        report_day = dt.date(int(year), int(month), int(day))
+        prev_day = report_day - dt.timedelta(days=1)
+        start_ts = '{0}-{1:02d}-{2:02d} {3:02d}:00:00'.format(
+            prev_day.year,
+            prev_day.month,
+            prev_day.day,
+            report_start
+        )
+        end_ts = '{0}-{1:02d}-{2:02d} {3:02d}:00:00'.format(
+            report_day.year,
+            report_day.month,
+            report_day.day,
+            report_end
+        )
+        slumber_query = """SELECT s.id as alert_id, s.alert_type, s.ts, s.host,
+        g.name, v.username, v.firstname, v.lastname
+        FROM sms_send s
+        LEFT OUTER JOIN groups AS g ON g.id=s.groupid
+        LEFT OUTER JOIN victims AS v ON v.id=s.victimid
+        WHERE s.ts > '{0}' AND s.ts < '{1}'""".format(start_ts, end_ts)
+
+        try:
+            self.logger.debug(slumber_query)
+            cursor.execute(slumber_query)
+            slumber_data = {}
+            for row in cursor.fetchall():
+                if row['alert_type'] in ("PROBLEM", "RECOVERY", "ACKNOWLEDGEMENT"):
+                    if row['name'] not in slumber_data:
+                        slumber_data[row['name']] = {}
+                    if row['username'] not in slumber_data[row['name']]:
+                        slumber_data[row['name']][row['username']] = {
+                            'name': "{0} {1}".format(row['firstname'], row['lastname'])
+                        }
+                    if row['alert_type'] not in slumber_data[row['name']][row['username']]:
+                        slumber_data[row['name']][row['username']][row['alert_type']] = {}
+                    slumber_data[row['name']][row['username']][row['alert_type']][row['alert_id']] = {
+                        'host': row['host'],
+                        'time': row['ts'],
+                    }
+        except mysql.Error as error:
+            raise OnCalendarDBError(error.args[0], error.args[1])
+
+        return slumber_data
+
+
     def get_group_info(self, group_id=False, group_name=False):
         """
         Get information on all groups, or a single group if
