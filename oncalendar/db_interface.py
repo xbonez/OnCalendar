@@ -1205,7 +1205,7 @@ class OnCalendarDB(object):
             report_end
         )
         slumber_query = """SELECT s.id as alert_id, s.alert_type, s.ts, s.host,
-        g.name, v.username, v.firstname, v.lastname
+        s.service, g.name, v.username, v.firstname, v.lastname
         FROM sms_send s
         LEFT OUTER JOIN groups AS g ON g.id=s.groupid
         LEFT OUTER JOIN victims AS v ON v.id=s.victimid
@@ -1227,7 +1227,8 @@ class OnCalendarDB(object):
                         slumber_data[row['name']][row['username']][row['alert_type']] = {}
                     slumber_data[row['name']][row['username']][row['alert_type']][row['alert_id']] = {
                         'host': row['host'],
-                        'time': row['ts'],
+                        'service': row['service'],
+                        'time': row['ts']
                     }
         except mysql.Error as error:
             raise OnCalendarDBError(error.args[0], error.args[1])
