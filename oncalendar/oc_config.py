@@ -29,6 +29,10 @@ class config(object):
         'APP_LOG_FILE': '',
         'SCHEDULE_LOG_FILE': ''
     }
+    reports = {
+        'SLUMBER_START': 21,
+        'SLUMBER_END': 9
+    }
     sms = {
         'SMS_TEST_MODE': False,
         'EMAIL_GATEWAY': False,

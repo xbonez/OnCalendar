@@ -1107,40 +1107,6 @@ def api_get_edit_history(group=None):
     return jsonify(edit_history)
 
 
-@ocapp.route('/api/report/oncall/<year>/<month>')
-@ocapp.route('/api/report/oncall/<year>/<month>/<group_name>')
-def api_oncall_report(year, month, group_name=False):
-    """
-    API interface to retrieve a report for all oncall users in the given month
-
-    Args:
-        year (int): The year of the report
-
-        month (int): The month of the report
-
-    Returns:
-        (str): The report as JSON
-
-    Raises:
-        OnCalendarAppError
-    """
-    try:
-        ocdb = OnCalendarDB(config.database)
-        if group_name:
-            victims_report = ocdb.get_oncall_report(year, month, group_name)
-        else:
-            victims_report = ocdb.get_oncall_report(year, month)
-    except OnCalendarDBError as error:
-        raise OnCalendarAppError(
-            payload = {
-                'error_code': error.args[0],
-                'error_message': error.args[1]
-            }
-        )
-
-    return jsonify(victims_report)
-
-
 @ocapp.route('/api/edits/<group>/last')
 def api_get_last_edit(group):
     """
@@ -2577,6 +2543,124 @@ def api_send_email(victim_type, group):
         )
 
     return jsonify({'email_status': 'Notification email sent to {0}'.format(target['email'])})
+
+
+# Reporting APIs
+#--------------------------------------
+@ocapp.route('/api/report/oncall/<year>/<month>')
+@ocapp.route('/api/report/oncall/<year>/<month>/<group_name>')
+def api_oncall_report(year, month, group_name=False):
+    """
+    API interface to retrieve a report for all oncall users in the given month
+
+    Args:
+        year (int): The year of the report
+
+        month (int): The month of the report
+
+    Returns:
+        (str): The report as JSON
+
+    Raises:
+        OnCalendarAppError
+    """
+    try:
+        ocdb = OnCalendarDB(config.database)
+        if group_name:
+            victims_report = ocdb.get_oncall_report(year, month, group_name)
+        else:
+            victims_report = ocdb.get_oncall_report(year, month)
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
+        )
+
+    return jsonify(victims_report)
+
+
+@ocapp.route('/api/report/slumber')
+@ocapp.route('/api/report/slumber/<year>/<month>/<day>')
+def api_slumber_report(year=False, month=False, day=False):
+    """
+    API interface to retrieve slumber report information for the previous
+    night or for a specified night.
+
+    A slumber report details all SMS messages sent during a set of
+    configured overnight hours (default is 21:00 to 08:59). The report
+    shows all alerts sent broken down by recipient, a breakdown of the
+    number of pages each recipient received per hour, and the alerts
+    that generated the most pain for recipients.
+
+    Args:
+        year (int)
+
+        month (int)
+
+        day (int)
+
+    Returns:
+        (str): The report as JSON
+
+    Raises:
+        OnCalendarAppError
+
+    """
+    report_start = 21
+    report_end = 9
+
+    if year and (not month or not day):
+        raise OnCalendarAppError(
+            payload = {
+                'error_code': ocapi_err.NOPARAM,
+                'error_message': 'Incomplete date specified'
+            }
+        )
+    if not year:
+        current_day = dt.date.today()
+        year = current_day.year
+        month = current_day.month
+        day = current_day.day
+
+    if hasattr(config, 'reports'):
+        if 'SLUMBER_START' in config.reports:
+            report_start = config.reports['SLUMBER_START']
+        if 'SLUMBER_END' in config.reports:
+            report_end = config.reports['SLUMBER_END']
+
+    try:
+        ocdb = OnCalendarDB(config.database)
+        slumber_data = ocdb.get_slumber_data(year, month, day, report_start, report_end)
+        slumber_report = {
+            'data': slumber_data,
+            'alerts': [],
+            'breakdown': [],
+            'worst': []
+        }
+        for group in slumber_data:
+            for user in slumber_data[group]:
+                problems = len(slumber_data[group][user]['PROBLEM']) if 'PROBLEM' in slumber_data[group][user] else 0
+                recoveries = len(slumber_data[group][user]['RECOVERY']) if 'RECOVERY' in slumber_data[group][user] else 0
+                acks = len(slumber_data[group][user]['ACKNOWLEDGEMENT']) if 'ACKNOWLEDGEMENT' in slumber_data[group][user] else 0
+                slumber_report['alerts'].append([
+                    group,
+                    slumber_data[group][user]['name'],
+                    problems,
+                    recoveries,
+                    acks,
+                    problems + recoveries + acks
+                ])
+    except OnCalendarDBError as error:
+        raise OnCalendarAppError(
+            payload = {
+                'error_code': error.args[0],
+                'error_message': error.args[1]
+            }
+        )
+
+    return jsonify(slumber_report)
 
 
 def parse_host_form(form_data):
