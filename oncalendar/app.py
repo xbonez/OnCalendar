@@ -6,6 +6,7 @@ import json
 import logging
 import MySQLdb as mysql
 import os
+import pytz
 import re
 import uwsgi
 
@@ -2595,11 +2596,11 @@ def api_slumber_report(year=False, month=False, day=False):
     that generated the most pain for recipients.
 
     Args:
-        year (int)
+        year (str)
 
-        month (int)
+        month (str)
 
-        day (int)
+        day (str)
 
     Returns:
         (str): The report as JSON
@@ -2623,6 +2624,9 @@ def api_slumber_report(year=False, month=False, day=False):
         year = current_day.year
         month = current_day.month
         day = current_day.day
+    else:
+        current_day = dt.date(int(year), int(month), int(day))
+    prev_day = current_day - dt.timedelta(days=1)
 
     if hasattr(config, 'reports'):
         if 'SLUMBER_START' in config.reports:
@@ -2630,11 +2634,31 @@ def api_slumber_report(year=False, month=False, day=False):
         if 'SLUMBER_END' in config.reports:
             report_end = config.reports['SLUMBER_END']
 
+    sleep_points = [1, 2, 3, 4, 4, 3, 2, 1, 0.5, 0.25]
+    sleep_points.extend([0] * 13)
+    sleep_points.extend([0.25, 0.3])
+    gap_hours = report_start - report_end
+    morning_hours = range(report_end)
+    evening_hours = range(report_start, 24)
+    slumber_hours = morning_hours
+    slumber_hours.extend([0] * gap_hours)
+    slumber_hours.extend(evening_hours)
+    slumber_points = zip(slumber_hours, sleep_points)
+
+    if 'TIMEZONE' in config.basic:
+        tz = pytz.timezone(config.basic['TIMEZONE'])
+    else:
+        tz = pytz.timezone('US/Pacific')
+    slumber_start = dt.datetime(prev_day.year, prev_day.month, prev_day.day, report_start, 0, 0, tzinfo=tz)
+    slumber_end = dt.datetime(current_day.year, current_day.month, current_day.day, report_end, 0, 0, tzinfo=tz)
+
     try:
         ocdb = OnCalendarDB(config.database)
         slumber_data = ocdb.get_slumber_data(year, month, day, report_start, report_end)
         slumber_report = {
             'data': slumber_data,
+            'slumber_start': slumber_start.astimezone(tz).strftime('%c %Z'),
+            'slumber_end': slumber_end.astimezone(tz).strftime('%c %Z'),
             'alerts': [],
             'breakdown': [],
             'worst': []
@@ -2644,14 +2668,53 @@ def api_slumber_report(year=False, month=False, day=False):
                 problems = len(slumber_data[group][user]['PROBLEM']) if 'PROBLEM' in slumber_data[group][user] else 0
                 recoveries = len(slumber_data[group][user]['RECOVERY']) if 'RECOVERY' in slumber_data[group][user] else 0
                 acks = len(slumber_data[group][user]['ACKNOWLEDGEMENT']) if 'ACKNOWLEDGEMENT' in slumber_data[group][user] else 0
-                slumber_report['alerts'].append([
-                    group,
-                    slumber_data[group][user]['name'],
-                    problems,
-                    recoveries,
-                    acks,
-                    problems + recoveries + acks
-                ])
+                slumber_report['alerts'].append([{
+                    'group': group,
+                    'victim': slumber_data[group][user]['name'],
+                    'problems': problems,
+                    'recoveries': recoveries,
+                    'acks': acks,
+                    'total_alerts': problems + recoveries + acks
+                }])
+                disruption_hours = {}
+                disruption_services = {}
+                disruption_hosts = {}
+                sleep_score = 10.0
+                for alert_type in ['PROBLEM', 'RECOVERY', 'ACKNOWLEDGEMENT']:
+                    if alert_type in slumber_data[group][user]:
+                        for alert in slumber_data[group][user][alert_type]:
+                            alert_host = slumber_data[group][user][alert_type][alert]['host']
+                            alert_service = slumber_data[group][user][alert_type][alert]['service']
+                            alert_hour = slumber_data[group][user][alert_type][alert]['time'].hour
+                            if alert_hour not in disruption_hours:
+                                disruption_hours[alert_hour] = 1
+                            else:
+                                disruption_hours[alert_hour] += 1
+                            if alert_service not in disruption_services:
+                                disruption_services[alert_service] = 1
+                            else:
+                                disruption_services[alert_service] += 1
+                            if alert_host not in disruption_hosts:
+                                disruption_hosts[alert_host] = 1
+                            else:
+                                disruption_hosts[alert_host] += 1
+                for hour, points in slumber_points:
+                    if hour in disruption_hours and disruption_hours[hour] > 0:
+                        sleep_score -= points
+
+                slumber_report['breakdown'].append([{
+                    'group': group,
+                    'victim': slumber_data[group][user]['name'],
+                    'hours': disruption_hours,
+                    'sleep_score': sleep_score
+                }])
+                slumber_report['worst'].append([{
+                    'group': group,
+                    'victim': slumber_data[group][user]['name'],
+                    'host': sorted(disruption_hosts, key=disruption_hosts.get, reverse=True)[0],
+                    'service': sorted(disruption_services, key=disruption_services.get, reverse=True)[0]
+                }])
+
     except OnCalendarDBError as error:
         raise OnCalendarAppError(
             payload = {

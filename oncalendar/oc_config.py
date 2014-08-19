@@ -7,7 +7,8 @@ class config(object):
         'JOB_MASTER': True,
         'EMAIL_DOMAIN': '',
         'CSRF_ENABLED': True,
-        'API_ACCESS_DOMAINS': False
+        'API_ACCESS_DOMAINS': False,
+        'TIMEZONE': 'US/Pacific'
     }
     database = {
         'DBUSER': 'oncalendar',
