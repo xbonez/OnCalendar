@@ -2668,14 +2668,14 @@ def api_slumber_report(year=False, month=False, day=False):
                 problems = len(slumber_data[group][user]['PROBLEM']) if 'PROBLEM' in slumber_data[group][user] else 0
                 recoveries = len(slumber_data[group][user]['RECOVERY']) if 'RECOVERY' in slumber_data[group][user] else 0
                 acks = len(slumber_data[group][user]['ACKNOWLEDGEMENT']) if 'ACKNOWLEDGEMENT' in slumber_data[group][user] else 0
-                slumber_report['alerts'].append([{
+                slumber_report['alerts'].append({
                     'group': group,
                     'victim': slumber_data[group][user]['name'],
                     'problems': problems,
                     'recoveries': recoveries,
                     'acks': acks,
                     'total_alerts': problems + recoveries + acks
-                }])
+                })
                 disruption_hours = {}
                 disruption_services = {}
                 disruption_hosts = {}
@@ -2702,18 +2702,18 @@ def api_slumber_report(year=False, month=False, day=False):
                     if hour in disruption_hours and disruption_hours[hour] > 0:
                         sleep_score -= points
 
-                slumber_report['breakdown'].append([{
+                slumber_report['breakdown'].append({
                     'group': group,
                     'victim': slumber_data[group][user]['name'],
                     'hours': disruption_hours,
                     'sleep_score': sleep_score
-                }])
-                slumber_report['worst'].append([{
+                })
+                slumber_report['worst'].append({
                     'group': group,
                     'victim': slumber_data[group][user]['name'],
                     'host': sorted(disruption_hosts, key=disruption_hosts.get, reverse=True)[0],
                     'service': sorted(disruption_services, key=disruption_services.get, reverse=True)[0]
-                }])
+                })
 
     except OnCalendarDBError as error:
         raise OnCalendarAppError(
