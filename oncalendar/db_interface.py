@@ -138,7 +138,7 @@ class OnCalendarDB(object):
                 "hour int(2) NOT NULL",
                 "min int(2) NOT NULL",
                 "groupid int(11) unsigned NOT NULL",
-                "victimid int(11) unsigned NOT NULL",
+                "victimid int(11) unsigned DEFAULT NULL",
                 "shadowid int(11) unsigned DEFAULT NULL",
                 "backupid int(11) unsigned DEFAULT NULL",
                 "KEY FK_calday (calday)",
