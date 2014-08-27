@@ -215,8 +215,16 @@ table.admin-table.dataTable {
     text-decoration: line-through;
 }
 
-.swap-period {
+.swap-period-oncall {
     border: 1px solid red;
+}
+
+.swap-period-shadow {
+    border: 1px solid yellow;
+}
+
+.swap-period-backup {
+    border: 1px solid blue;
 }
 
 .transparent {

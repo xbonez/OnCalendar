@@ -296,8 +296,11 @@ var edit_calday = function(target_group, calday, cal_date) {
         .append('<span class="elegant_icons arrow_carrot-down">');
     });
 
-    oncalendar.swap_start = 0;
-    oncalendar.swap_end = 0;
+    oncalendar.swap_start = {
+        oncall: 0,
+        shadow: 0,
+        backup: 0
+    };
 
     // Open the dialog box
     $.magnificPopup.open({
@@ -1184,45 +1187,179 @@ $('div#edit-account-info-popup').on('click', 'button.oc-checkbox', function() {
 // Handlers for the edit day dialog box
 $('div#edit-day-popup').on('click', 'li.slot-item', function() {
     var new_victim = $(this).attr('data-target');
+    var row_button = $(this).parents('ul').siblings('span').children('button');
+    var old_victim = row_button.text();
     var active_row = $(this).parents('ul').parents('span').parents('td').parents('tr');
-    $(this).parents('ul').siblings('span').children('button')
+    var change_rows;
+    row_button
         .text(new_victim)
         .attr('data-target', new_victim)
         .append('<span class="elegant_icons arrow_carrot-down">');
-    if (!oncalendar.swap_start) {
+    if (row_button.attr('data-original') === undefined) {
+        row_button.attr('data-original', old_victim);
+    }
+
+    if (!oncalendar.swap_start[active_row.attr('data-type')]) {
+        oncalendar.swap_type = active_row.attr('data-type');
         oncalendar.swap_start_row = active_row;
-        oncalendar.swap_start_row.addClass('swap-period');
-        oncalendar.swap_start_row.children('td.start-end').text('Swap Start');
-        oncalendar.swap_start = new_victim;
-        oncalendar.swap_type = oncalendar.swap_start_row.attr('data-type');
+        oncalendar.swap_start_row.addClass('swap-period-' + oncalendar.swap_type);
+        oncalendar.swap_start_row.children('td.start-end').text(oncalendar.swap_type + ' Swap Start');
+        oncalendar.swap_start[active_row.attr('data-type')] = new_victim;
     } else {
-        if ((new_victim === oncalendar.swap_start) && (oncalendar.swap_type == active_row.attr('data-type'))) {
+        // A start point is already set.
+        if ((new_victim === oncalendar.swap_start[oncalendar.swap_type]) && (oncalendar.swap_type == active_row.attr('data-type'))) {
+            // The newly chosen menu item
+            // is of the same type (oncall/shadow/backup), so it becomes
+            // the swap end point.
+
+            // If there's already a swap end defined,
+            // it needs to be modified based on the new choice
             if (typeof oncalendar.swap_end_row !== "undefined") {
-                oncalendar.swap_end_row.removeClass('swap-period');
-                oncalendar.swap_end_row.children('td.start-end').empty();
+                var old_end_row = oncalendar.swap_end_row;
+                old_end_row.removeClass('swap-period-' + oncalendar.swap_type);
+                old_end_row.children('td.start-end').empty();
+                oncalendar.swap_end_row = active_row;
+                oncalendar.swap_end_row.addClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_end_row.children('td.start-end').text(oncalendar.swap_type + ' Swap End');
+                // New end point is before the current swap start time,
+                // so the period needs to be reversed, current swap start
+                // becomes swap end point.
+                if (oncalendar.swap_start_row.index() > oncalendar.swap_end_row.index()) {
+                    var old_start_row = oncalendar.swap_start_row;
+                    change_rows = old_start_row.nextUntil(old_end_row, 'tr.' + oncalendar.swap_type + '-row');
+                    $.each(change_rows, function() {
+                        var change_button = $(this).children('td.menu-column').children('span').children('span').children('button');
+                        change_button.text(change_button.attr('data-original')).attr('data-target', change_button.attr('data-original'))
+                            .append('<span class="elegant_icons arrow_carrot-down">');
+                    });
+                    old_end_row_button = old_end_row.children('td.menu-column').children('span').children('span').children('button');
+                    old_end_row_button.text(old_end_row_button.attr('data-original'))
+                        .attr('data-targert', old_end_row_button.attr('data-original'))
+                        .append('<span class="elegant_icons arrow_carrot-down">');
+                    oncalendar.swap_start_row = oncalendar.swap_end_row;
+                    oncalendar.swap_start_row.children('td.start-end').text(oncalendar.swap_type + ' Swap Start');
+                    oncalendar.swap_end_row = old_start_row;
+                    oncalendar.swap_end_row.children('td.start-end').text(oncalendar.swap_type + ' Swap End');
+                    change_rows = oncalendar.swap_start_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row');
+                    $.each(change_rows, function() {
+                        var change_button = $(this).children('td.menu-column').children('span').children('span').children('button');
+                        if (change_button.attr('data-original') === undefined) {
+                            change_button.attr('data-original', change_button.text());
+                        }
+                        change_button.text(new_victim).attr('data-target', new_victim)
+                            .append('<span class="elegant_icons arrow_carrot-down">');
+                    });
+                // Current end point is later than the new end point,
+                // so the swap period needs to be contracted.
+                } else if (old_end_row.index() > oncalendar.swap_end_row.index()) {
+                    change_rows = oncalendar.swap_end_row.nextUntil(old_end_row, 'tr.' + oncalendar.swap_type + '-row');
+                    $.each(change_rows, function() {
+                        var change_button = $(this).children('td.menu-column').children('span').children('span').children('button');
+                        change_button.text(change_button.attr('data-original')).attr('data-target', change_button.attr('data-original'))
+                            .append('<span class="elegant_icons arrow_carrot-down">');
+                    });
+                    var old_end_row_button = old_end_row.children('td.menu-column').children('span').children('span').children('button');
+                    old_end_row_button.text(old_end_row_button.attr('data-original')).attr('data-target', old_end_row_button.attr('data-original'));
+                // New end point is later the current end point,
+                // simply expanding the defined swap period.
+                } else {
+                    change_rows = old_end_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row');
+                    $.each(change_rows, function() {
+                        var change_button = $(this).children('td.menu-column').children('span').children('span').children('button');
+                        if (change_button.attr('data-original') === undefined) {
+                            change_button.attr('data-original', change_button.text());
+                        }
+                        change_button.text(new_victim).attr('data-target', new_victim)
+                            .append('<span class="elegant_icons arrow_carrot-down">');
+                    });
+                }
+            // No swap end is defined
+            // Chosen end point is before the start point,
+            // so the period needs to be reversed, current swap start
+            // becomes the swap end point.
+            } else if (oncalendar.swap_start_row.index() > active_row.index()) {
+                var new_end_row = oncalendar.swap_start_row;
+                oncalendar.swap_start_row = active_row;
+                oncalendar.swap_start_row.addClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_start_row.children('td.start-end').text(oncalendar.swap_type + ' Swap Start');
+                oncalendar.swap_end_row = new_end_row;
+                oncalendar.swap_end_row.children('td.start-end').text(oncalendar.swap_type + ' Swap End');
+            // Set a new swap end point.
+            } else {
+                oncalendar.swap_end_row = active_row;
+                oncalendar.swap_end_row.addClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_end_row.children('td.start-end').text(oncalendar.swap_type + ' Swap End');
             }
-            oncalendar.swap_end_row = $(this).parents('ul').parents('span').parents('td').parents('tr');
-            oncalendar.swap_end_row.addClass('swap-period');
-            oncalendar.swap_end_row.children('td.start-end').text('Swap End');
-            oncalendar.swap_start_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row')
-                .children('td.menu-column').children('span').children('span').children('button')
-                .text(new_victim).attr('data-target', new_victim)
-                .append('<span class="elegant_icons arrow_carrot-down">');
+            change_rows = oncalendar.swap_start_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row');
+            $.each(change_rows, function() {
+                var change_button = $(this).children('td.menu-column').children('span').children('span').children('button');
+                if (change_button.attr('data-original') === undefined) {
+                    change_button.attr('data-original', change_button.text());
+                }
+                change_button.text(new_victim).attr('data-target', new_victim)
+                    .append('<span class="elegant_icons arrow_carrot-down">');
+            });
+        // The chosen menu item is *not* of the same time as the
+        // current swap start (oncall/shadow/backup), so it becomes a
+        // swap period for the new type.
         } else {
-            oncalendar.swap_start_row.removeClass('swap-period');
-            oncalendar.swap_start_row.children('td.start-end').empty();
-            if (typeof oncalendar.swap_end_row !== "undefined") {
-                oncalendar.swap_end_row.removeClass('swap-period');
-                oncalendar.swap_end_row.children('td.start-end').empty();
+            // There's a start, but no end yet,
+            // so we clear the existing choice.
+            if (typeof oncalendar.swap_end_row === "undefined") {
+                oncalendar.swap_start_row.removeClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_start_row.children('td.start-end').empty();
+                var old_start_button = oncalendar.swap_start_row.children('td.menu-column').children('span').children('span').children('button');
+                old_start_button.text(old_start_button.attr('data-original')).attr('data-target', old_start_button.attr('data-original'))
+                    .append('<span class="elegant_icons arrow_carrot-down">');
             }
-            oncalendar.swap_start_row = active_row;
-            oncalendar.swap_start_row.addClass('swap-period');
-            oncalendar.swap_start_row.children('td.start-end').text('Swap Start');
-            oncalendar.swap_start = new_victim;
-            oncalendar.swap_type = oncalendar.swap_start_row.attr('data-type');
+            // The currently set period has a start and end,
+            // check to see whether the change was made on the
+            // current start row, and update the swap period if
+            // so, otherwise scrap it and start a new one.
+            if (active_row.is(oncalendar.swap_start_row)) {
+                oncalendar.swap_start_row.children('td.menu-column').children('span').children('span').children('button')
+                    .text(new_victim).attr('data-target', new_victim)
+                    .append('<span class="elegant_icons arrow_carrot-down">');
+                change_rows = oncalendar.swap_start_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row');
+                $.each(change_rows, function() {
+                    $(this).children('td.menu-column').children('span').children('span').children('button')
+                        .text(new_victim).attr('data-target', new_victim)
+                        .append('<span class="elegant_icons arrow_carrot-down">');
+
+                });
+                oncalendar.swap_end_row.children('td.menu-column').children('span').children('span').children('button')
+                    .text(new_victim).attr('data-target', new_victim)
+                    .append('<span class="elegant_icons arrow_carrot-down">');
+            } else {
+                oncalendar.swap_end_row.removeClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_end_row.children('td.start-end').empty();
+                var end_row_button = oncalendar.swap_end_row.children('td.menu-column').children('span').children('span').children('button');
+                end_row_button.text(end_row_button.attr('data-original')).attr('data-target', end_row_button.attr('data-original'));
+                oncalendar.swap_start_row.removeClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_start_row.children('td.start-end').empty();
+                var start_row_button = oncalendar.swap_start_row.children('td.menu-column').children('span').children('span').children('button');
+                start_row_button.text(start_row_button.attr('data-original')).attr('data-target', start_row_button.attr('data-original'));
+                change_rows = oncalendar.swap_start_row.nextUntil(oncalendar.swap_end_row, 'tr.' + oncalendar.swap_type + '-row');
+                $.each(change_rows, function() {
+                    var change_button = $(this).children('td.menu-column').children('span').children('span').children('button');
+                    change_button.text(change_button.attr('data-original')).attr('data-target', change_button.attr('data-original'));
+                });
+                delete oncalendar.swap_end_row;
+                oncalendar.swap_start_row = active_row;
+                oncalendar.swap_type = oncalendar.swap_start_row.attr('data-type');
+                oncalendar.swap_start_row.addClass('swap-period-' + oncalendar.swap_type);
+                oncalendar.swap_start_row.children('td.start-end').text(oncalendar.swap_type + ' Swap Start');
+                oncalendar.swap_start[oncalendar.swap_type] = new_victim;
+            }
         }
     }
 }).on('click', 'button#edit-day-cancel-button', function() {
+    delete oncalendar.swap_start_row;
+    delete oncalendar.swap_end_row;
+    delete oncalendar.swap_type;
+    oncalendar.swap_start.oncall = 0;
+    oncalendar.swap_start.shadow = 0;
+    oncalendar.swap_start.backup = 0;
     $.magnificPopup.close();
 }).on('click', 'button#edit-day-save-button', function() {
     var reason_for_edit = $('textarea#edit-day-note').val();
@@ -1239,14 +1376,14 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
         };
 
         $.each($('button.edit-day-oncall-button'), function() {
-            if (typeof $(this).attr('data-target') !== "undefined") {
+            if (typeof $(this).attr('data-target') !== "undefined" && $(this).attr('data-target') !== $(this).attr('data-original')) {
                 update_day_data.slots[$(this).attr('data-slot')] = {
                     oncall: $(this).attr('data-target')
                 }
             }
         });
         $.each($('button.edit-day-shadow-button'), function() {
-            if (typeof $(this).attr('data-target') !== "undefined") {
+            if (typeof $(this).attr('data-target') !== "undefined" && $(this).attr('data-target') !== $(this).attr('data-original')) {
                 if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
                     update_day_data.slots[$(this).attr('data-slot')].shadow = $(this).attr('data-target');
                 } else {
@@ -1257,7 +1394,7 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
             }
         });
         $.each($('button.edit-day-backup-button'), function() {
-            if (typeof $(this).attr('data-target') !== "undefined") {
+            if (typeof $(this).attr('data-target') !== "undefined" && $(this).attr('data-target') !== $(this).attr('data-original')) {
                 if (typeof update_day_data.slots[$(this).attr('data-slot')] !== "undefined") {
                     update_day_data.slots[$(this).attr('data-slot')].backup = $(this).attr('data-target');
                 } else {
@@ -1278,12 +1415,12 @@ $('div#edit-day-popup').on('click', 'li.slot-item', function() {
                 var p_group_class = {};
                 if (typeof sessionStorage['display_group'] !== "undefined" && sessionStorage['display_group'] !== null) {
                     $.each($('p.victim-group'), function(i, element) {
-                        if ($(element).attr('data-group') === sessionStorage['display_group']) {
-                            $(element).removeClass('hide');
-                        } else {
-                            $(element).addClass('hide');
+                        var element_group = $(element).attr('data-group');
+                        p_group_class[element_group] = "victim-group info-tooltip";
+                        if (element_group !== sessionStorage['display_group']) {
+                            p_group_class[element_group] = "victim-group info-tooltip hide";
                         }
-                    })
+                    });
                 }
 
                 console.log(slots);
