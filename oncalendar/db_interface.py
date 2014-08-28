@@ -1102,6 +1102,7 @@ class OnCalendarDB(object):
                 in_month = False
         self.logger.debug(report_weeks)
 
+        victims_list = self.get_victim_info()
         if group_name:
             group_list = self.get_group_info(group_name=group_name)
         else:
@@ -1115,7 +1116,7 @@ class OnCalendarDB(object):
         FROM calendar c
         LEFT OUTER JOIN groups AS g ON g.id=c.groupid
         WHERE c.calday IN ({0})"""
-        if (group_name):
+        if group_name:
             victims_report_query += """ AND c.groupid=(SELECT id FROM groups WHERE name='{0}')
             GROUP BY c.victimid, c.groupid ORDER BY c.groupid""".format(group_name)
         else:
@@ -1152,7 +1153,7 @@ class OnCalendarDB(object):
                     else:
                         victims_report[week_index]['groups'][row['name']] = {}
                         victims_report[week_index]['groups'][row['name']][row['victimid']] = row
-                    victims_report[week_index]['groups'][row['name']][row['victimid']]['name'] = group_list[row['name']]['victims'][row['victimid']]['firstname'] + ' ' + group_list[row['name']]['victims'][row['victimid']]['lastname']
+                    victims_report[week_index]['groups'][row['name']][row['victimid']]['name'] = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
                 for group in group_list:
                     cursor.execute("SELECT victimid FROM calendar WHERE groupid='{0}' AND hour='{1}' AND min='{2}' and calday='{3}'".format(
                         group_list[group]['id'],
@@ -1162,7 +1163,7 @@ class OnCalendarDB(object):
                     ))
                     row = cursor.fetchone()
                     if row is not None:
-                        victims_report[week_index]['groups'][group]['scheduled_victim'] = group_list[group]['victims'][row['victimid']]['firstname'] + ' ' + group_list[group]['victims'][row['victimid']]['lastname']
+                        victims_report[week_index]['groups'][group]['scheduled_victim'] = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
