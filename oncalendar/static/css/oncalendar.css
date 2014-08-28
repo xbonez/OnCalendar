@@ -1409,60 +1409,61 @@ div#edit-account-info-popup table td {
 /* line 617, ../scss/oncalendar.scss */
 div#edit-day-popup {
   max-height: 650px;
+  min-width: 500px;
 }
-/* line 619, ../scss/oncalendar.scss */
+/* line 620, ../scss/oncalendar.scss */
 div#edit-day-popup h3 {
   height: 25px;
   margin: 0 0 15px;
 }
-/* line 623, ../scss/oncalendar.scss */
+/* line 624, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-form {
   max-height: 500px;
   overflow: auto;
   border-top: 1px solid rgba(42, 70, 97, 0.1);
   border-bottom: 1px solid rgba(42, 70, 97, 0.1);
 }
-/* line 629, ../scss/oncalendar.scss */
+/* line 630, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table {
   width: 97.5%;
 }
-/* line 631, ../scss/oncalendar.scss */
+/* line 632, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table td {
   padding: 0 0 0 5px;
 }
-/* line 636, ../scss/oncalendar.scss */
+/* line 637, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table tr.oncall-row:nth-child(odd),
 div#edit-day-popup table#edit-day-slots-table tr.shadow-row:nth-child(even),
 div#edit-day-popup table#edit-day-slots-table tr.backup-row:nth-child(odd) {
   background-color: rgba(42, 70, 97, 0.1);
 }
-/* line 641, ../scss/oncalendar.scss */
+/* line 642, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-note-box textarea#edit-day-note {
   width: 95%;
   height: 50px;
   margin-top: 10px;
 }
 
-/* line 650, ../scss/oncalendar.scss */
+/* line 651, ../scss/oncalendar.scss */
 div.send-sms-popup textarea.sms-text-entry {
   width: 400px;
   height: 50px;
 }
 
-/* line 656, ../scss/oncalendar.scss */
+/* line 657, ../scss/oncalendar.scss */
 .autocomplete-selected {
   background-color: rgba(40, 70, 97, 0.75);
   color: whitesmoke;
 }
 
-/* line 661, ../scss/oncalendar.scss */
+/* line 662, ../scss/oncalendar.scss */
 .autocomplete-suggestion {
   overflow: hidden;
   margin-bottom: 1px;
   padding-left: 8px;
 }
 
-/* line 667, ../scss/oncalendar.scss */
+/* line 668, ../scss/oncalendar.scss */
 .autocomplete-suggestion:hover {
   cursor: pointer;
   background-color: rgba(40, 70, 97, 0.75);
