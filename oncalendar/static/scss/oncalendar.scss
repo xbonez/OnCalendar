@@ -632,6 +632,9 @@ div#edit-day-popup {
         td {
             padding: 0 0 0 5px;
         }
+        td.start-end {
+            text-transform: capitalize;
+        }
         tr.oncall-row:nth-child(odd),
         tr.shadow-row:nth-child(even),
         tr.backup-row:nth-child(odd) {

@@ -1431,39 +1431,43 @@ div#edit-day-popup table#edit-day-slots-table {
 div#edit-day-popup table#edit-day-slots-table td {
   padding: 0 0 0 5px;
 }
-/* line 637, ../scss/oncalendar.scss */
+/* line 635, ../scss/oncalendar.scss */
+div#edit-day-popup table#edit-day-slots-table td.start-end {
+  text-transform: capitalize;
+}
+/* line 640, ../scss/oncalendar.scss */
 div#edit-day-popup table#edit-day-slots-table tr.oncall-row:nth-child(odd),
 div#edit-day-popup table#edit-day-slots-table tr.shadow-row:nth-child(even),
 div#edit-day-popup table#edit-day-slots-table tr.backup-row:nth-child(odd) {
   background-color: rgba(42, 70, 97, 0.1);
 }
-/* line 642, ../scss/oncalendar.scss */
+/* line 645, ../scss/oncalendar.scss */
 div#edit-day-popup div#edit-day-note-box textarea#edit-day-note {
   width: 95%;
   height: 50px;
   margin-top: 10px;
 }
 
-/* line 651, ../scss/oncalendar.scss */
+/* line 654, ../scss/oncalendar.scss */
 div.send-sms-popup textarea.sms-text-entry {
   width: 400px;
   height: 50px;
 }
 
-/* line 657, ../scss/oncalendar.scss */
+/* line 660, ../scss/oncalendar.scss */
 .autocomplete-selected {
   background-color: rgba(40, 70, 97, 0.75);
   color: whitesmoke;
 }
 
-/* line 662, ../scss/oncalendar.scss */
+/* line 665, ../scss/oncalendar.scss */
 .autocomplete-suggestion {
   overflow: hidden;
   margin-bottom: 1px;
   padding-left: 8px;
 }
 
-/* line 668, ../scss/oncalendar.scss */
+/* line 671, ../scss/oncalendar.scss */
 .autocomplete-suggestion:hover {
   cursor: pointer;
   background-color: rgba(40, 70, 97, 0.75);
