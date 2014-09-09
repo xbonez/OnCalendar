@@ -235,16 +235,21 @@ def check_calendar_gaps_8hour():
 
         for group in gap_check:
             ocapp.aps_logger.error("Schedule gap in the next 8 hours detected for group {0}".format(group))
-            ocsms.send_sms(
-                gap_check[group],
-                "Oncall schedule for group {0} has gaps within the next 8 hours!".format(group),
-                False,
-                callback=config.sms['TWILIO_USE_CALLBACK']
-            )
+            try:
+                ocsms.send_sms(
+                    gap_check[group],
+                    "Oncall schedule for group {0} has gaps within the next 8 hours!".format(group),
+                    False,
+                    callback=config.sms['TWILIO_USE_CALLBACK']
+                )
+            except OnCalendarSMSError as error:
+                ocapp.aps_logger.error("8 hour gap notification for group {0} failes: {1}".format(
+                    group,
+                    error,
+                ))
 
         if ocapp.job_failures['check_calendar_gaps_8hour'] > 0:
             ocapp.job_failures['check_calendar_gaps_8hour'] = 0
-
     except OnCalendarDBError as error:
         ocapp.job_failures['check_calendar_gaps_8hour'] += 1
         ocapp.aps_logger.error("8 hour schedule gap check failed - {0}: {1}".format(

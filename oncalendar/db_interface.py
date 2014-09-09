@@ -2137,11 +2137,11 @@ class OnCalendarDB(object):
                 cursor.execute(today_query)
                 for row in cursor.fetchall():
                     if row['name'] not in gap_check:
-                        gap_check[row['name']] = active_groups[row['id']]['victim']
+                        gap_check[row['name']] = active_groups[row['groupid']]['victim']
                 cursor.execute(tomorrow_query)
                 for row in cursor.fetchall():
                     if row['name'] not in gap_check:
-                        gap_check[row['name']] = active_groups[row['id']]['victim']
+                        gap_check[row['name']] = active_groups[row['groupid']]['victim']
 
                 for groupid in active_groups:
                     if active_groups[groupid]['name'] not in gap_check:
@@ -2193,7 +2193,7 @@ class OnCalendarDB(object):
                 cursor.execute(gap_query)
                 for row in cursor.fetchall():
                     if row['name'] not in gap_check:
-                        gap_check[row['name']] = active_groups[row['id']]['victim']
+                        gap_check[row['name']] = active_groups[row['groupid']]['victim']
 
                 for groupid in active_groups:
                     if active_groups[groupid]['name'] not in gap_check:
@@ -2302,15 +2302,15 @@ class OnCalendarDB(object):
             cursor.execute(day1_query)
             for row in cursor.fetchall():
                 if row['name'] not in gap_check:
-                    gap_check[row['name']] = active_groups[row['id']]['email']
+                    gap_check[row['name']] = active_groups[row['groupid']]['email']
             cursor.execute(day2_query)
             for row in cursor.fetchall():
                 if row['name'] not in gap_check:
-                    gap_check[row['name']] = active_groups[row['id']]['email']
+                    gap_check[row['name']] = active_groups[row['groupid']]['email']
             cursor.execute(day3_query)
             for row in cursor.fetchall():
                 if row['name'] in gap_check:
-                    gap_check[row['name']] = active_groups[row['id']]['email']
+                    gap_check[row['name']] = active_groups[row['groupid']]['email']
 
             for groupid in active_groups:
                 if active_groups[groupid]['name'] not in gap_check:
