@@ -32,6 +32,8 @@
             Groups
           </li><li id="victims-tab" class="tab" data-target="users-panel">
             Users
+          </li><li id="calendar-tab" class="tab" data-target="calendar-panel">
+            Calendar
           </li>
         </ul><div id="admin-function-container" class="tab-panel-container">
           <div id="groups-panel" class="tab-panel active-panel">
@@ -40,7 +42,64 @@
           <div id="users-panel" class="tab-panel">
             <div id="users-panel-data" class="tab-panel-data"></div>
           </div>
+          <div id="calendar-panel" class="tab-panel">
+            <div id="calendar-panel-data" class="tab-panel-data">
+              <div id="calendar-end" class="calendar-info">
+                <strong>Current calendar end date:</strong> <span id="current-end-date"></span>
+              </div>
+              <div id="extend-calendar" class="calendar-info">
+                <div id="extend-calendar-by-months">
+                  Extend calendar by <input type="text" id="extend-calendar-months" name="extend-calendar-months" class="numeric-input" size="1" maxlength="3"> months
+                </div>
+                <div id="extend-calendar-to">
+                  Extend calendar to:
+                  <span id="extend-calendar-to-day" class="dropdown">
+                    <span data-toggle="dropdown">
+                      <button id="extend-calendar-to-day-label"></button>
+                    </span>
+                    <ul id="extend-calendar-to-day-options" class="dropdown-menu" role="menu"></ul>
+                  </span>
+                  <span id="extend-calendar-to-month" class="dropdown">
+                    <span data-toggle="dropdown">
+                      <button id="extend-calendar-to-month-label"></button>
+                    </span>
+                    <ul id="extend-calendar-to-month-options" class="dropdown-menu" role="menu">
+                      <li data-month="0">January</li>
+                      <li data-month="1">February</li>
+                      <li data-month="2">March</li>
+                      <li data-month="3">April</li>
+                      <li data-month="4">May</li>
+                      <li data-month="5">June</li>
+                      <li data-month="6">July</li>
+                      <li data-month="7">August</li>
+                      <li data-month="8">September</li>
+                      <li data-month="9">October</li>
+                      <li data-month="10">November</li>
+                      <li data-month="11">December</li>
+                    </ul>
+                  </span>
+                  <span id="extend-calendar-to-year" class="dropdown">
+                    <span data-toggle="dropdown">
+                      <button id="extend-calendar-to-year-label"></button>
+                    </span>
+                    <ul id="extend-calendar-to-year-options" class="dropdown-menu" role="menu"></ul>
+                  </span>
+                </div>
+                <div id="extend-calendar-save"><button id="extend-calendar-save-button">Save</button></div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+    <div id="confirm-extend-calendar-popup" class="popup mfp-hide">
+      <div>
+        Extend table to <span id="extend-confirm-date"></span>?
+        <input type="hidden" id="extend-calendar-days" name="extend-calendar-days">
+      </div>
+      <div id="confirm-extend-calendar">
+        <button id="cancel-extend-calendar-button">Cancel</button>
+        <button id="confirm-extend-calendar-button">Confirm</button>
       </div>
     </div>
     <div id="add-group-popup" class="popup mfp-hide">

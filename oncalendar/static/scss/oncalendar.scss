@@ -372,11 +372,35 @@ div.inner-container {
 }
 
 div#admin-function-container {
-    min-height: 300px;
+    min-height: 500px;
+    div#calendar-panel {
+        height: 100%;
+        div#calendar-panel-data {
+            div#calendar-end {
+                span#current-end-date {
+                    margin-left: 10px;
+                }
+            }
+            div#extend-calendar {
+                padding-top: 5px;
+                margin-left: 25px;
+                font-size: 0.8em;
+                div {
+                    margin-top: 20px;
+                }
+                div#extend-calendar-save {
+                    font-size: 1.2em;
+                }
+            }
+        }
+    }
 }
 
 div.tab-panel {
-    min-height: 300px;
+    min-height: 500px;
+    div.tab-panel-data {
+        min-height: 500px;
+    }
 }
 
 tr#add-group, tr#edit-group-form,

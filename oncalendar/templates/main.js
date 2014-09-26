@@ -49,6 +49,22 @@ $.when(oncalendar.get_group_info()).then(function(data) {
     document.dispatchEvent(oc_group_event);
 });
 
+$(document).on('keydown', 'input.numeric-input', function(e) {
+    // Text fields that need numeric values are forced to only
+    // accept numeric input
+    var a = [8,9,13,16,17,18,20,27,35,36,37,38,40,45,46,91,92,192];
+    var k = e.which;
+    for (i = 48; i < 58; i++) {
+        a.push(i);
+    }
+    for (i = 96; i < 106; i++) {
+        a.push(i);
+    }
+    if (!(a.indexOf(k) >= 0)) {
+        e.preventDefault();
+    }
+})
+
 
 //-------------------------------------
 // Page specific functions, for the main calendar display

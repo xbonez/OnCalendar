@@ -3,6 +3,7 @@
 {% block page_script %}
 
 var oc_victims_event = new Event('victims_loaded');
+var oc_calendar_event = new Event('calendar_end_loaded');
 var master_victims_list = {};
 var sms_gateways = {{ sms_gateway_options }};
 oncalendar.gateway_map = {};
@@ -11,6 +12,11 @@ oncalendar.gateway_map = {};
 $.when(oncalendar.get_victims()).then(function(data) {
     master_victims_list = data;
     document.dispatchEvent(oc_victims_event);
+});
+
+$.when(oncalendar.get_calendar_end()).then(function(data) {
+    oncalendar.calendar_end = data;
+    document.dispatchEvent(oc_calendar_event);
 });
 
 $(document).ready(function() {
@@ -856,5 +862,91 @@ $('#edit-group-popup').on('click', 'button#cancel-edit-group-button', function()
         )
     }
 });
+
+// Event listener to populate the Calendar tab when data is loaded
+//    $('span#current-end-date').text(data.day + ' ' + oc.month_strings[data.month - 1] + ' ' + data.year)
+document.addEventListener('calendar_end_loaded', function() {
+    var month_day_counts = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    var month_index = oncalendar.calendar_end.month - 1;
+    var end_year = oncalendar.calendar_end.year + 1;
+    var calendar_panel = $('div#calendar-panel');
+    calendar_panel.children('div#calendar-panel-data').children('div#calendar-end').children('span').text(oncalendar.calendar_end.day + ' ' + oc.month_strings[month_index] + ' ' + oncalendar.calendar_end.year);
+    var extend_to_day_form = calendar_panel.children('div#calendar-panel-data').children('div#extend-calendar').children('div#extend-calendar-to');
+    if (month_index == 1 && (end_year % 4) == 0) {
+        var day_max = 29;
+    } else {
+        var day_max = month_day_counts[month_index];
+    }
+    build_days_menu(day_max, extend_to_day_form.children('span#extend-calendar-to-day').children('ul'));
+    extend_to_day_form.children('span#extend-calendar-to-day').children('span').children('button')
+        .attr('data-day', oncalendar.calendar_end.day)
+        .text(oncalendar.calendar_end.day)
+        .append('<span class="elegant_icons arrow_carrot-down">');
+    extend_to_day_form.children('span#extend-calendar-to-month').children('span').children('button')
+        .attr('data-month', month_index)
+        .text(oc.month_strings[month_index])
+        .append('<span class="elegant_icons arrow_carrot-down">');
+    for (i = 1; i < 5; i++) {
+        extend_to_day_form.children('span#extend-calendar-to-year').children('ul')
+            .append('<li data-year="' + (oncalendar.calendar_end.year + i) + '">' + (oncalendar.calendar_end.year + i) + '</li>');
+    }
+    extend_to_day_form.children('span#extend-calendar-to-year').children('span').children('button')
+        .attr('data-year', oncalendar.calendar_end.year + 1)
+        .text(oncalendar.calendar_end.year + 1)
+        .append('<span class="elegant_icons arrow_carrot-down">');
+});
+
+$('div#calendar-panel').on('click', 'button#extend-calendar-save-button', function() {
+    var current_end = new Date(oncalendar.calendar_end.year, oncalendar.calendar_end.month - 1, oncalendar.calendar_end.day);
+    console.log(current_end);
+    if ($('input#extend-calendar-months').prop('value')) {
+        console.log($('input#extend-calendar-months').prop('value'));
+        var new_end = new Date(current_end).addMonths(parseInt($('input#extend-calendar-months').prop('value')));
+    } else {
+        var new_end = new Date(
+            $('button#extend-calendar-to-year-label').attr('data-year'),
+            $('button#extend-calendar-to-month-label').attr('data-month'),
+            $('button#extend-calendar-to-day-label').attr('data-day')
+        );
+    }
+    var days_to_add = parseInt((((new_end - current_end) / 1000) / 3600) / 24);
+    $('span#extend-confirm-date').text(new_end.getDate() + ' ' + oc.month_strings[new_end.getMonth()] + ' ' + new_end.getFullYear());
+    $('input#extend-calendar-days').prop('value', days_to_add);
+    $.magnificPopup.open({
+        items: {
+            src: '#confirm-extend-calendar-popup',
+            type: 'inline'
+        },
+        preloader: false,
+        removalDelay: 300,
+        mainClass: 'popup-animate',
+        callbacks: {
+            close: function() {
+                $('input#extend-calendar-days').val('');
+                $('input#extend-calendar-months').val('');
+            }
+        }
+    });
+});
+
+$('div#confirm-extend-calendar-popup').on('click', 'button#cancel-extend-calendar-button', function() {
+    $.magnificPopup.close();
+}).on('click', 'button#confirm-extend-calendar-button', function() {
+    var days_to_add = $('input#extend-calendar-days').prop('value');
+    $.when(oncalendar.extend_calendar(days_to_add)).then(
+        function(data) {
+            oncalendar.calendar_end = data;
+            document.dispatchEvent(oc_calendar_event);
+            $.magnificPopup.close();
+        }
+    )
+});
+
+var build_days_menu = function(days, element) {
+    for (i = 1; i <= days; i++) {
+        element.append('<li data-day="' + i + '">' + i + '</li>');
+    }
+};
+
 
 {% endblock %}

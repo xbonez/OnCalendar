@@ -1877,6 +1877,52 @@ var oncalendar = {
 
         return delete_group_object.promise();
     },
+    get_calendar_end: function() {
+        var calendar_end_object = new $.Deferred();
+        var calendar_end_url = window.location.origin + '/api/calendar/end';
+        var calendar_end_request = $.ajax({
+            url: calendar_end_url,
+            type: 'GET',
+            dataType: 'json'
+        });
+        var chain = calendar_end_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                calendar_end_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = $.parseJSON(data.responseText);
+                calendar_end_object.reject(error);
+            });
+
+        return calendar_end_object.promise();
+    },
+    extend_calendar: function(extend_days) {
+        var calendar_extend_object = new $.Deferred();
+        var extend_calendar_url = window.location.origin + '/api/admin/calendar/extend/' + extend_days;
+        var calendar_extend_request = $.ajax({
+            url: extend_calendar_url,
+            type: 'GET',
+            dataType: 'json'
+        });
+        var chain = calendar_extend_request.then(function(data) {
+            return data;
+        });
+
+        chain
+            .done(function(data) {
+                calendar_extend_object.resolve(data);
+            })
+            .fail(function(data) {
+                var error = $.parseJSON(data.responseText);
+                calendar_extend_object.reject(error);
+            });
+
+        return calendar_extend_object.promise();
+    },
     update_month: function(month_data) {
         var update_month_object = new $.Deferred();
         var update_month_url = window.location.origin + '/api/calendar/month';
