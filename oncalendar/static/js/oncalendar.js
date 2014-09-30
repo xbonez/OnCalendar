@@ -395,7 +395,7 @@ var oncalendar = {
         console.time('Post month');
         if (cal.post_month_padding > 0) {
             for (i=1; i<=cal.post_month_padding; i++) {
-                current_date_string = cal.current_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
+                current_date_string = cal.next_month_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
                 day_cell = document.createDocumentFragment();
                 day_cell.appendChild(document.createElement('td'));
                 day_cell.firstChild.setAttribute('id', current_date_string);
@@ -562,7 +562,7 @@ var oncalendar = {
             week_row.appendChild(document.createElement('tr'));
             week_row.firstChild.setAttribute('id', 'week' + current_week);
             for (i=1; i<=cal.first_day_number; i++) {
-                current_date_string = cal.current_year + '-' + (cal.previous_month + 1) + '-' + current_day.toString('d');
+                current_date_string = cal.previous_month_year + '-' + (cal.previous_month + 1) + '-' + current_day.toString('d');
                 calday = cal.victims.map[current_date_string];
                 victim_string = '--';
                 shadow_string = '--';
@@ -768,7 +768,7 @@ var oncalendar = {
 
         if (cal.post_month_padding > 0) {
             for (i=1; i<=cal.post_month_padding; i++) {
-                current_date_string = cal.current_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
+                current_date_string = cal.next_month_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
                 calday = cal.victims.map[current_date_string];
                 victim_string = '--';
                 shadow_string = '--';
@@ -914,7 +914,7 @@ var oncalendar = {
             week_row.appendChild(document.createElement('tr'));
             week_row.firstChild.setAttribute('id', 'week' + current_week);
             for (i=1; i<=cal.first_day_number; i++) {
-                current_date_string = cal.current_year + '-' + (cal.previous_month + 1) + '-' + current_day.toString('d');
+                current_date_string = cal.previous_month_year + '-' + (cal.previous_month + 1) + '-' + current_day.toString('d');
                 calday = cal.victims.map[current_date_string];
                 if (current_day.getDay() < cal.oncall_groups[group].turnover_day) {
                     day_cell = document.createDocumentFragment();
@@ -1230,7 +1230,7 @@ var oncalendar = {
 
         if (cal.post_month_padding > 0) {
             for (i=1; i<=cal.post_month_padding; i++) {
-                current_date_string = cal.current_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
+                current_date_string = cal.next_month_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
                 calday = cal.victims.map[current_date_string];
                 if (current_day.getDay() === cal.oncall_groups[group].turnover_day) {
                     victim_string = '--';
@@ -1389,7 +1389,7 @@ var oncalendar = {
             week_row.appendChild(document.createElement('tr'));
             week_row.firstChild.setAttribute('id', 'week' + current_week);
             for (i = 0; i <= 6; i++) {
-                current_date_string = cal.current_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
+                current_date_string = cal.next_month_year + '-' + (cal.next_month + 1) + '-' + current_day.toString('d');
                 calday = cal.victims.map[current_date_string];
                 victim_string = '--';
                 shadow_string = '--';
