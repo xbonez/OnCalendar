@@ -833,6 +833,7 @@ class OnCalendarDB(object):
                 continue
 
             year, month, date = day.split('-')
+            next_day = dt.date(int(year), int(month), int(date)) + dt.timedelta(days=1)
 
             try:
                 self.logger.debug(calday_query.format(year, month, date))
@@ -843,8 +844,17 @@ class OnCalendarDB(object):
             for row in cursor.fetchall():
                 calday = row['id']
 
+            try:
+                self.logger.debug(calday_query.format(next_day.year, next_day.month, next_day.day))
+                cursor.execute(calday_query.format(next_day.year, next_day.month, next_day.day))
+            except mysql.Error as error:
+                raise OnCalendarDBError(error.args[0], error.args[1])
+
+            for row in cursor.fetchall():
+                next_calday = row['id']
+
             self.add_day_slots(calday, group_info[group_name]['id'])
-            self.add_day_slots(calday + 1, group_info[group_name]['id'])
+            self.add_day_slots(next_calday, group_info[group_name]['id'])
 
             for victim_type in ['victim', 'shadow', 'backup']:
                 prev_victim_type = 'prev_' + victim_type
@@ -878,7 +888,7 @@ class OnCalendarDB(object):
                             cursor.execute(post_day_update_query.format(
                                 victim_type + 'id',
                                 victims[victim_type],
-                                calday + 1,
+                                next_calday,
                                 group_info[group_name]['id'],
                                 group_info[group_name]['turnover_hour']
                             ) + null_filter.format(victim_type + 'id'))
@@ -886,7 +896,7 @@ class OnCalendarDB(object):
                                 cursor.execute(last_slot_query.format(
                                     victim_type + 'id',
                                     victims[victim_type],
-                                    calday + 1,
+                                    next_calday,
                                     group_info[group_name]['id'],
                                     group_info[group_name]['turnover_hour'],
                                     '0'
@@ -928,7 +938,7 @@ class OnCalendarDB(object):
                             cursor.execute(post_day_update_query.format(
                                 victim_type + 'id',
                                 victims[victim_type],
-                                calday + 1,
+                                next_calday,
                                 group_info[group_name]['id'],
                                 group_info[group_name]['turnover_hour']
                             ) + filter_tag.format(
@@ -939,7 +949,7 @@ class OnCalendarDB(object):
                                 cursor.execute(last_slot_query.format(
                                     victim_type + 'id',
                                     victims[victim_type],
-                                    calday + 1,
+                                    next_calday,
                                     group_info[group_name]['id'],
                                     group_info[group_name]['turnover_hour'],
                                     '0'

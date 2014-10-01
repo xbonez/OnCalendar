@@ -852,7 +852,7 @@ def api_calendar_update_month():
         'filter_group': 'Core',
         'reason': 'Example reason for schedule update',
         'days': {
-            185: {
+            '2014-1-1': {
                 'oncall': 'billybob',
                 'shadow': 'brad',
                 'backup': 'angelina'
