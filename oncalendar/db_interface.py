@@ -2147,11 +2147,11 @@ class OnCalendarDB(object):
                 cursor.execute(today_query)
                 for row in cursor.fetchall():
                     if row['name'] not in gap_check:
-                        gap_check[row['name']] = active_groups[row['groupid']]['victim']
+                        gap_check[row['name']] = active_groups[row['groupid']]['phone']
                 cursor.execute(tomorrow_query)
                 for row in cursor.fetchall():
                     if row['name'] not in gap_check:
-                        gap_check[row['name']] = active_groups[row['groupid']]['victim']
+                        gap_check[row['name']] = active_groups[row['groupid']]['phone']
 
                 for groupid in active_groups:
                     if active_groups[groupid]['name'] not in gap_check:
@@ -2164,7 +2164,7 @@ class OnCalendarDB(object):
                         ))
                         rows = cursor.fetchall()
                         if len(rows) == 0 and active_groups[groupid]['name'] not in gap_check:
-                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['victim']
+                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['phone']
                             continue
 
                         cursor.execute(tomorrow_empty_query.format(
@@ -2176,7 +2176,7 @@ class OnCalendarDB(object):
                         ))
                         rows = cursor.fetchall()
                         if len(rows) == 0 and active_groups[groupid]['name'] not in gap_check:
-                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['victim']
+                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['phone']
 
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
@@ -2203,7 +2203,7 @@ class OnCalendarDB(object):
                 cursor.execute(gap_query)
                 for row in cursor.fetchall():
                     if row['name'] not in gap_check:
-                        gap_check[row['name']] = active_groups[row['groupid']]['victim']
+                        gap_check[row['name']] = active_groups[row['groupid']]['phone']
 
                 for groupid in active_groups:
                     if active_groups[groupid]['name'] not in gap_check:
