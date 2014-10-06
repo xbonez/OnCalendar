@@ -1907,9 +1907,10 @@ class OnCalendarDB(object):
             raise OnCalendarDBError(error.args[0], error.args[1])
 
         current_victims = {}
-
+        schedule_status = {}
         for row in cursor.fetchall():
             current_victims[row['name']] = row
+            schedule_status.setdefault(row['name'], {'oncall': {'updated': False}})
 
         today = dt.datetime.now()
         slot_min = 30 if today.minute > 29 else 0
@@ -1930,7 +1931,6 @@ class OnCalendarDB(object):
         except mysql.Error as error:
             raise OnCalendarDBError(error.args[0], error.args[1] + ' calendar_victims_query')
 
-        schedule_status = {}
         phone_query = "SELECT phone FROM victims WHERE id='{0}'"
         phones_query = """SELECT v1.phone as new_phone, v2.phone as prev_phone
         FROM victims v1, victims v2
@@ -1941,7 +1941,6 @@ class OnCalendarDB(object):
 
         for row in cursor.fetchall():
             self.logger.debug('db_interface: checking primary for {0}'.format(row['name']))
-            schedule_status[row['name']] = {}
             if row['victimid'] is not None:
                 if row['victimid'] != current_victims[row['name']]['victimid']:
                     self.logger.debug('db_interface: New primary found, updating')
@@ -1983,8 +1982,6 @@ class OnCalendarDB(object):
                         rotate_cursor.execute(update_victim_query)
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking primary for {0})'.format(row['name']))
-                else:
-                    schedule_status[row['name']]['oncall'] = {'updated': False}
 
             if row['shadowid'] is not None:
                 if row['shadowid'] != current_victims[row['name']]['shadowid']:
@@ -2022,8 +2019,6 @@ class OnCalendarDB(object):
                         rotate_cursor.execute(update_shadow_query)
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking shadow for {0})'.format(row['name']))
-                else:
-                    schedule_status[row['name']]['shadow'] = {'updated': False}
             else:
                 if current_victims[row['name']]['shadowid'] is not None:
                     try:
@@ -2067,8 +2062,6 @@ class OnCalendarDB(object):
                         rotate_cursor.execute(update_backup_query)
                     except mysql.Error as error:
                         raise OnCalendarDBError(error.args[0], error.args[1] + ' (checking backup for {0})'.format(row['name']))
-                else:
-                    schedule_status[row['name']]['backup'] = {'updated': False}
 
         self.oncalendar_db.commit()
         return schedule_status
