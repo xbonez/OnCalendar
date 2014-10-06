@@ -1158,12 +1158,13 @@ class OnCalendarDB(object):
                 self.logger.debug(victims_report_query.format(','.join(week_caldays)))
                 cursor.execute(victims_report_query.format(','.join(week_caldays)))
                 for row in cursor.fetchall():
-                    if row['name'] in victims_report[week_index]['groups']:
-                        victims_report[week_index]['groups'][row['name']][row['victimid']] = row
-                    else:
-                        victims_report[week_index]['groups'][row['name']] = {}
-                        victims_report[week_index]['groups'][row['name']][row['victimid']] = row
-                    victims_report[week_index]['groups'][row['name']][row['victimid']]['name'] = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
+                    if row['victimid'] is not None:
+                        if row['name'] in victims_report[week_index]['groups']:
+                            victims_report[week_index]['groups'][row['name']][row['victimid']] = row
+                        else:
+                            victims_report[week_index]['groups'][row['name']] = {}
+                            victims_report[week_index]['groups'][row['name']][row['victimid']] = row
+                        victims_report[week_index]['groups'][row['name']][row['victimid']]['name'] = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
                 for group in group_list:
                     cursor.execute("SELECT victimid FROM calendar WHERE groupid='{0}' AND hour='{1}' AND min='{2}' and calday='{3}'".format(
                         group_list[group]['id'],
@@ -1173,7 +1174,11 @@ class OnCalendarDB(object):
                     ))
                     row = cursor.fetchone()
                     if row is not None:
-                        victims_report[week_index]['groups'][group]['scheduled_victim'] = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
+                        if row['victimid'] is not None:
+                            victim_full_name = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
+                        else:
+                            victim_full_name = 'None Scheduled'
+                        victims_report[week_index]['groups'].setdefault(group, dict())['scheduled_victim'] = victim_full_name
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
