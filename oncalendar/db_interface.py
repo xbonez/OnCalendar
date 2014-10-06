@@ -2165,16 +2165,17 @@ class OnCalendarDB(object):
                             gap_check[active_groups[groupid]['name']] = active_groups[groupid]['phone']
                             continue
 
-                        cursor.execute(tomorrow_empty_query.format(
-                            end.year,
-                            end.month,
-                            end.day,
-                            end.hour,
-                            groupid
-                        ))
-                        rows = cursor.fetchall()
-                        if len(rows) == 0 and active_groups[groupid]['name'] not in gap_check:
-                            gap_check[active_groups[groupid]['name']] = active_groups[groupid]['phone']
+                        if end.hour > 0:
+                            cursor.execute(tomorrow_empty_query.format(
+                                end.year,
+                                end.month,
+                                end.day,
+                                end.hour,
+                                groupid
+                            ))
+                            rows = cursor.fetchall()
+                            if len(rows) == 0 and active_groups[groupid]['name'] not in gap_check:
+                                gap_check[active_groups[groupid]['name']] = active_groups[groupid]['phone']
 
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
