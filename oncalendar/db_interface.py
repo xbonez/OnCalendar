@@ -286,7 +286,7 @@ class OnCalendarDB(object):
             update_note='{2}'""".format(
             updater,
             update_group,
-            update_note,
+            self.oncalendar_db.escape_string(update_note),
             )
 
         try:
