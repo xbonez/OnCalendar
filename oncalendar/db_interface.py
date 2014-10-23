@@ -1121,16 +1121,16 @@ class OnCalendarDB(object):
         victims_report = {}
         cursor = self.oncalendar_db.cursor(mysql.cursors.DictCursor)
         week_caldays_query = 'SELECT id FROM caldays WHERE year=' + str(year) + ' AND month={0} AND day BETWEEN {1} AND {2}'
-        victims_report_query = """SELECT c.groupid, g.name, c.victimid,
-        COUNT(c.victimid) AS slots
+        victims_report_query = """SELECT c.groupid, g.name, c.{0},
+        COUNT(c.{0}) AS slots
         FROM calendar c
         LEFT OUTER JOIN groups AS g ON g.id=c.groupid
-        WHERE c.calday IN ({0})"""
+        WHERE c.calday IN ({1}) AND c.{0} IS NOT NULL"""
         if group_name:
             victims_report_query += """ AND c.groupid=(SELECT id FROM groups WHERE name='{0}')
             GROUP BY c.victimid, c.groupid ORDER BY c.groupid""".format(group_name)
         else:
-            victims_report_query += ' GROUP BY c.victimid, c.groupid ORDER BY c.groupid'
+            victims_report_query += ' GROUP BY c.{0}, c.groupid ORDER BY c.groupid'
 
         for week in report_weeks:
             week_index = report_weeks.index(week)
@@ -1155,30 +1155,13 @@ class OnCalendarDB(object):
             self.logger.debug(week_caldays)
 
             try:
-                self.logger.debug(victims_report_query.format(','.join(week_caldays)))
-                cursor.execute(victims_report_query.format(','.join(week_caldays)))
-                for row in cursor.fetchall():
-                    if row['victimid'] is not None:
-                        if row['name'] in victims_report[week_index]['groups']:
-                            victims_report[week_index]['groups'][row['name']][row['victimid']] = row
-                        else:
-                            victims_report[week_index]['groups'][row['name']] = {}
-                            victims_report[week_index]['groups'][row['name']][row['victimid']] = row
-                        victims_report[week_index]['groups'][row['name']][row['victimid']]['name'] = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
-                for group in group_list:
-                    cursor.execute("SELECT victimid FROM calendar WHERE groupid='{0}' AND hour='{1}' AND min='{2}' and calday='{3}'".format(
-                        group_list[group]['id'],
-                        group_list[group]['turnover_hour'],
-                        group_list[group]['turnover_min'],
-                        week_caldays[group_list[group]['turnover_day'] - 1]
-                    ))
-                    row = cursor.fetchone()
-                    if row is not None:
-                        if row['victimid'] is not None:
-                            victim_full_name = victims_list[row['victimid']]['firstname'] + ' ' + victims_list[row['victimid']]['lastname']
-                        else:
-                            victim_full_name = 'None Scheduled'
-                        victims_report[week_index]['groups'].setdefault(group, dict())['scheduled_victim'] = victim_full_name
+                for victim_type in ('victim', 'shadow', 'backup'):
+                    self.logger.debug(victims_report_query.format(victim_type + 'id', ','.join(week_caldays)))
+                    cursor.execute(victims_report_query.format(victim_type + 'id', ','.join(week_caldays)))
+                    for row in cursor.fetchall():
+                        victims_report[week_index]['groups'].setdefault(row['name'], {'victim': {}, 'shadow': {}, 'backup': {}})
+                        victims_report[week_index]['groups'][row['name']][victim_type][row[victim_type + 'id']] = row
+                        victims_report[week_index]['groups'][row['name']][victim_type][row[victim_type + 'id']]['name'] = victims_list[row[victim_type + 'id']]['firstname'] + ' ' + victims_list[row[victim_type + 'id']]['lastname']
             except mysql.Error as error:
                 raise OnCalendarDBError(error.args[0], error.args[1])
 
